@@ -1,0 +1,27 @@
+# Download-Caches (werden von fetch_soiusa.py / assign_countries.py neu geladen)
+soiusa_sts_raw.geojson
+soiusa_sezioni_raw.geojson
+ne_110m_countries.geojson
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Internal planning / private (kept local, not published)
+SPEC.md
+PHASE_2C_Spec.md
+HANDOVER_*.md
+CLAUDE_CODE_PROMPT_*.md
+Bergtouren_mit_Michael.xlsx
+
+# Private canon + private build (full version with names/notes — local only)
+touren.json
+index_privat.html
+*_raw.geojson
+
+# One-off diagnostic scripts (not part of the pipeline)
+verify_keys.py
+list_de_groups.py
+coverage_check.py
+scrub_touren.py
