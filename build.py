@@ -92,15 +92,26 @@ TEMPLATE = r"""<!DOCTYPE html>
   #title .kpi{margin-top:8px;display:flex;gap:12px}
   #title .kpi b{display:block;font-size:18px;color:var(--accent)}
   #title .kpi span{font-size:10px;color:var(--muted)}
-  #title .leg{margin-top:7px;display:flex;gap:10px;flex-wrap:wrap}
-  #title .leg-item{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)}
-  .sw-hl{display:inline-block;width:10px;height:10px;border:2px solid #ffb24d;
-    border-radius:2px;flex-shrink:0}
-  .sw-sw{display:inline-block;width:10px;height:10px;background:#c25a68;border-radius:2px;flex-shrink:0}
-  .sw-nw{display:inline-block;width:10px;height:10px;background:#2f6fed;border-radius:2px;flex-shrink:0}
-  .sw-no{display:inline-block;width:10px;height:10px;background:#16a34a;border-radius:2px;flex-shrink:0}
-  .sw-zo{display:inline-block;width:10px;height:10px;background:#8b5cf6;border-radius:2px;flex-shrink:0}
-  .sw-so{display:inline-block;width:10px;height:10px;background:#0ea5b5;border-radius:2px;flex-shrink:0}
+  /* ── Legend box (bottom-right, collapsible) ── */
+  #legend{position:absolute;bottom:150px;right:16px;z-index:5;width:186px;
+    background:var(--panel);backdrop-filter:blur(8px);border:1px solid var(--line);
+    border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.45);overflow:hidden}
+  #legend .lh{padding:9px 12px;font-size:12px;font-weight:600;cursor:pointer;
+    display:flex;justify-content:space-between;align-items:center;user-select:none}
+  #legend .lh::after{content:'▾';color:var(--muted);transition:transform .3s}
+  #legend.open .lh::after{transform:rotate(180deg)}
+  #legend .ll{max-height:0;overflow:hidden;transition:max-height .3s ease}
+  #legend.open .ll{max-height:240px}
+  #legend .lrow{display:flex;align-items:center;gap:8px;padding:4px 12px 4px;
+    font-size:11.5px;color:var(--txt)}
+  #legend .lrow:last-child{padding-bottom:10px}
+  #legend .lsep{height:1px;background:var(--line);margin:6px 12px}
+  .sw-hl{display:inline-block;width:13px;height:13px;border:2px solid #ffb24d;border-radius:3px;flex-shrink:0}
+  .sw-nw{display:inline-block;width:13px;height:13px;background:#0072B2;border-radius:3px;flex-shrink:0}
+  .sw-sw{display:inline-block;width:13px;height:13px;background:#CC79A7;border-radius:3px;flex-shrink:0}
+  .sw-zo{display:inline-block;width:13px;height:13px;background:#56B4E9;border-radius:3px;flex-shrink:0}
+  .sw-no{display:inline-block;width:13px;height:13px;background:#009E73;border-radius:3px;flex-shrink:0}
+  .sw-so{display:inline-block;width:13px;height:13px;background:#E6C229;border-radius:3px;flex-shrink:0}
 
   /* ── Controls (stacked below title card) ── */
   #controls{position:absolute;top:196px;left:16px;z-index:5;
@@ -196,14 +207,6 @@ TEMPLATE = r"""<!DOCTYPE html>
     <div><b id="kGroups">–</b><span>SOIUSA-Gruppen</span></div>
     <div><b id="kYears">–</b><span>Jahre</span></div>
   </div>
-  <div class="leg">
-    <span class="leg-item"><span class="sw-hl"></span>besucht</span>
-    <span class="leg-item"><span class="sw-nw"></span>Nordwestalpen</span>
-    <span class="leg-item"><span class="sw-sw"></span>S&uuml;dwestalpen</span>
-    <span class="leg-item"><span class="sw-no"></span>Nordostalpen</span>
-    <span class="leg-item"><span class="sw-zo"></span>Zentralostalpen</span>
-    <span class="leg-item"><span class="sw-so"></span>S&uuml;dostalpen</span>
-  </div>
 </div>
 
 <div id="controls">
@@ -232,6 +235,19 @@ TEMPLATE = r"""<!DOCTYPE html>
     Besuchte Gebiete <span id="covCount"></span>
   </div>
   <div class="cl" id="covList"></div>
+</div>
+
+<div id="legend" class="open">
+  <div class="lh" onclick="document.getElementById('legend').classList.toggle('open')">Legende</div>
+  <div class="ll">
+    <div class="lrow"><span class="sw-nw"></span>Nordwestalpen</div>
+    <div class="lrow"><span class="sw-sw"></span>S&uuml;dwestalpen</div>
+    <div class="lrow"><span class="sw-zo"></span>Zentralostalpen</div>
+    <div class="lrow"><span class="sw-no"></span>Nordostalpen</div>
+    <div class="lrow"><span class="sw-so"></span>S&uuml;dostalpen</div>
+    <div class="lsep"></div>
+    <div class="lrow"><span class="sw-hl"></span>besucht</div>
+  </div>
 </div>
 
 <script>

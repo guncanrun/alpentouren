@@ -112,12 +112,13 @@ def shade_for(sts_name, palette):
 # ── SOIUSA Grandi Settori (flat fill colors) ──────────────────────────────────
 # Fill follows the 5 big SOIUSA sectors, derived from CODICE (PARTE/letter),
 # not country. `country` property is kept for the later 2c panel iteration.
+# Okabe-Ito (CVD-safe); Orange/Zinnober reserved for "besucht" (#ffb24d).
 SETTORE = {
-    "I/A":  ("Südwestalpen",    "#c25a68"),
-    "I/B":  ("Nordwestalpen",   "#2f6fed"),
-    "II/B": ("Nordostalpen",    "#16a34a"),
-    "II/A": ("Zentralostalpen", "#8b5cf6"),
-    "II/C": ("Südostalpen",     "#0ea5b5"),
+    "I/A":  ("Südwestalpen",    "#CC79A7"),  # Rot-Violett
+    "I/B":  ("Nordwestalpen",   "#0072B2"),  # Blau
+    "II/B": ("Nordostalpen",    "#009E73"),  # Blaugrün
+    "II/A": ("Zentralostalpen", "#56B4E9"),  # Hellblau
+    "II/C": ("Südostalpen",     "#E6C229"),  # Gelb (gedämpft)
 }
 
 
