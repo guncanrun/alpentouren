@@ -26,3 +26,4 @@ list_de_groups.py
 coverage_check.py
 scrub_touren.py
 fetch_wikidata.py
+check_outliers.py
