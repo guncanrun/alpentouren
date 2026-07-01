@@ -1,0 +1,131 @@
+{
+  "meta": {
+    "quelle": "de.wikipedia — AVE-Gebirgsgruppenlisten + Gruppen-/Gipfelartikel",
+    "lizenz": "Texte CC BY-SA (Wikipedia); Bilder Wikimedia Commons CC BY-SA",
+    "status": "Entwurf — Cowork-Verifikation ausstehend",
+    "stand": "2026-07-01",
+    "hinweis": "Steckbriefe der besuchten SOIUSA-Gruppen. Key = exakter STS-Name."
+  },
+  "gruppen": {
+    "Alpi di Berchtesgaden": {
+      "name_de": "Berchtesgadener Alpen",
+      "land": ["DE", "AT"],
+      "region_kanton": ["Bayern", "Salzburg"],
+      "hoechster_berg": "Hochkönig",
+      "hoehe_m": 2941,
+      "wiki_url": "https://de.wikipedia.org/wiki/Berchtesgadener_Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi Venoste (Ötztaler Alpen)": {
+      "name_de": "Ötztaler Alpen",
+      "land": ["AT", "IT"],
+      "region_kanton": ["Tirol", "Südtirol"],
+      "hoechster_berg": "Wildspitze",
+      "hoehe_m": 3768,
+      "wiki_url": "https://de.wikipedia.org/wiki/Ötztaler_Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Monti delle Lechquellen": {
+      "name_de": "Lechquellengebirge",
+      "land": ["AT"],
+      "region_kanton": ["Vorarlberg"],
+      "hoechster_berg": "Untere Wildgrubenspitze",
+      "hoehe_m": 2753,
+      "wiki_url": "https://de.wikipedia.org/wiki/Lechquellengebirge",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Monti del Kaiser": {
+      "name_de": "Kaisergebirge",
+      "land": ["AT"],
+      "region_kanton": ["Tirol"],
+      "hoechster_berg": "Ellmauer Halt",
+      "hoehe_m": 2344,
+      "wiki_url": "https://de.wikipedia.org/wiki/Kaisergebirge",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi del Monte Bianco": {
+      "name_de": "Mont-Blanc-Gruppe",
+      "land": ["FR", "IT", "CH"],
+      "region_kanton": ["Haute-Savoie", "Aostatal", "Wallis"],
+      "hoechster_berg": "Mont Blanc",
+      "hoehe_m": 4805,
+      "wiki_url": "https://de.wikipedia.org/wiki/Mont-Blanc-Gruppe",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi del Silvretta, del Samnaun e del Verwall": {
+      "name_de": "Silvretta / Samnaun / Verwall",
+      "land": ["AT", "CH"],
+      "region_kanton": ["Vorarlberg", "Tirol", "Graubünden"],
+      "hoechster_berg": "Piz Linard",
+      "hoehe_m": 3410,
+      "wiki_url": "https://de.wikipedia.org/wiki/Silvretta",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi Carniche": {
+      "name_de": "Karnische Alpen",
+      "land": ["AT", "IT"],
+      "region_kanton": ["Kärnten", "Friaul-Julisch Venetien"],
+      "hoechster_berg": "Hohe Warte (Monte Coglians)",
+      "hoehe_m": 2780,
+      "wiki_url": "https://de.wikipedia.org/wiki/Karnische_Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Rätikon": {
+      "name_de": "Rätikon",
+      "land": ["AT", "CH", "LI"],
+      "region_kanton": ["Vorarlberg", "Graubünden", "Liechtenstein"],
+      "hoechster_berg": "Schesaplana",
+      "hoehe_m": 2964,
+      "wiki_url": "https://de.wikipedia.org/wiki/Rätikon",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Dolomiti di Gardena e di Fassa": {
+      "name_de": "Grödner & Fassaner Dolomiten",
+      "land": ["IT"],
+      "region_kanton": ["Südtirol", "Trentino", "Belluno"],
+      "hoechster_berg": "Marmolata",
+      "hoehe_m": 3343,
+      "wiki_url": "https://de.wikipedia.org/wiki/Dolomiten",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi Gardesane": {
+      "name_de": "Gardaseeberge",
+      "land": ["IT"],
+      "region_kanton": ["Trentino", "Lombardei", "Venetien"],
+      "hoechster_berg": "Monte Cadria",
+      "hoehe_m": 2254,
+      "wiki_url": "https://de.wikipedia.org/wiki/Gardaseeberge",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi dello Stubai": {
+      "name_de": "Stubaier Alpen",
+      "land": ["AT", "IT"],
+      "region_kanton": ["Tirol", "Südtirol"],
+      "hoechster_berg": "Zuckerhütl",
+      "hoehe_m": 3507,
+      "wiki_url": "https://de.wikipedia.org/wiki/Stubaier_Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Monti del Dachstein": {
+      "name_de": "Dachsteingebirge",
+      "land": ["AT"],
+      "region_kanton": ["Oberösterreich", "Steiermark", "Salzburg"],
+      "hoechster_berg": "Hoher Dachstein",
+      "hoehe_m": 2995,
+      "wiki_url": "https://de.wikipedia.org/wiki/Dachsteingebirge",
+      "bild_url": "",
+      "bild_attr": ""
+    }
+  }
+}

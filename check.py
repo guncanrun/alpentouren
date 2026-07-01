@@ -45,6 +45,14 @@ checks = [
     ("popup fn showStsPopup",         "function showStsPopup"),
     ("popup on sts click",            "showStsPopup(e.lngLat"),
     ("popup closeOnClick false",      "closeOnClick:false"),
+    # Phase 2c — two-tab panel + Steckbrief
+    ("wiki const",                    "const WIKI"),
+    ("priv flag (public=false)",      "const PRIV = false"),
+    ("about pane",                    'id="pAbout"'),
+    ("tour pane",                     'id="pTour"'),
+    ("showTab fn",                    "function showTab"),
+    ("steckbrief fn",                 "function steckbriefHtml"),
+    ("steckbrief Hoechster Berg",     "Höchster Berg"),
     # Click/selection
     ("sts-selected filter on click",  "setFilter('sts-selected'"),
     ("closePanel resets sts-selected","setFilter('sts-selected',['=='"),
@@ -90,6 +98,13 @@ for name, marker in checks:
     print(f"{'OK  ' if ok else 'FAIL'} {name}")
     if not ok:
         errors.append(name)
+
+# Negative guard: the public build must NOT carry the private tab label.
+if "Tour mit Papa" in html:
+    print("FAIL public leak: 'Tour mit Papa' present in index.html")
+    errors.append("public leak: 'Tour mit Papa' in index.html")
+else:
+    print("OK   public build free of 'Tour mit Papa'")
 
 print()
 if errors:

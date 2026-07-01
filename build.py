@@ -55,6 +55,10 @@ sts_json        = load_compact("soiusa_sts_colored.geojson")
 highlights_json = load_compact("soiusa_highlights_clean.geojson")
 lp_json         = load_compact("soiusa_sts_label_points.geojson")
 mask_json       = load_compact("soiusa_mask.geojson")
+try:
+    wiki_json = load_compact("soiusa_wiki.json")
+except FileNotFoundError:
+    wiki_json = '{"gruppen":{}}'
 
 sts_count = len(json.loads(sts_json)["features"])
 hl_count  = len(json.loads(highlights_json)["features"])
@@ -128,6 +132,24 @@ TEMPLATE = r"""<!DOCTYPE html>
   #panel .x{position:absolute;top:10px;right:10px;cursor:pointer;color:var(--muted);
     width:22px;height:22px;border-radius:7px;display:grid;place-items:center;font-size:15px}
   #panel .x:hover{background:rgba(255,255,255,.08);color:#fff}
+  /* Tabs + Steckbrief */
+  #panel .tabs{display:flex;border-bottom:1px solid var(--line)}
+  #panel .tab{flex:1;padding:8px 10px;font-size:11px;text-align:center;cursor:pointer;
+    color:var(--muted);border-bottom:2px solid transparent;user-select:none}
+  #panel .tab.active{color:var(--accent2);border-bottom-color:var(--accent2)}
+  #panel .pane{display:none}
+  #panel .pane.active{display:block}
+  #panel .sb-row{display:flex;justify-content:space-between;gap:10px;padding:4px 0;
+    border-bottom:1px dotted rgba(255,255,255,.08);font-size:12px}
+  #panel .sb-row .k{color:var(--muted);white-space:nowrap}
+  #panel .sb-row .v{text-align:right}
+  #panel .sb-row .v b{color:var(--accent);font-variant-numeric:tabular-nums}
+  #panel .sb-img{width:100%;border-radius:8px;margin:9px 0 3px;display:block}
+  #panel .sb-attr{font-size:9px;color:var(--muted);line-height:1.3}
+  #panel .sb-wiki{display:inline-block;margin-top:10px;font-size:11.5px;color:var(--accent2);
+    text-decoration:none}
+  #panel .sb-wiki:hover{text-decoration:underline}
+  #panel .sb-open{font-size:11px;color:var(--muted);margin-top:9px}
 
   /* ── Coverage list (default collapsed) ── */
   #cov{position:absolute;bottom:16px;left:16px;z-index:5;width:270px;max-height:42vh;
@@ -196,7 +218,11 @@ TEMPLATE = r"""<!DOCTYPE html>
     <h2 id="pGroup"></h2>
     <div class="gegend" id="pGegend"></div>
   </div>
-  <div class="body" id="pBody"></div>
+  __PTABS__
+  <div class="body">
+    <div class="pane active" id="pAbout"></div>
+    <div class="pane" id="pTour"></div>
+  </div>
 </div>
 
 <div id="cov">
@@ -212,6 +238,10 @@ const SOIUSA_STS = __SOIUSA_STS_GEOJSON__;
 const SOIUSA_HIGHLIGHTS = __SOIUSA_HIGHLIGHTS_GEOJSON__;
 const SOIUSA_LBL_PTS    = __SOIUSA_LBL_PTS_GEOJSON__;
 const MASK = __MASK_GEOJSON__;
+const WIKI = __SOIUSA_WIKI_JSON__;
+const PRIV = __PRIV__;
+const CNAMES = {AT:'Österreich',CH:'Schweiz',DE:'Deutschland',
+  FR:'Frankreich',IT:'Italien',SI:'Slowenien',LI:'Liechtenstein'};
 
 console.log('SOIUSA:', SOIUSA_STS.features.length, 'Untergruppen,',
             SOIUSA_HIGHLIGHTS.features.length, 'Highlights');
@@ -433,27 +463,97 @@ function featBbox(feat){
   return(isFinite(w)&&isFinite(s)&&isFinite(e)&&isFinite(n))?[[w,s],[e,n]]:null;
 }
 
+// ── Tab switching (guards missing elements in public build) ───────────────────
+function showTab(name){
+  const at=document.getElementById('pAbout'), to=document.getElementById('pTour');
+  const ta=document.getElementById('tabAbout'), tt=document.getElementById('tabTour');
+  if(at) at.classList.toggle('active', name==='about');
+  if(to) to.classList.toggle('active', name==='tour');
+  if(ta) ta.classList.toggle('active', name==='about');
+  if(tt) tt.classList.toggle('active', name==='tour');
+}
+function setTourTab(html){
+  const el=document.getElementById('pTour');
+  const tabs=document.getElementById('pTabs');
+  const show = PRIV && !!html;
+  if(el) el.innerHTML = show ? html : '';
+  if(tabs) tabs.style.display = show ? 'flex' : 'none';
+  showTab(show ? 'tour' : 'about');
+}
+
+// ── Gipfel list markup (shared) ───────────────────────────────────────────────
+function gipfelUl(gipfel){
+  if(!gipfel||!gipfel.length) return '';
+  return '<ul>'+gipfel.map(g=>'<li><span>'+g.name+
+    (g.hinweis?' <i style="color:var(--muted)">('+g.hinweis+')</i>':'')+
+    '</span>'+(g.hoehe_m?'<b>'+g.hoehe_m+' m</b>':'')+'</li>').join('')+'</ul>';
+}
+
 // ── Open: tour marker ─────────────────────────────────────────────────────────
 function openTour(id){
   const t=TOUREN.find(x=>x.id==id); if(!t) return;
   map.setFilter('sts-selected',['==',['get','STS'],'']);
   document.getElementById('pYear').textContent=(t.land?t.land+' · ':'')+t.jahr;
   document.getElementById('pGroup').textContent=t.gebirge;
-  document.getElementById('pGegend').textContent=t.gegend;
-  let html='';
-  if(t.gipfel&&t.gipfel.length){
-    html+='<div class="sec"><h3>Gipfel</h3><ul>'+
-      t.gipfel.map(g=>'<li><span>'+g.name+
-        (g.hinweis?' <i style="color:var(--muted)">('+g.hinweis+')</i>':'')+
-        '</span>'+(g.hoehe_m?'<b>'+g.hoehe_m+' m</b>':'')+
-        '</li>').join('')+'</ul></div>';
-  }
-  if(t.huetten) html+='<div class="sec"><h3>Hütten / Stationen</h3>'+t.huetten+'</div>';
-  if(t.bemerkung) html+='<div class="sec"><h3>Notiz</h3>'+t.bemerkung+'</div>';
-  document.getElementById('pBody').innerHTML=html||
-    '<div class="sec" style="color:var(--muted)">Kein Gipfel — siehe Notiz.</div>';
+  document.getElementById('pGegend').textContent=t.gegend||'';
+  // About pane: impersonal facts (Gipfel)
+  let about='';
+  if(t.gipfel&&t.gipfel.length) about+='<div class="sec"><h3>Gipfel</h3>'+gipfelUl(t.gipfel)+'</div>';
+  document.getElementById('pAbout').innerHTML = about || '<div class="sb-open">—</div>';
+  // Tour pane: private only (Hütten + Notiz)
+  let tour='';
+  if(t.huetten) tour+='<div class="sec"><h3>Hütten / Stationen</h3>'+t.huetten+'</div>';
+  if(t.bemerkung) tour+='<div class="sec"><h3>Notiz</h3>'+t.bemerkung+'</div>';
+  setTourTab(tour);
   document.getElementById('panel').classList.add('open');
   map.flyTo({center:[t.lon,t.lat],zoom:9.5,pitch:20,bearing:0,duration:1200,essential:true});
+}
+
+// ── Steckbrief markup (public-safe, from soiusa_wiki.json) ────────────────────
+function steckbriefHtml(stsName, props){
+  const w = (WIKI.gruppen||{})[stsName] || null;
+  const settore = props.settore || '';
+  const rows = [];
+  if(w && w.hoechster_berg)
+    rows.push(['Höchster Berg','<b>'+w.hoechster_berg+'</b>'+(w.hoehe_m?' · '+w.hoehe_m+' m':'')]);
+  if(settore) rows.push(['Lage', settore+' (Settore)']);
+  const land = (w && w.land && w.land.length) ? w.land.join(' · ')
+    : (CNAMES[props.country]||props.country||'');
+  if(land) rows.push(['Land', land]);
+  if(w && w.region_kanton && w.region_kanton.length)
+    rows.push(['Region', w.region_kanton.join(' · ')]);
+  let html = rows.map(r=>'<div class="sb-row"><span class="k">'+r[0]+
+    '</span><span class="v">'+r[1]+'</span></div>').join('');
+  if(w && w.bild_url){
+    html += '<img class="sb-img" src="'+w.bild_url+'" alt="" loading="lazy">';
+    if(w.bild_attr) html += '<div class="sb-attr">'+w.bild_attr+'</div>';
+  }
+  if(w && w.wiki_url)
+    html += '<a class="sb-wiki" href="'+w.wiki_url+'" target="_blank" rel="noopener">Auf Wikipedia →</a>';
+  else if(!w)
+    html += '<div class="sb-open">Weitere Angaben folgen.</div>';
+  return html || '<div class="sb-open">Weitere Angaben folgen.</div>';
+}
+
+// ── Tour markup for a visited group (private build only) ──────────────────────
+function groupTourHtml(props){
+  const tourIds = typeof props.tour_ids==='string'
+    ? JSON.parse(props.tour_ids) : (Array.isArray(props.tour_ids)?props.tour_ids:[]);
+  const tours = tourIds.map(id=>TOUREN.find(t=>t.id==id)).filter(Boolean);
+  if(!tours.length) return '';
+  let html='';
+  const gebs=[...new Set(tours.map(t=>t.gebirge))];
+  if(gebs.length>1) html+='<div class="notiz" style="margin:0 0 9px">SOIUSA fasst '+
+    gebs.join(' &amp; ')+' zu einer Untergruppe zusammen ('+tours.length+' Touren).</div>';
+  tours.forEach(t=>{
+    html+='<div class="sec">';
+    if(tours.length>1) html+='<h3>'+t.gebirge+(t.jahr?' — '+t.jahr:'')+'</h3>';
+    html+=gipfelUl(t.gipfel);
+    if(t.huetten) html+='<div class="notiz"><b style="color:var(--muted)">Hütten:</b> '+t.huetten+'</div>';
+    if(t.bemerkung) html+='<div class="notiz">'+t.bemerkung+'</div>';
+    html+='</div>';
+  });
+  return html;
 }
 
 // ── Open: STS polygon (visited or not) ───────────────────────────────────────
@@ -462,44 +562,14 @@ function openSts(feat){
   const stsName = String(props.STS || '').trim();
   // Harden: use '__none__' sentinel so empty-string filter doesn't accidentally match
   map.setFilter('sts-selected',['==',['get','STS'], stsName||'__none__']);
+  const visited = props.visited === 1;
 
-  if(props.visited === 1){
-    const tourIds = typeof props.tour_ids==='string'
-      ? JSON.parse(props.tour_ids) : (Array.isArray(props.tour_ids)?props.tour_ids:[]);
-    const tours = tourIds.map(id=>TOUREN.find(t=>t.id==id)).filter(Boolean);
-    const lands = [...new Set(tours.map(t=>t.land))].join('/');
-    const jahreStr = tours.map(t=>t.jahr).join(' · ');
-    document.getElementById('pYear').textContent=(lands?lands+' · ':'')+jahreStr;
-    document.getElementById('pGroup').textContent=props.name_de||stsName;
-    document.getElementById('pGegend').textContent=stsName+(props.CODICE?' · '+props.CODICE:'');
-    let html='';
-    const gebs=[...new Set(tours.map(t=>t.gebirge))];
-    if(gebs.length>1) html+='<div class="notiz" style="margin:0 0 9px">SOIUSA fasst '+
-      gebs.join(' &amp; ')+' zu einer Untergruppe zusammen ('+tours.length+' Touren).</div>';
-    tours.forEach(t=>{
-      html+='<div class="sec">';
-      if(tours.length>1) html+='<h3>'+t.gebirge+' — '+t.jahr+'</h3>';
-      if(t.gipfel&&t.gipfel.length){
-        html+='<ul>'+t.gipfel.map(g=>'<li><span>'+g.name+
-          (g.hinweis?' <i style="color:var(--muted)">('+g.hinweis+')</i>':'')+
-          '</span>'+(g.hoehe_m?'<b>'+g.hoehe_m+' m</b>':'')+
-          '</li>').join('')+'</ul>';
-      }
-      if(t.bemerkung) html+='<div class="notiz">'+t.bemerkung+'</div>';
-      html+='</div>';
-    });
-    document.getElementById('pBody').innerHTML=html||
-      '<div class="sec" style="color:var(--muted)">—</div>';
-  } else {
-    const countryNames = {AT:'Österreich',CH:'Schweiz',DE:'Deutschland',
-      FR:'Frankreich',IT:'Italien',SI:'Slowenien',LI:'Liechtenstein'};
-    const cname = countryNames[props.country]||props.country||'';
-    document.getElementById('pYear').textContent=cname;
-    document.getElementById('pGroup').textContent=stsName||'—';
-    document.getElementById('pGegend').textContent=props.CODICE||'';
-    document.getElementById('pBody').innerHTML=
-      '<div class="sec" style="color:var(--muted);font-size:12px">Noch nicht besucht.</div>';
-  }
+  document.getElementById('pGroup').textContent = props.name_de || stsName;
+  document.getElementById('pGegend').textContent = stsName + (props.CODICE?' · '+props.CODICE:'');
+  document.getElementById('pYear').textContent = visited ? 'Besucht' : 'Noch nicht besucht';
+
+  document.getElementById('pAbout').innerHTML = steckbriefHtml(stsName, props);
+  setTourTab(visited ? groupTourHtml(props) : '');
 
   document.getElementById('panel').classList.add('open');
   const bb=featBbox(feat);
@@ -545,7 +615,17 @@ html = html.replace("__SOIUSA_STS_GEOJSON__",         sts_json)
 html = html.replace("__SOIUSA_HIGHLIGHTS_GEOJSON__",  highlights_json)
 html = html.replace("__MASK_GEOJSON__",               mask_json)
 html = html.replace("__SOIUSA_LBL_PTS_GEOJSON__",    lp_json)
+html = html.replace("__SOIUSA_WIKI_JSON__",          wiki_json)
 html = html.replace("__TITEL__", TITEL).replace("__UNTER__", UNTER)
+html = html.replace("__PRIV__", "false" if PUBLIC else "true")
+
+# Tab bar only in the private build — keeps the string "Tour mit Papa" out of public HTML.
+PTABS = "" if PUBLIC else (
+    '<div class="tabs" id="pTabs">'
+    "<div class=\"tab\" id=\"tabTour\" onclick=\"showTab('tour')\">Tour mit Papa</div>"
+    "<div class=\"tab active\" id=\"tabAbout\" onclick=\"showTab('about')\">Über die Gruppe</div>"
+    "</div>")
+html = html.replace("__PTABS__", PTABS)
 
 out = HERE / OUT
 out.write_text(html, encoding="utf-8")

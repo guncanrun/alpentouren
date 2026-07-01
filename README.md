@@ -12,7 +12,9 @@ sind orange hervorgehoben. Klick auf eine Fläche öffnet Namen und Details.
 - 131 SOIUSA-Sottosezioni als Flächen-Mosaik, eingefärbt nach den 5 SOIUSA-Settori
 - Deutschsprachige Gruppennamen (IT-SOIUSA → DE-Lookup)
 - Zuschaltbare Labels, self-hosted Glyphs (offline-fähig)
-- Klick-Popup + Detail-Panel, Abdeckungs-Liste
+- Klick-Popup + Detail-Panel mit Gruppen-Steckbrief („Über die Gruppe": höchster Berg,
+  Höhe, Lage, Land, Region, Wikipedia-Link)
+- Abdeckungs-Liste der besuchten Gebiete
 - Einzelne, in sich geschlossene `index.html` — GitHub-Pages-tauglich
 
 ## Tech-Stack
@@ -35,6 +37,8 @@ python check.py             # Verifikation
 - **Satellit:** Esri World Imagery (© Esri, Maxar, Earthstar Geographics)
 - **Höhenmodell:** Mapzen Terrain Tiles / AWS Open Data (Terrarium)
 - **Ländergrenzen (Zuordnung):** Natural Earth 110m
+- **Gruppen-Steckbriefe (`soiusa_wiki.json`):** de.wikipedia (AVE-Gebirgsgruppenlisten +
+  Gruppenartikel), Text CC BY-SA; ggf. Bilder Wikimedia Commons CC BY-SA
 - **Schrift:** Noto Sans (SIL Open Font License), als PBF-Glyphs self-hosted
 
 Karten-Code und Aufbereitung: eigenes Projekt. Kartendaten wie oben zitiert.
