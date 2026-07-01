@@ -434,6 +434,23 @@ map.on('load',()=>{
       'text-size':9.5,'text-offset':[0,0.4],'text-anchor':'top','text-optional':true,'text-allow-overlap':false},
     paint:{'text-color':'#ffcabf','text-halo-color':'#06101a','text-halo-width':1.4}});
 
+  // ── Peaks of the clicked group (within-filter, reuse peak icon) ────────────
+  map.addLayer({id:'peaks-in-group', type:'symbol', source:'osm-peaks',
+    filter:['==',['get','name'],'__none__'],
+    layout:{'icon-image':'peak','icon-anchor':'bottom','icon-allow-overlap':true,'icon-size':0.8,
+      'text-field':['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],
+      'text-font':['Noto Sans Bold'],'text-size':9.5,'text-offset':[0,0.4],
+      'text-anchor':'top','text-optional':true,'text-allow-overlap':false},
+    paint:{'text-color':'#eaf1ff','text-halo-color':'#06101a','text-halo-width':1.5}});
+  // Highlight: the group's highest peak (bigger triangle + bold gold label)
+  map.addLayer({id:'peaks-highest', type:'symbol', source:'osm-peaks',
+    filter:['==',['get','name'],'__none__'],
+    layout:{'icon-image':'peak','icon-anchor':'bottom','icon-allow-overlap':true,'icon-size':1.5,
+      'text-field':['concat',['get','name'],'  ',['to-string',['get','ele']],' m'],
+      'text-font':['Noto Sans Bold'],'text-size':12,'text-offset':[0,0.5],
+      'text-anchor':'top','text-allow-overlap':true},
+    paint:{'text-color':'#ffd47a','text-halo-color':'#06101a','text-halo-width':2}});
+
   // ── Selection ring — filter-driven, initially empty ───────────────────────
   map.addLayer({id:'sts-selected', type:'line', source:'sts',
     filter:['==',['get','STS'],''],
@@ -516,6 +533,20 @@ function houseIcon(color){
   });
 }
 
+// ── Peaks of the clicked group (within-filter) + highest-peak highlight ───────
+function showGroupPeaks(geom, stsName){
+  if(!geom){ resetGroupPeaks(); return; }
+  const w=(WIKI.gruppen||{})[stsName];
+  let hoch='__none__';
+  if(w && w.hoechster_berg) hoch = w.hoechster_berg.replace(/\s*\(.*?\)\s*/g,'').trim();
+  map.setFilter('peaks-in-group', ['all',['within',geom],['!=',['get','name'],hoch]]);
+  map.setFilter('peaks-highest',  ['all',['within',geom],['==',['get','name'],hoch]]);
+}
+function resetGroupPeaks(){
+  map.setFilter('peaks-in-group', ['==',['get','name'],'__none__']);
+  map.setFilter('peaks-highest',  ['==',['get','name'],'__none__']);
+}
+
 // ── featBbox: handles Polygon, MultiPolygon, GeometryCollection ───────────────
 function featBbox(feat){
   if(!feat||!feat.geometry) return null;
@@ -563,6 +594,7 @@ function gipfelUl(gipfel){
 function openTour(id){
   const t=TOUREN.find(x=>x.id==id); if(!t) return;
   map.setFilter('sts-selected',['==',['get','STS'],'']);
+  resetGroupPeaks();
   document.getElementById('pYear').textContent=(t.land?t.land+' · ':'')+t.jahr;
   document.getElementById('pGroup').textContent=t.gebirge;
   document.getElementById('pGegend').textContent=t.gegend||'';
@@ -640,6 +672,7 @@ function openSts(feat){
 
   document.getElementById('pAbout').innerHTML = steckbriefHtml(stsName, props);
   setTourTab(visited ? groupTourHtml(props) : '');
+  showGroupPeaks(feat.geometry, stsName);
 
   document.getElementById('panel').classList.add('open');
   const bb=featBbox(feat);
@@ -676,6 +709,7 @@ function closePanel(){
   stsPopup.remove();
   document.getElementById('panel').classList.remove('open');
   map.setFilter('sts-selected',['==',['get','STS'],'']);
+  resetGroupPeaks();
 }
 function overview(){
   closePanel();

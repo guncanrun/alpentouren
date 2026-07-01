@@ -61,6 +61,11 @@ checks = [
     ("osm huts other layer",          "id:'osm-huts-other'"),
     ("peak triangle icon",            "map.addImage('peak'"),
     ("hut club icon",                 "'hut-club'"),
+    # Phase 2c — Berge nach Klick
+    ("peaks-in-group layer",          "id:'peaks-in-group'"),
+    ("peaks-highest layer",           "id:'peaks-highest'"),
+    ("showGroupPeaks fn",             "function showGroupPeaks"),
+    ("within filter",                 "['within',geom]"),
     ("togglePeaks fn",                "function togglePeaks"),
     ("toggleHuts fn",                 "function toggleHuts"),
     ("peaks button",                  'id="btnPeaks"'),
