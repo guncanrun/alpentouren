@@ -208,6 +208,8 @@ TEMPLATE = r"""<!DOCTYPE html>
 
 <div id="controls">
   <button id="toggleLayers" class="btn" onclick="toggleLayers()">Namen</button>
+  <button id="btnPeaks" class="btn" onclick="togglePeaks()">Gipfel</button>
+  <button id="btnHuts" class="btn" onclick="toggleHuts()">H&uuml;tten</button>
   <button class="btn" onclick="overview()">Alpen&uuml;berblick</button>
 </div>
 
@@ -298,7 +300,7 @@ const map = new maplibregl.Map({
   center:ALPS.center, zoom:ALPS.zoom, pitch:ALPS.pitch, bearing:ALPS.bearing,
   maxPitch:70, hash:true,
   attributionControl:{compact:true,
-    customAttribution:'SOIUSA © Arpa Piemonte · Marazzi et al. · Accorsi'}
+    customAttribution:'SOIUSA © Arpa Piemonte · Marazzi et al. · Accorsi · Gipfel/Hütten © OpenStreetMap (ODbL)'}
 });
 map.addControl(new maplibregl.NavigationControl({visualizePitch:true}), 'bottom-right');
 
@@ -328,6 +330,9 @@ map.on('load',()=>{
   map.addSource('highlights', {type:'geojson', data:SOIUSA_HIGHLIGHTS});
   map.addSource('sts-lp',    {type:'geojson', data:SOIUSA_LBL_PTS});
   map.addSource('tours',     {type:'geojson', data:fc});
+  // OSM overlays as URL sources (not inlined) — keeps index.html small.
+  map.addSource('osm-peaks', {type:'geojson', data:'./soiusa_osm_peaks.geojson'});
+  map.addSource('osm-huts',  {type:'geojson', data:'./soiusa_osm_huts.geojson'});
 
   // ── Non-Alpine mask — always on ───────────────────────────────────────────
   map.addLayer({id:'mask-fill', type:'fill', source:'mask',
@@ -377,6 +382,29 @@ map.on('load',()=>{
       'text-size':13,'text-allow-overlap':false,'text-optional':true,'text-anchor':'center'},
     paint:{'text-color':'#ffd47a',
            'text-halo-color':'#06101a','text-halo-width':2.0,'text-halo-blur':0.2}});
+
+  // ── OSM peaks (toggle, zoom-gated) — dot from z8, label from z10.5 ─────────
+  map.addLayer({id:'osm-peaks-dot', type:'circle', source:'osm-peaks', minzoom:8,
+    layout:{'visibility':'none'},
+    paint:{'circle-radius':2.4,'circle-color':'#cfe0ff',
+           'circle-stroke-width':1,'circle-stroke-color':'#06101a','circle-opacity':0.9}});
+  map.addLayer({id:'osm-peaks', type:'symbol', source:'osm-peaks', minzoom:10.5,
+    layout:{'visibility':'none',
+      'text-field':['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],
+      'text-font':['Noto Sans Bold'],'text-size':9.5,'text-offset':[0,0.7],
+      'text-anchor':'top','text-optional':true,'text-allow-overlap':false},
+    paint:{'text-color':'#dbe7ff','text-halo-color':'#06101a','text-halo-width':1.4}});
+
+  // ── OSM huts (toggle, zoom-gated) — dot from z7.5, label from z9 ───────────
+  map.addLayer({id:'osm-huts-dot', type:'circle', source:'osm-huts', minzoom:7.5,
+    layout:{'visibility':'none'},
+    paint:{'circle-radius':3,'circle-color':'#ff9d3c',
+           'circle-stroke-width':1,'circle-stroke-color':'#06101a'}});
+  map.addLayer({id:'osm-huts', type:'symbol', source:'osm-huts', minzoom:9,
+    layout:{'visibility':'none',
+      'text-field':['get','name'],'text-font':['Noto Sans Bold'],'text-size':9.5,
+      'text-offset':[0,0.7],'text-anchor':'top','text-optional':true,'text-allow-overlap':false},
+    paint:{'text-color':'#ffd47a','text-halo-color':'#06101a','text-halo-width':1.4}});
 
   // ── Selection ring — filter-driven, initially empty ───────────────────────
   map.addLayer({id:'sts-selected', type:'line', source:'sts',
@@ -586,6 +614,20 @@ function toggleLayers(){
   map.setLayoutProperty('sts-label',   'visibility',v);
   map.setLayoutProperty('sts-label-hl','visibility',v);
   document.getElementById('toggleLayers').classList.toggle('active',_layersOn);
+}
+
+// ── OSM overlays (zuschaltbar, zoom-gated) ────────────────────────────────────
+let _peaksOn=false;
+function togglePeaks(){
+  _peaksOn=!_peaksOn; const v=_peaksOn?'visible':'none';
+  ['osm-peaks','osm-peaks-dot'].forEach(l=>map.setLayoutProperty(l,'visibility',v));
+  document.getElementById('btnPeaks').classList.toggle('active',_peaksOn);
+}
+let _hutsOn=false;
+function toggleHuts(){
+  _hutsOn=!_hutsOn; const v=_hutsOn?'visible':'none';
+  ['osm-huts','osm-huts-dot'].forEach(l=>map.setLayoutProperty(l,'visibility',v));
+  document.getElementById('btnHuts').classList.toggle('active',_hutsOn);
 }
 
 function closePanel(){

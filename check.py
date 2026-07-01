@@ -53,6 +53,16 @@ checks = [
     ("showTab fn",                    "function showTab"),
     ("steckbrief fn",                 "function steckbriefHtml"),
     ("steckbrief Hoechster Berg",     "Höchster Berg"),
+    # Phase 2c — OSM overlays (peaks + huts)
+    ("osm peaks url source",          "./soiusa_osm_peaks.geojson"),
+    ("osm huts url source",           "./soiusa_osm_huts.geojson"),
+    ("osm peaks layer",               "id:'osm-peaks'"),
+    ("osm huts layer",                "id:'osm-huts'"),
+    ("togglePeaks fn",                "function togglePeaks"),
+    ("toggleHuts fn",                 "function toggleHuts"),
+    ("peaks button",                  'id="btnPeaks"'),
+    ("huts button",                   'id="btnHuts"'),
+    ("OSM attribution ODbL",          "OpenStreetMap (ODbL)"),
     # Click/selection
     ("sts-selected filter on click",  "setFilter('sts-selected'"),
     ("closePanel resets sts-selected","setFilter('sts-selected',['=='"),
