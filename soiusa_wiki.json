@@ -2,7 +2,7 @@
   "meta": {
     "quelle": "de.wikipedia — AVE-Gebirgsgruppenlisten + Gruppen-/Gipfelartikel",
     "lizenz": "Texte CC BY-SA (Wikipedia); Bilder Wikimedia Commons CC BY-SA",
-    "status": "Entwurf — 12 besuchte handkuratiert; unbesuchte teils automatisch aus de.wikipedia (Infobox Gebirge). Cowork-Verifikation ausstehend.",
+    "status": "Entwurf — 12 besuchte Cowork-verifiziert inkl. Bilder; unbesuchte teils automatisch (de.wikipedia + OSM), Cowork-Verifikation ausstehend.",
     "stand": "2026-07-01",
     "hinweis": "Steckbriefe der besuchten SOIUSA-Gruppen. Key = exakter STS-Name."
   },
@@ -20,8 +20,8 @@
       "hoechster_berg": "Hochkönig",
       "hoehe_m": 2941,
       "wiki_url": "https://de.wikipedia.org/wiki/Berchtesgadener_Alpen",
-      "bild_url": "",
-      "bild_attr": ""
+      "bild_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Hochkoenig.jpg/500px-Hochkoenig.jpg",
+      "bild_attr": "Foto: Aconcagua / CC BY-SA 3.0 (Wikimedia Commons)"
     },
     "Alpi Venoste (Ötztaler Alpen)": {
       "name_de": "Ötztaler Alpen",
@@ -36,8 +36,8 @@
       "hoechster_berg": "Wildspitze",
       "hoehe_m": 3768,
       "wiki_url": "https://de.wikipedia.org/wiki/Ötztaler_Alpen",
-      "bild_url": "",
-      "bild_attr": ""
+      "bild_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Wildspitzefromtiefenbachkogel.JPG/500px-Wildspitzefromtiefenbachkogel.JPG",
+      "bild_attr": "Foto: Pirmin Olde Weghuis / CC BY-SA 3.0 (Wikimedia Commons)"
     },
     "Monti delle Lechquellen": {
       "name_de": "Lechquellengebirge",
@@ -50,8 +50,8 @@
       "hoechster_berg": "Untere Wildgrubenspitze",
       "hoehe_m": 2753,
       "wiki_url": "https://de.wikipedia.org/wiki/Lechquellengebirge",
-      "bild_url": "",
-      "bild_attr": ""
+      "bild_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/RoteWand2.jpg/500px-RoteWand2.jpg",
+      "bild_attr": "Foto: Bernhard Mäser / CC BY-SA 3.0 (Wikimedia Commons)"
     },
     "Monti del Kaiser": {
       "name_de": "Kaisergebirge",
@@ -64,8 +64,8 @@
       "hoechster_berg": "Ellmauer Halt",
       "hoehe_m": 2344,
       "wiki_url": "https://de.wikipedia.org/wiki/Kaisergebirge",
-      "bild_url": "",
-      "bild_attr": ""
+      "bild_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/77/Ellmauer_Halt2_HQ.jpg/500px-Ellmauer_Halt2_HQ.jpg",
+      "bild_attr": "Foto: Luidger / CC BY-SA 3.0 (Wikimedia Commons)"
     },
     "Alpi del Monte Bianco": {
       "name_de": "Mont-Blanc-Gruppe",
@@ -80,10 +80,10 @@
         "Wallis"
       ],
       "hoechster_berg": "Mont Blanc",
-      "hoehe_m": 4805,
+      "hoehe_m": 4806,
       "wiki_url": "https://de.wikipedia.org/wiki/Mont-Blanc-Gruppe",
-      "bild_url": "",
-      "bild_attr": ""
+      "bild_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/MontBlancFromENE.jpg/500px-MontBlancFromENE.jpg",
+      "bild_attr": "Foto: Cactus26 / CC BY-SA 3.0 (Wikimedia Commons)"
     },
     "Alpi del Silvretta, del Samnaun e del Verwall": {
       "name_de": "Silvretta / Samnaun / Verwall",
@@ -99,8 +99,8 @@
       "hoechster_berg": "Piz Linard",
       "hoehe_m": 3410,
       "wiki_url": "https://de.wikipedia.org/wiki/Silvretta",
-      "bild_url": "",
-      "bild_attr": ""
+      "bild_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/Piz_linard_von_Nordosten.jpg/500px-Piz_linard_von_Nordosten.jpg",
+      "bild_attr": "Foto: Stefan.straub / CC BY-SA 4.0 (Wikimedia Commons)"
     },
     "Alpi Carniche": {
       "name_de": "Karnische Alpen",
@@ -115,8 +115,8 @@
       "hoechster_berg": "Hohe Warte (Monte Coglians)",
       "hoehe_m": 2780,
       "wiki_url": "https://de.wikipedia.org/wiki/Karnische_Alpen",
-      "bild_url": "",
-      "bild_attr": ""
+      "bild_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/HoheWarte_KellerspitzeWest_Karnische.jpg/500px-HoheWarte_KellerspitzeWest_Karnische.jpg",
+      "bild_attr": "Foto: Herzi Pinki / CC BY 2.5 (Wikimedia Commons)"
     },
     "Rätikon": {
       "name_de": "Rätikon",
@@ -133,8 +133,8 @@
       "hoechster_berg": "Schesaplana",
       "hoehe_m": 2964,
       "wiki_url": "https://de.wikipedia.org/wiki/Rätikon",
-      "bild_url": "",
-      "bild_attr": ""
+      "bild_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d9/Schesaplana_von_der_Mannheimer_H%C3%BCtte.jpg/500px-Schesaplana_von_der_Mannheimer_H%C3%BCtte.jpg",
+      "bild_attr": "Foto: Jörg Braukmann / CC BY-SA 4.0 (Wikimedia Commons)"
     },
     "Dolomiti di Gardena e di Fassa": {
       "name_de": "Grödner & Fassaner Dolomiten",
@@ -148,9 +148,9 @@
       ],
       "hoechster_berg": "Marmolata",
       "hoehe_m": 3343,
-      "wiki_url": "https://de.wikipedia.org/wiki/Dolomiten",
-      "bild_url": "",
-      "bild_attr": ""
+      "wiki_url": "https://de.wikipedia.org/wiki/Marmolata",
+      "bild_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/Marmolata%2C_3343m.jpg/500px-Marmolata%2C_3343m.jpg",
+      "bild_attr": "Foto: 2015 Michael 2015 / CC BY-SA 4.0 (Wikimedia Commons)"
     },
     "Prealpi Gardesane": {
       "name_de": "Gardaseeberge",
@@ -165,8 +165,8 @@
       "hoechster_berg": "Monte Cadria",
       "hoehe_m": 2254,
       "wiki_url": "https://de.wikipedia.org/wiki/Gardaseeberge",
-      "bild_url": "",
-      "bild_attr": ""
+      "bild_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/Monte_Cadria.jpg/500px-Monte_Cadria.jpg",
+      "bild_attr": "Foto: Niccolò Caranti / CC BY-SA 4.0 (Wikimedia Commons)"
     },
     "Alpi dello Stubai": {
       "name_de": "Stubaier Alpen",
@@ -181,8 +181,8 @@
       "hoechster_berg": "Zuckerhütl",
       "hoehe_m": 3507,
       "wiki_url": "https://de.wikipedia.org/wiki/Stubaier_Alpen",
-      "bild_url": "",
-      "bild_attr": ""
+      "bild_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/Zuckerh%C3%BCtl.jpg/500px-Zuckerh%C3%BCtl.jpg",
+      "bild_attr": "Foto: Jörg Braukmann / CC BY-SA 4.0 (Wikimedia Commons)"
     },
     "Monti del Dachstein": {
       "name_de": "Dachsteingebirge",
@@ -197,8 +197,8 @@
       "hoechster_berg": "Hoher Dachstein",
       "hoehe_m": 2995,
       "wiki_url": "https://de.wikipedia.org/wiki/Dachsteingebirge",
-      "bild_url": "",
-      "bild_attr": ""
+      "bild_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Ramsau_am_Dachstein_-_Dachsteins%C3%BCdwand_%28c%29.JPG/500px-Ramsau_am_Dachstein_-_Dachsteins%C3%BCdwand_%28c%29.JPG",
+      "bild_attr": "Foto: C.Stadler/Bwag / CC BY-SA 4.0 (Wikimedia Commons)"
     },
     "Alpi Bernesi p.d.": {
       "name_de": "Berner Alpen",
@@ -639,7 +639,7 @@
       ],
       "region_kanton": [],
       "hoechster_berg": "Ortler",
-      "hoehe_m": null,
+      "hoehe_m": 3905,
       "wiki_url": "https://de.wikipedia.org/wiki/Ortlergruppe",
       "bild_url": "",
       "bild_attr": ""

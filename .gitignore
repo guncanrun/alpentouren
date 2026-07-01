@@ -10,7 +10,7 @@ __pycache__/
 
 # Internal planning / private (kept local, not published)
 SPEC.md
-PHASE_2C_Spec.md
+PHASE_2C_*.md
 HANDOVER_*.md
 CLAUDE_CODE_PROMPT_*.md
 Bergtouren_mit_Michael.xlsx
@@ -25,3 +25,4 @@ verify_keys.py
 list_de_groups.py
 coverage_check.py
 scrub_touren.py
+fetch_wikidata.py
