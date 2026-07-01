@@ -2,15 +2,21 @@
   "meta": {
     "quelle": "de.wikipedia — AVE-Gebirgsgruppenlisten + Gruppen-/Gipfelartikel",
     "lizenz": "Texte CC BY-SA (Wikipedia); Bilder Wikimedia Commons CC BY-SA",
-    "status": "Entwurf — Cowork-Verifikation ausstehend",
+    "status": "Entwurf — 12 besuchte handkuratiert; unbesuchte teils automatisch aus de.wikipedia (Infobox Gebirge). Cowork-Verifikation ausstehend.",
     "stand": "2026-07-01",
     "hinweis": "Steckbriefe der besuchten SOIUSA-Gruppen. Key = exakter STS-Name."
   },
   "gruppen": {
     "Alpi di Berchtesgaden": {
       "name_de": "Berchtesgadener Alpen",
-      "land": ["DE", "AT"],
-      "region_kanton": ["Bayern", "Salzburg"],
+      "land": [
+        "DE",
+        "AT"
+      ],
+      "region_kanton": [
+        "Bayern",
+        "Salzburg"
+      ],
       "hoechster_berg": "Hochkönig",
       "hoehe_m": 2941,
       "wiki_url": "https://de.wikipedia.org/wiki/Berchtesgadener_Alpen",
@@ -19,8 +25,14 @@
     },
     "Alpi Venoste (Ötztaler Alpen)": {
       "name_de": "Ötztaler Alpen",
-      "land": ["AT", "IT"],
-      "region_kanton": ["Tirol", "Südtirol"],
+      "land": [
+        "AT",
+        "IT"
+      ],
+      "region_kanton": [
+        "Tirol",
+        "Südtirol"
+      ],
       "hoechster_berg": "Wildspitze",
       "hoehe_m": 3768,
       "wiki_url": "https://de.wikipedia.org/wiki/Ötztaler_Alpen",
@@ -29,8 +41,12 @@
     },
     "Monti delle Lechquellen": {
       "name_de": "Lechquellengebirge",
-      "land": ["AT"],
-      "region_kanton": ["Vorarlberg"],
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [
+        "Vorarlberg"
+      ],
       "hoechster_berg": "Untere Wildgrubenspitze",
       "hoehe_m": 2753,
       "wiki_url": "https://de.wikipedia.org/wiki/Lechquellengebirge",
@@ -39,8 +55,12 @@
     },
     "Monti del Kaiser": {
       "name_de": "Kaisergebirge",
-      "land": ["AT"],
-      "region_kanton": ["Tirol"],
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [
+        "Tirol"
+      ],
       "hoechster_berg": "Ellmauer Halt",
       "hoehe_m": 2344,
       "wiki_url": "https://de.wikipedia.org/wiki/Kaisergebirge",
@@ -49,8 +69,16 @@
     },
     "Alpi del Monte Bianco": {
       "name_de": "Mont-Blanc-Gruppe",
-      "land": ["FR", "IT", "CH"],
-      "region_kanton": ["Haute-Savoie", "Aostatal", "Wallis"],
+      "land": [
+        "FR",
+        "IT",
+        "CH"
+      ],
+      "region_kanton": [
+        "Haute-Savoie",
+        "Aostatal",
+        "Wallis"
+      ],
       "hoechster_berg": "Mont Blanc",
       "hoehe_m": 4805,
       "wiki_url": "https://de.wikipedia.org/wiki/Mont-Blanc-Gruppe",
@@ -59,8 +87,15 @@
     },
     "Alpi del Silvretta, del Samnaun e del Verwall": {
       "name_de": "Silvretta / Samnaun / Verwall",
-      "land": ["AT", "CH"],
-      "region_kanton": ["Vorarlberg", "Tirol", "Graubünden"],
+      "land": [
+        "AT",
+        "CH"
+      ],
+      "region_kanton": [
+        "Vorarlberg",
+        "Tirol",
+        "Graubünden"
+      ],
       "hoechster_berg": "Piz Linard",
       "hoehe_m": 3410,
       "wiki_url": "https://de.wikipedia.org/wiki/Silvretta",
@@ -69,8 +104,14 @@
     },
     "Alpi Carniche": {
       "name_de": "Karnische Alpen",
-      "land": ["AT", "IT"],
-      "region_kanton": ["Kärnten", "Friaul-Julisch Venetien"],
+      "land": [
+        "AT",
+        "IT"
+      ],
+      "region_kanton": [
+        "Kärnten",
+        "Friaul-Julisch Venetien"
+      ],
       "hoechster_berg": "Hohe Warte (Monte Coglians)",
       "hoehe_m": 2780,
       "wiki_url": "https://de.wikipedia.org/wiki/Karnische_Alpen",
@@ -79,8 +120,16 @@
     },
     "Rätikon": {
       "name_de": "Rätikon",
-      "land": ["AT", "CH", "LI"],
-      "region_kanton": ["Vorarlberg", "Graubünden", "Liechtenstein"],
+      "land": [
+        "AT",
+        "CH",
+        "LI"
+      ],
+      "region_kanton": [
+        "Vorarlberg",
+        "Graubünden",
+        "Liechtenstein"
+      ],
       "hoechster_berg": "Schesaplana",
       "hoehe_m": 2964,
       "wiki_url": "https://de.wikipedia.org/wiki/Rätikon",
@@ -89,8 +138,14 @@
     },
     "Dolomiti di Gardena e di Fassa": {
       "name_de": "Grödner & Fassaner Dolomiten",
-      "land": ["IT"],
-      "region_kanton": ["Südtirol", "Trentino", "Belluno"],
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [
+        "Südtirol",
+        "Trentino",
+        "Belluno"
+      ],
       "hoechster_berg": "Marmolata",
       "hoehe_m": 3343,
       "wiki_url": "https://de.wikipedia.org/wiki/Dolomiten",
@@ -99,8 +154,14 @@
     },
     "Prealpi Gardesane": {
       "name_de": "Gardaseeberge",
-      "land": ["IT"],
-      "region_kanton": ["Trentino", "Lombardei", "Venetien"],
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [
+        "Trentino",
+        "Lombardei",
+        "Venetien"
+      ],
       "hoechster_berg": "Monte Cadria",
       "hoehe_m": 2254,
       "wiki_url": "https://de.wikipedia.org/wiki/Gardaseeberge",
@@ -109,8 +170,14 @@
     },
     "Alpi dello Stubai": {
       "name_de": "Stubaier Alpen",
-      "land": ["AT", "IT"],
-      "region_kanton": ["Tirol", "Südtirol"],
+      "land": [
+        "AT",
+        "IT"
+      ],
+      "region_kanton": [
+        "Tirol",
+        "Südtirol"
+      ],
       "hoechster_berg": "Zuckerhütl",
       "hoehe_m": 3507,
       "wiki_url": "https://de.wikipedia.org/wiki/Stubaier_Alpen",
@@ -119,11 +186,1445 @@
     },
     "Monti del Dachstein": {
       "name_de": "Dachsteingebirge",
-      "land": ["AT"],
-      "region_kanton": ["Oberösterreich", "Steiermark", "Salzburg"],
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [
+        "Oberösterreich",
+        "Steiermark",
+        "Salzburg"
+      ],
       "hoechster_berg": "Hoher Dachstein",
       "hoehe_m": 2995,
       "wiki_url": "https://de.wikipedia.org/wiki/Dachsteingebirge",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi Bernesi p.d.": {
+      "name_de": "Berner Alpen",
+      "land": [
+        "CH"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Finsteraarhorn",
+      "hoehe_m": 4274,
+      "wiki_url": "https://de.wikipedia.org/wiki/Berner_Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi Biellesi e Cusiane": {
+      "name_de": "Bielleser und Cusianer Alpen",
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi Giulie": {
+      "name_de": "Julische Alpen",
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Triglav",
+      "hoehe_m": 2864,
+      "wiki_url": "https://de.wikipedia.org/wiki/Julische_Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi Glaronesi p,d,": {
+      "name_de": "Glarner Alpen",
+      "land": [
+        "CH"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Tödi",
+      "hoehe_m": 3614,
+      "wiki_url": "https://de.wikipedia.org/wiki/Glarner_Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi Marittime": {
+      "name_de": "Seealpen",
+      "land": [
+        "FR"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Monte Argentera",
+      "hoehe_m": null,
+      "wiki_url": "https://de.wikipedia.org/wiki/Seealpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi Nord-orientali di Stiria": {
+      "name_de": "Nordöstliche Steirische Alpen",
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi Orobie": {
+      "name_de": "Bergamasker Alpen",
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Pizzo di Coca",
+      "hoehe_m": null,
+      "wiki_url": "https://de.wikipedia.org/wiki/Bergamasker_Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi Pusteresi (Defereggen Alpen)": {
+      "name_de": "Defereggen Alpen",
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi Sarentine (Sarntaler Alpen)": {
+      "name_de": "Sarntaler Alpen",
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Hirzer (Sarntaler Alpen)",
+      "hoehe_m": null,
+      "wiki_url": "https://de.wikipedia.org/wiki/Sarntaler_Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi Scistose Salisburghesi": {
+      "name_de": "Salzburger Schieferalpen",
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Hundstein (Salzburger Schieferalpen)",
+      "hoehe_m": null,
+      "wiki_url": "https://de.wikipedia.org/wiki/Salzburger_Schieferalpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi Ticinesi e del Verbano": {
+      "name_de": "Tessiner Alpen",
+      "land": [
+        "CH"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Basòdino",
+      "hoehe_m": 3273,
+      "wiki_url": "https://de.wikipedia.org/wiki/Tessiner_Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi Urane": {
+      "name_de": "Urner Alpen",
+      "land": [
+        "CH"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Dammastock",
+      "hoehe_m": 3630,
+      "wiki_url": "https://de.wikipedia.org/wiki/Urner_Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi Urano-Glaronesi": {
+      "name_de": "Urner-Glarner Alpen",
+      "land": [
+        "CH"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Oberalpstock",
+      "hoehe_m": 3328,
+      "wiki_url": "https://de.wikipedia.org/wiki/Urner-Glarner_Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi del Beaufortain": {
+      "name_de": "Beaufortain",
+      "land": [
+        "FR"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi del Bernina": {
+      "name_de": "Berninagruppe",
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Piz Bernina",
+      "hoehe_m": 4049,
+      "wiki_url": "https://de.wikipedia.org/wiki/Berninagruppe",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi del Chiemgau": {
+      "name_de": "Chiemgauer Alpen",
+      "land": [
+        "DE"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Sonntagshorn",
+      "hoehe_m": null,
+      "wiki_url": "https://de.wikipedia.org/wiki/Chiemgauer_Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi del Gran Paradiso": {
+      "name_de": "Gran-Paradiso-Gruppe",
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi del Grand Combin": {
+      "name_de": "Grand-Combin-Gruppe",
+      "land": [
+        "CH"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi del Mangfall": {
+      "name_de": "Mangfallgebirge",
+      "land": [
+        "DE"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Hinteres Sonnwendjoch",
+      "hoehe_m": null,
+      "wiki_url": "https://de.wikipedia.org/wiki/Mangfallgebirge",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi del Marguareis": {
+      "name_de": "Marguareis-Gruppe",
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi del Mischabel e del Weissmies": {
+      "name_de": "Mischabel- und Weissmiesgruppe",
+      "land": [
+        "CH"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi del Moncenisio": {
+      "name_de": "Mont-Cenis-Gruppe",
+      "land": [
+        "FR"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi del Monginevro": {
+      "name_de": "Montgenèvre-Alpen",
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi del Monte Leone e del San Gottardo": {
+      "name_de": "Monte-Leone- und Gotthardgruppe",
+      "land": [
+        "CH"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi del Monte Rosa": {
+      "name_de": "Monte-Rosa-Alpen",
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi del Monviso": {
+      "name_de": "Monviso-Gruppe",
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi del Platta": {
+      "name_de": "Oberhalbsteiner Alpen",
+      "land": [
+        "CH"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Piz Platta",
+      "hoehe_m": 3392,
+      "wiki_url": "https://de.wikipedia.org/wiki/Oberhalbsteiner_Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi del Plessur": {
+      "name_de": "Plessur-Alpen",
+      "land": [
+        "CH"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Aroser Rothorn",
+      "hoehe_m": 2980,
+      "wiki_url": "https://de.wikipedia.org/wiki/Plessur-Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi del Wallgau": {
+      "name_de": "Werdenfelsner Alpen",
+      "land": [
+        "DE"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi del Weisshorn e del Cervino": {
+      "name_de": "Weisshorn- und Matterhorngruppe",
+      "land": [
+        "CH"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi dell'Adamello e della Presanella": {
+      "name_de": "Adamello-Presanella-Alpen",
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Presanella",
+      "hoehe_m": null,
+      "wiki_url": "https://de.wikipedia.org/wiki/Adamello-Presanella-Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi dell'Adula": {
+      "name_de": "Adula-Alpen",
+      "land": [
+        "CH"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Rheinwaldhorn",
+      "hoehe_m": null,
+      "wiki_url": "https://de.wikipedia.org/wiki/Adula-Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi dell'Albula": {
+      "name_de": "Albula-Alpen",
+      "land": [
+        "CH"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Piz Kesch",
+      "hoehe_m": 3418,
+      "wiki_url": "https://de.wikipedia.org/wiki/Albula-Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi dell'Algovia": {
+      "name_de": "Allgäuer Alpen",
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Großer Krottenkopf",
+      "hoehe_m": null,
+      "wiki_url": "https://de.wikipedia.org/wiki/Allg%C3%A4uer_Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi dell'Ammergau": {
+      "name_de": "Ammergauer Alpen",
+      "land": [
+        "DE"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Daniel (Berg)",
+      "hoehe_m": null,
+      "wiki_url": "https://de.wikipedia.org/wiki/Ammergauer_Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi dell'Ennstal": {
+      "name_de": "Ennstaler Alpen",
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Hochtor (Ennstaler Alpen)",
+      "hoehe_m": null,
+      "wiki_url": "https://de.wikipedia.org/wiki/Ennstaler_Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi dell'Ortles": {
+      "name_de": "Ortlergruppe",
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Ortler",
+      "hoehe_m": null,
+      "wiki_url": "https://de.wikipedia.org/wiki/Ortlergruppe",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi dell'Ybbstal": {
+      "name_de": "Ybbstaler Alpen",
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Kräuterin",
+      "hoehe_m": null,
+      "wiki_url": "https://de.wikipedia.org/wiki/Ybbstaler_Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi della Grande Sassière e del Rutor": {
+      "name_de": "Grande-Sassière- und Rutor-Gruppe",
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi della Gurktal": {
+      "name_de": "Gurktaler Alpen",
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Eisenhut (Berg)",
+      "hoehe_m": null,
+      "wiki_url": "https://de.wikipedia.org/wiki/Gurktaler_Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi della Lavanttal": {
+      "name_de": "Lavanttaler Alpen",
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Zirbitzkogel",
+      "hoehe_m": 2396,
+      "wiki_url": "https://de.wikipedia.org/wiki/Lavanttaler_Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi della Lechtal": {
+      "name_de": "Lechtaler Alpen",
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Parseierspitze",
+      "hoehe_m": 3036,
+      "wiki_url": "https://de.wikipedia.org/wiki/Lechtaler_Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi della Val Müstair": {
+      "name_de": "Münstertaler Alpen",
+      "land": [
+        "CH"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "https://de.wikipedia.org/wiki/M%C3%BCnstertaler_Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi della Val di Non": {
+      "name_de": "Nonsberggruppe",
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Laugenspitze",
+      "hoehe_m": null,
+      "wiki_url": "https://de.wikipedia.org/wiki/Nonsberggruppe",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi della Vanoise e del Grand Arc": {
+      "name_de": "Vanoise- und Grand-Arc-Gruppe",
+      "land": [
+        "FR"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi della Zillertal": {
+      "name_de": "Zillertaler Alpen",
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Hochfeiler",
+      "hoehe_m": null,
+      "wiki_url": "https://de.wikipedia.org/wiki/Zillertaler_Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi delle Grandes Rousses e Aiguilles d'Arves": {
+      "name_de": "Grandes Rousses und Aiguilles d'Arves",
+      "land": [
+        "FR"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi di Brandenberg": {
+      "name_de": "Brandenberger Alpen",
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Hochiss",
+      "hoehe_m": 2299,
+      "wiki_url": "https://de.wikipedia.org/wiki/Brandenberger_Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi di Kamnik e della Savinja": {
+      "name_de": "Steiner Alpen",
+      "land": [
+        "SI"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Grintovec",
+      "hoehe_m": 2558,
+      "wiki_url": "https://de.wikipedia.org/wiki/Steiner_Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi di Kitzbühel": {
+      "name_de": "Kitzbüheler Alpen",
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Kreuzjoch (Kitzbüheler Alpen)",
+      "hoehe_m": null,
+      "wiki_url": "https://de.wikipedia.org/wiki/Kitzb%C3%BCheler_Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi di Lanzo e dell'Alta Moriana": {
+      "name_de": "Lanzo- und Obermaurienne-Alpen",
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi di Livigno": {
+      "name_de": "Livigno-Alpen",
+      "land": [
+        "CH"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Cima de’ Piazzi",
+      "hoehe_m": null,
+      "wiki_url": "https://de.wikipedia.org/wiki/Livigno-Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi di Provenza": {
+      "name_de": "Provenzalische Alpen",
+      "land": [
+        "FR"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Tête de l’Estrop",
+      "hoehe_m": null,
+      "wiki_url": "https://de.wikipedia.org/wiki/Provenzalische_Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alpi di Vaud": {
+      "name_de": "Waadtländer Alpen",
+      "land": [
+        "CH"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Le Sommet des Diablerets",
+      "hoehe_m": null,
+      "wiki_url": "https://de.wikipedia.org/wiki/Waadtl%C3%A4nder_Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Alti Tauri (Hohe Tauern)": {
+      "name_de": "Hohe Tauern",
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "https://de.wikipedia.org/wiki/Hohe_Tauern",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Caravanche": {
+      "name_de": "Karawanken",
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Hochstuhl",
+      "hoehe_m": null,
+      "wiki_url": "https://de.wikipedia.org/wiki/Karawanken",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Catena delle Aiguilles Rouges": {
+      "name_de": "Aiguilles-Rouges-Kette",
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Catena di Belledonne": {
+      "name_de": "Belledonne-Kette",
+      "land": [
+        "FR"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Dolomiti Feltrine e delle Pale di San Martino": {
+      "name_de": "Feltriner Dolomiten und Palagruppe",
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Dolomiti di Brenta": {
+      "name_de": "Brentagruppe",
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Cima Brenta",
+      "hoehe_m": 3151,
+      "wiki_url": "https://de.wikipedia.org/wiki/Brentagruppe",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Dolomiti di Fiemme": {
+      "name_de": "Fleimstaler Dolomiten",
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Dolomiti di Sesto, di Braies e d'Ampezzo": {
+      "name_de": "Sextner, Pragser und Ampezzaner Dolomiten",
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Dolomiti di Zoldo": {
+      "name_de": "Zoldaner Dolomiten",
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Gailtaler Alpen (Alpi della Gail)": {
+      "name_de": "Gailtaler Alpen",
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Große Sandspitze",
+      "hoehe_m": 2772,
+      "wiki_url": "https://de.wikipedia.org/wiki/Gailtaler_Alpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Kreuzeckgruppe": {
+      "name_de": "Kreuzeckgruppe",
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Mölltaler Polinik",
+      "hoehe_m": null,
+      "wiki_url": "https://de.wikipedia.org/wiki/Kreuzeckgruppe",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Massiccio degli Écrins": {
+      "name_de": "Écrins-Massiv",
+      "land": [
+        "FR"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Barre des Écrins",
+      "hoehe_m": 4102,
+      "wiki_url": "https://de.wikipedia.org/wiki/%C3%89crins-Massiv",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Massiccio del Champsaur": {
+      "name_de": "Champsaur-Massiv",
+      "land": [
+        "FR"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Massiccio del Taillefer": {
+      "name_de": "Taillefer-Massiv",
+      "land": [
+        "FR"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Massiccio dell'Embrunais": {
+      "name_de": "Embrunais-Massiv",
+      "land": [
+        "FR"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Monti Totes": {
+      "name_de": "Totes Gebirge",
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Großer Priel",
+      "hoehe_m": 2515,
+      "wiki_url": "https://de.wikipedia.org/wiki/Totes_Gebirge",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Monti del Karwendel": {
+      "name_de": "Karwendel",
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Birkkarspitze",
+      "hoehe_m": 2749,
+      "wiki_url": "https://de.wikipedia.org/wiki/Karwendel",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Monti del Salzkammergut": {
+      "name_de": "Salzkammergutberge",
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Gamsfeld",
+      "hoehe_m": 2027,
+      "wiki_url": "https://de.wikipedia.org/wiki/Salzkammergutberge",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Monti dello Stein": {
+      "name_de": "Steinernes Meer",
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Selbhorn",
+      "hoehe_m": 2655,
+      "wiki_url": "https://de.wikipedia.org/wiki/Steinernes_Meer",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Monti di Mieming e del Wetterstein": {
+      "name_de": "Mieminger Kette / Wettersteingebirge",
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Monti di Tennen": {
+      "name_de": "Tennengebirge",
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Raucheck",
+      "hoehe_m": 2430,
+      "wiki_url": "https://de.wikipedia.org/wiki/Tennengebirge",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Monti orientali di Gap": {
+      "name_de": "Berge östlich von Gap",
+      "land": [
+        "FR"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi Appenzellesi e Sangallesi": {
+      "name_de": "Appenzeller und St. Galler Voralpen",
+      "land": [
+        "CH"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "https://de.wikipedia.org/wiki/Appenzeller_und_St._Galler_Voralpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi Bellunesi": {
+      "name_de": "Belluneser Voralpen",
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Col Nudo",
+      "hoehe_m": 2471,
+      "wiki_url": "https://de.wikipedia.org/wiki/Belluneser_Voralpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi Bergamasche": {
+      "name_de": "Bergamasker Voralpen",
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi Bernesi": {
+      "name_de": "Berner Voralpen",
+      "land": [
+        "CH"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Schilthorn",
+      "hoehe_m": 3402,
+      "wiki_url": "https://de.wikipedia.org/wiki/Berner_Voralpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi Bresciane": {
+      "name_de": "Brescianer Voralpen",
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi Carniche": {
+      "name_de": "Karnische Voralpen",
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Cima dei Preti",
+      "hoehe_m": 2707,
+      "wiki_url": "https://de.wikipedia.org/wiki/Karnische_Voralpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi Comasche": {
+      "name_de": "Comer Voralpen",
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Pizzo di Gino",
+      "hoehe_m": 2245,
+      "wiki_url": "https://de.wikipedia.org/wiki/Comer_Voralpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi Giulie": {
+      "name_de": "Julische Voralpen",
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi Liguri": {
+      "name_de": "Ligurische Voralpen",
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi Lucernesi e Untervaldesi": {
+      "name_de": "Luzerner und Unterwaldner Voralpen",
+      "land": [
+        "CH"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Ruchstock",
+      "hoehe_m": 2818,
+      "wiki_url": "https://de.wikipedia.org/wiki/Luzerner_und_Unterwaldner_Voralpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi Orientali della Bassa Austria": {
+      "name_de": "Niederösterreichische Voralpen",
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "https://de.wikipedia.org/wiki/Nieder%C3%B6sterreichische_Voralpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi Slovene nord-orientali": {
+      "name_de": "Nordöstliche Slowenische Voralpen",
+      "land": [
+        "SI"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi Slovene occidentali": {
+      "name_de": "Westliche Slowenische Voralpen",
+      "land": [
+        "SI"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi Slovene orientali": {
+      "name_de": "Östliche Slowenische Voralpen",
+      "land": [
+        "SI"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi Svittesi e Urane": {
+      "name_de": "Schwyzer und Urner Voralpen",
+      "land": [
+        "CH"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi Varesine": {
+      "name_de": "Vareser Voralpen",
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Monte Tamaro",
+      "hoehe_m": null,
+      "wiki_url": "https://de.wikipedia.org/wiki/Vareser_Voralpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi centrali di Stiria": {
+      "name_de": "Eisenwurzen",
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "https://de.wikipedia.org/wiki/Eisenwurzen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi dei Bauges": {
+      "name_de": "Bauges-Voralpen",
+      "land": [
+        "FR"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi dei Bornes": {
+      "name_de": "Bornes-Voralpen",
+      "land": [
+        "FR"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi del Devoluy": {
+      "name_de": "Dévoluy-Voralpen",
+      "land": [
+        "FR"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi del Diois": {
+      "name_de": "Diois-Voralpen",
+      "land": [
+        "FR"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi del Giffre": {
+      "name_de": "Giffre-Voralpen",
+      "land": [
+        "FR"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi del Tux": {
+      "name_de": "Tuxer Voralpen",
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Lizumer Reckner",
+      "hoehe_m": 2886,
+      "wiki_url": "https://de.wikipedia.org/wiki/Tuxer_Voralpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi del Vercors": {
+      "name_de": "Vercors-Voralpen",
+      "land": [
+        "FR"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi dell'Alta Austria": {
+      "name_de": "Oberösterreichische Voralpen",
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Hoher Nock",
+      "hoehe_m": null,
+      "wiki_url": "https://de.wikipedia.org/wiki/Ober%C3%B6sterreichische_Voralpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi della Chartreuse": {
+      "name_de": "Chartreuse-Voralpen",
+      "land": [
+        "FR"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi delle Baronnies": {
+      "name_de": "Baronnies-Voralpen",
+      "land": [
+        "FR"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi dello Chablais": {
+      "name_de": "Chablais-Voralpen",
+      "land": [
+        "FR"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi di Bregenz": {
+      "name_de": "Bregenzer Wald",
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "https://de.wikipedia.org/wiki/Bregenzer_Wald",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi di Digne": {
+      "name_de": "Voralpen von Digne",
+      "land": [
+        "FR"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi di Grasse": {
+      "name_de": "Voralpen von Grasse",
+      "land": [
+        "FR"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi di Nizza": {
+      "name_de": "Voralpen von Nizza",
+      "land": [
+        "FR"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi di Vaucluse": {
+      "name_de": "Vaucluse-Voralpen",
+      "land": [
+        "FR"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi di Vaud e Friburgo": {
+      "name_de": "Waadtländer und Freiburger Voralpen",
+      "land": [
+        "CH"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Le Tarent",
+      "hoehe_m": null,
+      "wiki_url": "https://de.wikipedia.org/wiki/Waadtl%C3%A4nder_und_Freiburger_Voralpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi nord-occidentali di Stiria": {
+      "name_de": "Nordwestliche Steirische Voralpen",
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi occidentali di Gap": {
+      "name_de": "Westliche Voralpen von Gap",
+      "land": [
+        "FR"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi orientali di Stiria": {
+      "name_de": "Östliche Steirische Voralpen",
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi sud-occidentali di Stiria": {
+      "name_de": "Südwestliche Steirische Voralpen",
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Prealpi vicentine": {
+      "name_de": "Vicentiner Voralpen",
+      "land": [
+        "IT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Cima Dodici",
+      "hoehe_m": 2446,
+      "wiki_url": "https://de.wikipedia.org/wiki/Vicentiner_Voralpen",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Tauri di Radstadt": {
+      "name_de": "Radstädter Tauern",
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Weißeck",
+      "hoehe_m": 2711,
+      "wiki_url": "https://de.wikipedia.org/wiki/Radst%C3%A4dter_Tauern",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Tauri di Schladming e di Murau": {
+      "name_de": "Schladminger Tauern",
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Hochgolling",
+      "hoehe_m": 2862,
+      "wiki_url": "https://de.wikipedia.org/wiki/Schladminger_Tauern",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Tauri di Seckau": {
+      "name_de": "Seckauer Tauern",
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "Geierhaupt",
+      "hoehe_m": 2417,
+      "wiki_url": "https://de.wikipedia.org/wiki/Seckauer_Tauern",
+      "bild_url": "",
+      "bild_attr": ""
+    },
+    "Tauri di Wölz e di Rottenmann": {
+      "name_de": "Wölzer / Rottenmanner Tauern",
+      "land": [
+        "AT"
+      ],
+      "region_kanton": [],
+      "hoechster_berg": "",
+      "hoehe_m": null,
+      "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
     }
