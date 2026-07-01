@@ -70,6 +70,14 @@ def peaks_geojson(elements):
     return feats
 
 
+import re
+
+# Exclude alpine dairy farms / pastures (Almen), keep real hiking huts.
+ALM_RE = re.compile(r"Alm|Alpe|Alpage|Malga|\bAlp\b|Rifugio Alpe", re.IGNORECASE)
+# Alpine-club operators → prioritised "club" category.
+CLUB_RE = re.compile(r"Alpenverein|DAV|ÖAV|OeAV|AVS|SAC|CAI|Naturfreunde", re.IGNORECASE)
+
+
 def huts_geojson(elements):
     feats = []
     for el in elements:
@@ -80,9 +88,19 @@ def huts_geojson(elements):
         name = tags.get("name")
         if lon is None or not name:
             continue
+        if ALM_RE.search(name):        # drop Almen/Alpe/Malga
+            continue
+        op = tags.get("operator", "") or ""
+        props = {"name": name, "kat": "club" if CLUB_RE.search(op) else "hut"}
+        raw = str(tags.get("ele", "")).replace(",", ".").split()
+        if raw:
+            try:
+                props["ele"] = round(float(raw[0]))
+            except (ValueError, IndexError):
+                pass
         feats.append({"type": "Feature",
                       "geometry": {"type": "Point", "coordinates": [round(lon, 5), round(lat, 5)]},
-                      "properties": {"name": name, "typ": tags.get("tourism")}})
+                      "properties": props})
     return feats
 
 

@@ -334,28 +334,40 @@ map.on('load',()=>{
     paint:{'text-color':'#ffd47a',
            'text-halo-color':'#06101a','text-halo-width':2.0,'text-halo-blur':0.2}});
 
-  // ── OSM peaks (toggle, zoom-gated) — dot from z8, label from z10.5 ─────────
-  map.addLayer({id:'osm-peaks-dot', type:'circle', source:'osm-peaks', minzoom:8,
-    layout:{'visibility':'none'},
-    paint:{'circle-radius':2.4,'circle-color':'#cfe0ff',
-           'circle-stroke-width':1,'circle-stroke-color':'#06101a','circle-opacity':0.9}});
-  map.addLayer({id:'osm-peaks', type:'symbol', source:'osm-peaks', minzoom:10.5,
-    layout:{'visibility':'none',
-      'text-field':['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],
-      'text-font':['Noto Sans Bold'],'text-size':9.5,'text-offset':[0,0.7],
+  // ── OSM symbol icons (keyless canvas) ─────────────────────────────────────
+  map.addImage('peak', makeIcon(22,(x,s)=>{           // black triangle, white outline
+    x.beginPath(); x.moveTo(s*0.5,s*0.13); x.lineTo(s*0.9,s*0.85); x.lineTo(s*0.1,s*0.85); x.closePath();
+    x.fillStyle='#0b0b0b'; x.fill(); x.lineWidth=1.7; x.strokeStyle='#ffffff'; x.lineJoin='round'; x.stroke();
+  }), {pixelRatio:2});
+  map.addImage('hut-club',  houseIcon('#e2574c'), {pixelRatio:2});   // Alpenvereinshütte
+  map.addImage('hut-other', houseIcon('#9fb0c0'), {pixelRatio:2});   // sonstige Berghütte
+
+  // Peaks — black triangle, name+height label from higher zoom
+  map.addLayer({id:'osm-peaks', type:'symbol', source:'osm-peaks', minzoom:8,
+    layout:{'visibility':'none','icon-image':'peak','icon-anchor':'bottom','icon-allow-overlap':false,
+      'icon-size':['interpolate',['linear'],['zoom'], 8,0.55, 12,1.0],
+      'text-field':['step',['zoom'], '', 10.5, ['concat',['get','name'],'\n',['to-string',['get','ele']],' m']],
+      'text-font':['Noto Sans Bold'],'text-size':9.5,'text-offset':[0,0.4],
       'text-anchor':'top','text-optional':true,'text-allow-overlap':false},
     paint:{'text-color':'#dbe7ff','text-halo-color':'#06101a','text-halo-width':1.4}});
 
-  // ── OSM huts (toggle, zoom-gated) — dot from z7.5, label from z9 ───────────
-  map.addLayer({id:'osm-huts-dot', type:'circle', source:'osm-huts', minzoom:7.5,
-    layout:{'visibility':'none'},
-    paint:{'circle-radius':3,'circle-color':'#ff9d3c',
-           'circle-stroke-width':1,'circle-stroke-color':'#06101a'}});
-  map.addLayer({id:'osm-huts', type:'symbol', source:'osm-huts', minzoom:9,
-    layout:{'visibility':'none',
-      'text-field':['get','name'],'text-font':['Noto Sans Bold'],'text-size':9.5,
-      'text-offset':[0,0.7],'text-anchor':'top','text-optional':true,'text-allow-overlap':false},
-    paint:{'text-color':'#ffd47a','text-halo-color':'#06101a','text-halo-width':1.4}});
+  // Huts — sonstige (grau, ab höherem Zoom)
+  map.addLayer({id:'osm-huts-other', type:'symbol', source:'osm-huts', minzoom:9,
+    filter:['==',['get','kat'],'hut'],
+    layout:{'visibility':'none','icon-image':'hut-other','icon-anchor':'bottom','icon-allow-overlap':false,
+      'icon-size':['interpolate',['linear'],['zoom'], 9,0.7, 12,1.0],
+      'text-field':['step',['zoom'], '', 10.5, ['get','name']],'text-font':['Noto Sans Bold'],
+      'text-size':9,'text-offset':[0,0.4],'text-anchor':'top','text-optional':true,'text-allow-overlap':false},
+    paint:{'text-color':'#cdd6e0','text-halo-color':'#06101a','text-halo-width':1.3}});
+
+  // Huts — Alpenverein/Club (rot, kräftiger, ab niedrigerem Zoom)
+  map.addLayer({id:'osm-huts-club', type:'symbol', source:'osm-huts', minzoom:7.5,
+    filter:['==',['get','kat'],'club'],
+    layout:{'visibility':'none','icon-image':'hut-club','icon-anchor':'bottom','icon-allow-overlap':false,
+      'icon-size':['interpolate',['linear'],['zoom'], 7.5,0.8, 12,1.15],
+      'text-field':['step',['zoom'], '', 9, ['get','name']],'text-font':['Noto Sans Bold'],
+      'text-size':9.5,'text-offset':[0,0.4],'text-anchor':'top','text-optional':true,'text-allow-overlap':false},
+    paint:{'text-color':'#ffcabf','text-halo-color':'#06101a','text-halo-width':1.4}});
 
   // ── Selection ring — filter-driven, initially empty ───────────────────────
   map.addLayer({id:'sts-selected', type:'line', source:'sts',
@@ -424,6 +436,20 @@ map.on('load',()=>{
   setTimeout(()=>map.resize(), 150);
   map.once('idle',()=>map.resize());
 });
+
+// ── Keyless canvas icons for OSM symbols ──────────────────────────────────────
+function makeIcon(size, draw){
+  const c=document.createElement('canvas'); c.width=size; c.height=size;
+  const x=c.getContext('2d'); draw(x,size);
+  return x.getImageData(0,0,size,size);
+}
+function houseIcon(color){
+  return makeIcon(20,(x,s)=>{
+    x.fillStyle=color; x.strokeStyle='#06101a'; x.lineWidth=1.5; x.lineJoin='round';
+    x.beginPath(); x.moveTo(s*0.5,s*0.16); x.lineTo(s*0.86,s*0.5); x.lineTo(s*0.14,s*0.5); x.closePath(); x.fill(); x.stroke();
+    x.beginPath(); x.rect(s*0.27,s*0.5,s*0.46,s*0.34); x.fill(); x.stroke();
+  });
+}
 
 // ── featBbox: handles Polygon, MultiPolygon, GeometryCollection ───────────────
 function featBbox(feat){
@@ -571,13 +597,13 @@ function toggleLayers(){
 let _peaksOn=false;
 function togglePeaks(){
   _peaksOn=!_peaksOn; const v=_peaksOn?'visible':'none';
-  ['osm-peaks','osm-peaks-dot'].forEach(l=>map.setLayoutProperty(l,'visibility',v));
+  map.setLayoutProperty('osm-peaks','visibility',v);
   document.getElementById('btnPeaks').classList.toggle('active',_peaksOn);
 }
 let _hutsOn=false;
 function toggleHuts(){
   _hutsOn=!_hutsOn; const v=_hutsOn?'visible':'none';
-  ['osm-huts','osm-huts-dot'].forEach(l=>map.setLayoutProperty(l,'visibility',v));
+  ['osm-huts-club','osm-huts-other'].forEach(l=>map.setLayoutProperty(l,'visibility',v));
   document.getElementById('btnHuts').classList.toggle('active',_hutsOn);
 }
 
