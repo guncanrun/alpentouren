@@ -302,7 +302,7 @@ const map = new maplibregl.Map({
       sat:{type:'raster', tileSize:256,
         tiles:['https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
         attribution:'Imagery © Esri, Maxar, Earthstar Geographics'},
-      dem:{type:'raster-dem', tileSize:256, encoding:'terrarium', maxzoom:12,
+      dem:{type:'raster-dem', tileSize:256, encoding:'terrarium', maxzoom:10,
         tiles:['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
         attribution:'Elevation: Mapzen Terrain Tiles / AWS Open Data'}
     },
@@ -534,7 +534,10 @@ function houseIcon(color){
 }
 
 // ── Peaks of the clicked group (within-filter) + highest-peak highlight ───────
-function showGroupPeaks(geom, stsName){
+function showGroupPeaks(stsName){
+  // Use the FULL inline geometry (not the tile-clipped click feature).
+  const f=SOIUSA_STS.features.find(x=>x.properties.STS===stsName);
+  const geom=f&&f.geometry;
   if(!geom){ resetGroupPeaks(); return; }
   const w=(WIKI.gruppen||{})[stsName];
   let hoch='__none__';
@@ -672,7 +675,7 @@ function openSts(feat){
 
   document.getElementById('pAbout').innerHTML = steckbriefHtml(stsName, props);
   setTourTab(visited ? groupTourHtml(props) : '');
-  showGroupPeaks(feat.geometry, stsName);
+  showGroupPeaks(stsName);
 
   document.getElementById('panel').classList.add('open');
   const bb=featBbox(feat);
