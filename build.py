@@ -1303,3 +1303,12 @@ out.write_text(html, encoding="utf-8")
 size_kb = out.stat().st_size / 1024
 mode = "public" if PUBLIC else "PRIVAT"
 print(f"{OUT} [{mode}]: {len(data['touren'])} Touren · {hl_count}/{sts_count} Untergruppen · {size_kb:.0f} KB")
+
+# ── Backup-Hook (nur Privat-Build): sichert den gitignorierten Privat-Kanon ───
+# (touren.json + _cowork_specs) nach OneDrive. Fehler brechen den Build nie ab.
+if not PUBLIC:
+    try:
+        import backup_privat
+        backup_privat.backup()
+    except Exception as e:
+        print(f"backup_privat: uebersprungen ({e})")
