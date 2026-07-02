@@ -26,11 +26,12 @@ BBOX = "42.5,3.5,49.5,18.5"   # S,W,N,E — Alpenraum (deckt maxBounds ab)
 MIN_ELE = 2000
 
 PEAKS_Q = f'[out:json][timeout:300];(node["natural"="peak"]["name"]["ele"]({BBOX}););out qt;'
+# nwr + out center: huts/passes are often mapped as building WAYS, not nodes.
 HUTS_Q = (f'[out:json][timeout:300];'
-          f'(node["tourism"="alpine_hut"]["name"]({BBOX});'
-          f'node["tourism"="wilderness_hut"]["name"]({BBOX}););out qt;')
+          f'(nwr["tourism"="alpine_hut"]["name"]({BBOX});'
+          f'nwr["tourism"="wilderness_hut"]["name"]({BBOX}););out center;')
 PASS_Q = (f'[out:json][timeout:300];'
-          f'(node["mountain_pass"="yes"]["name"]({BBOX}););out qt;')  # named road/mountain passes
+          f'(nwr["mountain_pass"="yes"]["name"]({BBOX}););out center;')
 
 # ── Peak hierarchy tiers (0 Mont Blanc · 1 Länder-Höchste · 2/3/4 Höhenbänder) ──
 NAMED_PEAKS = {   # name substring : (tier, approx ele) — Wikidata-verified values
@@ -85,6 +86,14 @@ def query(q):
     raise last
 
 
+def lonlat(el):
+    """Coordinates for a node (lon/lat) or a way/relation (center)."""
+    if "lon" in el and "lat" in el:
+        return el["lon"], el["lat"]
+    c = el.get("center") or {}
+    return c.get("lon"), c.get("lat")
+
+
 def peaks_geojson(elements):
     feats = []
     for el in elements:
@@ -120,9 +129,7 @@ CLUB_RE = re.compile(r"Alpenverein|DAV|ÖAV|OeAV|AVS|SAC|CAI|FFCAM|Naturfreunde"
 def huts_geojson(elements):
     feats = []
     for el in elements:
-        if el.get("type") != "node":
-            continue
-        lon, lat = el.get("lon"), el.get("lat")
+        lon, lat = lonlat(el)
         tags = el.get("tags") or {}
         name = tags.get("name")
         if lon is None or not name:
@@ -157,9 +164,7 @@ def huts_geojson(elements):
 def passes_geojson(elements):
     feats = []
     for el in elements:
-        if el.get("type") != "node":
-            continue
-        lon, lat = el.get("lon"), el.get("lat")
+        lon, lat = lonlat(el)
         tags = el.get("tags") or {}
         name = tags.get("name")
         if lon is None or not name:
