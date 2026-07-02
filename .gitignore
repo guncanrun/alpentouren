@@ -29,3 +29,4 @@ fetch_wikidata.py
 check_outliers.py
 
 debug_huts.py
+ne_10m_boundary_lines.geojson

@@ -30,6 +30,8 @@ checks = [
     ("Landesgrenzen toggle",          'id="tglBorders"'),
     ("toggleBorders fn",              "function toggleBorders"),
     ("borders layer",                 "id:'borders'"),
+    ("borders url source",            "./soiusa_borders.geojson"),
+    ("country labels layer",          "id:'country-labels'"),
     ("home button",                   'id="home"'),
     ("auto-pitch fn",                 "function pitchForZoom"),
     ("auto-pitch on zoomend",         "map.on('zoomend'"),

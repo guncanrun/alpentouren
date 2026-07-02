@@ -55,7 +55,6 @@ sts_json        = load_compact("soiusa_sts_colored.geojson")
 highlights_json = load_compact("soiusa_highlights_clean.geojson")
 lp_json         = load_compact("soiusa_sts_label_points.geojson")
 mask_json       = load_compact("soiusa_mask.geojson")
-borders_json    = load_compact("soiusa_borders.geojson")
 try:
     wiki_json = load_compact("soiusa_wiki.json")
 except FileNotFoundError:
@@ -328,7 +327,15 @@ const SOIUSA_STS = __SOIUSA_STS_GEOJSON__;
 const SOIUSA_HIGHLIGHTS = __SOIUSA_HIGHLIGHTS_GEOJSON__;
 const SOIUSA_LBL_PTS    = __SOIUSA_LBL_PTS_GEOJSON__;
 const MASK = __MASK_GEOJSON__;
-const BORDERS = __BORDERS_GEOJSON__;
+const COUNTRY_LABELS = {type:'FeatureCollection',features:[
+  {type:'Feature',geometry:{type:'Point',coordinates:[11.40,47.62]},properties:{name:'Deutschland',iso:'DE'}},
+  {type:'Feature',geometry:{type:'Point',coordinates:[13.80,47.30]},properties:{name:'Österreich',iso:'AT'}},
+  {type:'Feature',geometry:{type:'Point',coordinates:[8.00,46.75]},properties:{name:'Schweiz',iso:'CH'}},
+  {type:'Feature',geometry:{type:'Point',coordinates:[11.05,46.35]},properties:{name:'Italien',iso:'IT'}},
+  {type:'Feature',geometry:{type:'Point',coordinates:[6.50,45.42]},properties:{name:'Frankreich',iso:'FR'}},
+  {type:'Feature',geometry:{type:'Point',coordinates:[14.10,46.30]},properties:{name:'Slowenien',iso:'SI'}},
+  {type:'Feature',geometry:{type:'Point',coordinates:[9.55,47.15]},properties:{name:'Liechtenstein',iso:'LI'}}
+]};
 const WIKI = __SOIUSA_WIKI_JSON__;
 const PRIV = __PRIV__;
 const CNAMES = {AT:'Österreich',CH:'Schweiz',DE:'Deutschland',
@@ -444,10 +451,19 @@ map.on('load',()=>{
   // ── Non-Alpine mask — always on ───────────────────────────────────────────
   map.addLayer({id:'mask-fill', type:'fill', source:'mask',
     paint:{'fill-color':'#000816','fill-opacity':0.42}});
-  map.addSource('borders', {type:'geojson', data:BORDERS});
+  map.addSource('borders', {type:'geojson', data:'./soiusa_borders.geojson'});
   map.addLayer({id:'borders', type:'line', source:'borders',
     layout:{'visibility':'none','line-join':'round'},
-    paint:{'line-color':'#e2ebf7','line-width':1.2,'line-opacity':0.55,'line-dasharray':[3,2]}});
+    paint:{'line-color':'#e2ebf7','line-width':1.2,'line-opacity':0.6,'line-dasharray':[3,2]}});
+  // Länder-Labels (im Landesteil, uppercase, zoom-gated, an den Grenzen-Toggle gekoppelt)
+  map.addSource('country-labels', {type:'geojson', data:COUNTRY_LABELS});
+  map.addLayer({id:'country-labels', type:'symbol', source:'country-labels', minzoom:7,
+    layout:{'visibility':'none','text-field':['get','name'],'text-font':['Noto Sans Bold'],
+      'text-size':['interpolate',['linear'],['zoom'], 7,11, 10,17],'text-letter-spacing':0.18,
+      'text-transform':'uppercase','text-allow-overlap':false,'text-optional':true},
+    paint:{'text-color':'#cdd9e8',
+      'text-opacity':['step',['zoom'], ['case',['==',['get','iso'],'LI'],0,0.7], 9,0.7],
+      'text-halo-color':'#06101a','text-halo-width':1.5}});
 
   // ── STS mosaic fill — toggle-controlled ──────────────────────────────────
   // 'coalesce' prevents MapLibre crash when fill_color is undefined on a feature.
@@ -906,7 +922,7 @@ function toggleFarbung(){
 let _bordersOn=false;
 function toggleBorders(){
   _bordersOn=!_bordersOn;
-  map.setLayoutProperty('borders','visibility',_bordersOn?'visible':'none');
+  ['borders','country-labels'].forEach(l=>map.setLayoutProperty(l,'visibility',_bordersOn?'visible':'none'));
   document.getElementById('tglBorders').classList.toggle('on',_bordersOn);
 }
 
@@ -959,7 +975,6 @@ html = TEMPLATE.replace("__TOUREN_GEOJSON__",        touren_json)
 html = html.replace("__SOIUSA_STS_GEOJSON__",         sts_json)
 html = html.replace("__SOIUSA_HIGHLIGHTS_GEOJSON__",  highlights_json)
 html = html.replace("__MASK_GEOJSON__",               mask_json)
-html = html.replace("__BORDERS_GEOJSON__",            borders_json)
 html = html.replace("__SOIUSA_LBL_PTS_GEOJSON__",    lp_json)
 html = html.replace("__SOIUSA_WIKI_JSON__",          wiki_json)
 html = html.replace("__TITEL__", TITEL).replace("__UNTER__", UNTER)
