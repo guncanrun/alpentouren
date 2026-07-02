@@ -187,6 +187,20 @@ TEMPLATE = r"""<!DOCTYPE html>
     line-height:1;background:none}
   .sp-name{font:600 13px/1.3 Inter,system-ui,sans-serif;color:#e8edf2}
   .sp-sub{font-size:10.5px;color:#9fb0c0;margin-top:2px}
+  .hp-n{font:600 12px/1.2 Inter,system-ui,sans-serif;color:#e8edf2}
+  .hp-s{font-size:10px;color:#9fb0c0;margin-top:1px}
+
+  /* ── About / Info card ── */
+  #about{position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:7;
+    width:min(360px,calc(100vw - 32px));background:var(--panel);backdrop-filter:blur(8px);
+    border:1px solid var(--line);border-radius:14px;padding:14px 16px;
+    box-shadow:0 8px 30px rgba(0,0,0,.55);display:none}
+  #about.open{display:block}
+  #about h3{margin:0 0 6px;font-size:14px}
+  #about p{margin:5px 0;font-size:11.5px;color:var(--muted);line-height:1.5}
+  #about b{color:var(--txt)}
+  #about .x{position:absolute;top:9px;right:11px;cursor:pointer;color:var(--muted);font-size:16px}
+  #about a{color:var(--accent2);text-decoration:none}
 
   @media(max-width:640px){
     #title{max-width:none;right:16px}
@@ -215,6 +229,20 @@ TEMPLATE = r"""<!DOCTYPE html>
   <button id="btnPeaks" class="btn" onclick="togglePeaks()">Gipfel</button>
   <button id="btnHuts" class="btn" onclick="toggleHuts()">H&uuml;tten</button>
   <button class="btn" onclick="overview()">Alpen&uuml;berblick</button>
+  <button id="btnAbout" class="btn" onclick="toggleAbout()">Info</button>
+</div>
+
+<div id="about">
+  <div class="x" onclick="toggleAbout()">&times;</div>
+  <h3>&Uuml;ber diese Karte</h3>
+  <p>Interaktive 3D-Karte der Alpen: welche <b>SOIUSA-Untergruppen</b> ich besucht habe,
+     eingebettet in die Gesamtstruktur des Gebirges.</p>
+  <p><b>Tech:</b> Datenaufbereitung in <b>Python</b>, Rendering mit <b>MapLibre GL JS</b>,
+     3D-Terrain aus offenem DEM. Komplett <b>statisch &amp; keyless</b> auf GitHub Pages
+     (kein Server, kein API-Key).</p>
+  <p><b>Daten:</b> SOIUSA (ARPA Piemonte) &middot; OpenStreetMap &ndash; Gipfel/H&uuml;tten (ODbL)
+     &middot; Wikipedia/Wikidata &ndash; Steckbriefe (CC BY-SA) &middot; Natural Earth
+     &middot; Esri World Imagery.</p>
 </div>
 
 <div id="panel">
@@ -339,7 +367,10 @@ map.on('zoomend', e=>{
 // wieder (Name erst beim 2. Klick). Schließen via X / closePanel / Leer-Klick unten.
 const stsPopup = new maplibregl.Popup({
   closeButton:true, closeOnClick:false, offset:10, maxWidth:'260px'});
+const hoverPop = new maplibregl.Popup({closeButton:false, closeOnClick:false, offset:8});
+function toggleAbout(){ document.getElementById('about').classList.toggle('open'); }
 function showStsPopup(lngLat, props){
+  hoverPop.remove();
   const name = props.name_de || props.STS || '—';
   const sub  = props.visited!==1 && props.settore && props.settore!=='—'
     ? '<div class="sp-sub">'+props.settore+'</div>' : '';
@@ -514,7 +545,16 @@ map.on('load',()=>{
 
   // ── STS fill click — popup always; panel only for visited groups ─────────
   map.on('mouseenter','sts-fill',()=>map.getCanvas().style.cursor='pointer');
-  map.on('mouseleave','sts-fill',()=>map.getCanvas().style.cursor='');
+  map.on('mousemove','sts-fill',e=>{
+    if(document.getElementById('panel').classList.contains('open')) return;  // kein Doppel-Popup
+    const p=e.features[0].properties, nm=p.name_de||p.STS||'';
+    let sub=p.settore||'';
+    if(p.visited===1){ try{const n=JSON.parse(p.tour_ids||'[]').length; sub=n+(n===1?' Tour':' Touren');}catch(_){} }
+    hoverPop.setLngLat(e.lngLat)
+      .setHTML('<div class="hp-n">'+nm+'</div>'+(sub?'<div class="hp-s">'+sub+'</div>':''))
+      .addTo(map);
+  });
+  map.on('mouseleave','sts-fill',()=>{map.getCanvas().style.cursor='';hoverPop.remove();});
   map.on('click','sts-fill',e=>{
     if(map.queryRenderedFeatures(e.point,{layers:['t-dot']}).length) return;
     const feat=e.features[0];

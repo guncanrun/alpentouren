@@ -103,6 +103,11 @@ checks = [
     ("settore in feature props",      '"settore"'),
     # UI
     ("controls div",                  'id="controls"'),
+    ("About/Info button",             'id="btnAbout"'),
+    ("About card",                    'id="about"'),
+    ("toggleAbout fn",                "function toggleAbout"),
+    ("hover tooltip popup",           "const hoverPop"),
+    ("hover on sts-fill mousemove",   "map.on('mousemove','sts-fill'"),
     ("cov default collapsed",         '<div id="cov">'),
     # Map setup
     ("overflow hidden",               "overflow:hidden"),
