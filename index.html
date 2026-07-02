@@ -368,7 +368,7 @@ map.on('load',()=>{
         ['get','name_de'],['get','STS']],
       'text-font':['Noto Sans Bold'],
       'text-size':['interpolate',['linear'],['zoom'], 6.5,10, 9,13],
-      'text-allow-overlap':false,'text-optional':true,'text-anchor':'center'},
+      'text-allow-overlap':true,'text-optional':false,'text-anchor':'center','symbol-sort-key':0},
     paint:{'text-color':'rgba(232,240,255,0.95)',
            'text-halo-color':'#06101a','text-halo-width':1.8,'text-halo-blur':0.2}});
 
@@ -379,7 +379,7 @@ map.on('load',()=>{
     filter:['==',['get','visited'],1],
     layout:{'visibility':'none',
       'text-field':['get','name_de'],'text-font':['Noto Sans Bold'],
-      'text-size':13,'text-allow-overlap':false,'text-optional':true,'text-anchor':'center'},
+      'text-size':13,'text-allow-overlap':true,'text-optional':false,'text-anchor':'center','symbol-sort-key':0},
     paint:{'text-color':'#ffd47a',
            'text-halo-color':'#06101a','text-halo-width':2.0,'text-halo-blur':0.2}});
 
