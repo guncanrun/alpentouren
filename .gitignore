@@ -32,3 +32,6 @@ debug_huts.py
 ne_10m_boundary_lines.geojson
 ne_10m_countries.geojson
 touren_public.json
+
+# Private Memoiren-Assets (Fotos/Abzeichen) — nie committen
+privat_assets/

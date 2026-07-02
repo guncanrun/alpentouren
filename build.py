@@ -226,7 +226,7 @@ TEMPLATE = r"""<!DOCTYPE html>
   #panel .sb-open{font-size:11px;color:var(--muted);margin-top:9px}
 
   /* ── Coverage list (default collapsed) ── */
-  #cov{position:absolute;bottom:16px;left:16px;z-index:5;width:270px;max-height:42vh;
+  #cov{position:absolute;bottom:74px;left:16px;z-index:5;width:270px;max-height:42vh;
     background:var(--panel);backdrop-filter:blur(8px);border:1px solid var(--line);
     border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.45);overflow:hidden}
   #cov .ch{padding:9px 14px;font-size:var(--fs-ui);font-weight:600;cursor:pointer;min-height:var(--row-h);
@@ -338,6 +338,28 @@ TEMPLATE = r"""<!DOCTYPE html>
     font-family:inherit;touch-action:manipulation}
   .seg button.on{background:rgba(95,208,197,.16);border-color:var(--accent2);color:var(--txt);font-weight:600}
 
+  /* PRIV:START */
+  /* ── Chronologie-Modus (nur Privat-Build) ── */
+  #chronoBtn{position:absolute;left:16px;bottom:16px;z-index:8;
+    width:var(--ctl-round);height:var(--ctl-round);border-radius:50%;
+    background:var(--panel);border:1px solid var(--line);color:var(--txt);
+    font-size:18px;cursor:pointer;backdrop-filter:blur(8px);touch-action:manipulation}
+  #chronoBtn:hover{border-color:var(--accent2);color:var(--accent2)}
+  #chronoBtn.active{border-color:var(--accent);color:var(--accent);background:rgba(255,178,77,.14)}
+  #chronoBar{position:absolute;left:74px;right:64px;bottom:16px;z-index:7;display:none;
+    align-items:center;gap:8px;background:var(--panel);backdrop-filter:blur(8px);
+    border:1px solid var(--line);border-radius:14px;padding:6px 8px;
+    box-shadow:0 8px 30px rgba(0,0,0,.45)}
+  #chronoBar.open{display:flex}
+  #chronoChips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:thin;scroll-behavior:smooth}
+  #chronoChips .chip{flex:0 0 auto;min-height:var(--row-h);padding:3px 12px;border-radius:20px;
+    border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--muted);
+    font-size:var(--fs-ui);font-family:inherit;cursor:pointer;white-space:nowrap;
+    touch-action:manipulation;display:flex;align-items:center}
+  #chronoChips .chip.on{background:rgba(255,178,77,.18);border-color:var(--accent);
+    color:var(--txt);font-weight:600}
+  /* PRIV:END */
+
   @media(max-width:640px){
     #title{max-width:calc(100vw - 90px)}
     #panel{width:auto;left:16px;right:16px;top:auto;bottom:16px;z-index:9}
@@ -413,6 +435,11 @@ TEMPLATE = r"""<!DOCTYPE html>
 Touren ansehen <span id="covCount"></span>
   </div>
   <div class="cl" id="covList"></div>
+</div>
+<!-- Chronologie-Modus: runder Toggle unten links + Jahresleiste (Stufe 1) -->
+<button id="chronoBtn" onclick="chronoToggle()" title="Chronologie &ndash; Jahre durchgehen">&#128344;</button>
+<div id="chronoBar">
+  <div id="chronoChips"></div>
 </div>
 <!-- PRIV:END -->
 
@@ -618,6 +645,19 @@ map.on('load',()=>{
       // Reinzoomen). Zoom MUSS top-level stehen (nicht in * / case verschachteln).
       'fill-opacity': ['interpolate',['linear'],['zoom'], 8,0.34, 11.5,0]
     }});
+
+  /* PRIV:START */
+  // ── Chronologie-Füllungen (nur Privat): kumulativ gedimmt (≤ Jahr) + aktuelles
+  //    Jahr kräftig. Filter werden je Jahr aus JS gesetzt; standardmäßig aus. ──
+  map.addLayer({id:'chrono-past', type:'fill', source:'sts',
+    filter:['in',['get','STS'],['literal',[]]],
+    layout:{'visibility':'none'},
+    paint:{'fill-color':'#ffb24d','fill-opacity':0.30}});
+  map.addLayer({id:'chrono-cur', type:'fill', source:'sts',
+    filter:['in',['get','STS'],['literal',[]]],
+    layout:{'visibility':'none'},
+    paint:{'fill-color':'#ffb24d','fill-opacity':0.62}});
+  /* PRIV:END */
 
   // ── STS borders — toggle-controlled, only for non-visited (visited use hl-line) ──
   map.addLayer({id:'sts-line', type:'line', source:'sts',
@@ -1328,6 +1368,90 @@ cl.innerHTML=visitedGroups.map(g=>{
   const yrs = ids.map(id=>{const t=TOUREN.find(x=>x.id==id);return t&&t.jahr;}).filter(Boolean);
   const sp=row.querySelector('.yr'); if(sp) sp.textContent=yrs.join(', ');
 });
+/* PRIV:END */
+
+// ══ Chronologie-Modus (nur Privat) — Stufe 1: Jahresleiste + kumulative Färbung ══
+/* PRIV:START */
+function jahrSort(j){ const m=String(j==null?'':j).match(/\d{4}/); return m?+m[0]:null; }
+// Pro STS-Gruppe die Besuchsjahre + globale Jahresliste (nur Jahre mit Touren).
+const CHRONO = (function(){
+  const tourById={}; TOUREN.forEach(t=>{ tourById[t.id]=t; });
+  // Färbung folgt der Gruppen-Zuordnung (tour_ids) — konsistent mit der besucht-Logik.
+  const stsYears={};
+  SOIUSA_STS.features.forEach(f=>{
+    const p=f.properties; if(p.visited!==1) return;
+    let ids=[]; try{ ids = typeof p.tour_ids==='string'?JSON.parse(p.tour_ids||'[]'):(p.tour_ids||[]); }catch(_){}
+    const ys=new Set();
+    ids.forEach(id=>{ const t=tourById[id]; const y=t&&jahrSort(t.jahr); if(y) ys.add(y); });
+    if(ys.size) stsYears[p.STS]=[...ys];
+  });
+  // Jahresleiste = ALLE Touren-Jahre (Spec: „nur Jahre mit Touren"), auch wenn eine
+  // Tour (noch) keiner STS-Gruppe zugeordnet ist -> Chip erscheint, Färbung ggf. leer.
+  const yearMeta={};
+  TOUREN.forEach(t=>{ const y=jahrSort(t.jahr); if(!y) return;
+    if(!yearMeta[y]) yearMeta[y]={label:String(t.jahr), unsure:!!t.jahr_unsicher};
+    if(t.jahr_unsicher) yearMeta[y].unsure=true; });
+  const years=Object.keys(yearMeta).map(Number).sort((a,b)=>a-b);
+  return {stsYears, years, yearMeta};
+})();
+
+let _chronoOn=false, _chronoIdx=-1, _chronoSaved=null;
+// Stand Jahr X: Gruppen mit Tour == X kräftig (chrono-cur), nur früher besuchte gedimmt (chrono-past).
+function chronoSetYear(idx){
+  if(idx<0 || idx>=CHRONO.years.length) return;
+  _chronoIdx=idx; const Y=CHRONO.years[idx];
+  const past=[], cur=[];
+  Object.keys(CHRONO.stsYears).forEach(sts=>{
+    const ys=CHRONO.stsYears[sts];
+    if(ys.indexOf(Y)>=0) cur.push(sts);
+    else if(ys.some(y=>y<Y)) past.push(sts);
+  });
+  map.setFilter('chrono-past',['in',['get','STS'],['literal',past]]);
+  map.setFilter('chrono-cur', ['in',['get','STS'],['literal',cur]]);
+  const chips=document.querySelectorAll('#chronoChips .chip');
+  chips.forEach((c,i)=>c.classList.toggle('on',i===idx));
+  if(chips[idx]) chips[idx].scrollIntoView({inline:'center',block:'nearest'});
+}
+function chronoEnter(){
+  if(_chronoOn || !CHRONO.years.length) return;
+  _chronoOn=true;
+  _chronoSaved={p:_peaksOn,h:_hutsOn,s:_passesOn};       // Punkt-Toggles merken + dezent aus
+  if(_peaksOn) togglePeaks(); if(_hutsOn) toggleHuts(); if(_passesOn) togglePasses();
+  ['hl-line','sts-label-hl'].forEach(l=>map.setLayoutProperty(l,'visibility','none'));  // „alle besucht" aus
+  ['chrono-past','chrono-cur'].forEach(l=>map.setLayoutProperty(l,'visibility','visible'));
+  document.getElementById('cov').style.display='none';
+  document.getElementById('chronoBar').classList.add('open');
+  document.getElementById('chronoBtn').classList.add('active');
+  overview();
+  chronoSetYear(0);                                       // Beginn beim frühesten Jahr
+}
+function chronoExit(){
+  if(!_chronoOn) return; _chronoOn=false;
+  ['chrono-past','chrono-cur'].forEach(l=>map.setLayoutProperty(l,'visibility','none'));
+  map.setLayoutProperty('hl-line','visibility','visible');
+  map.setLayoutProperty('sts-label-hl','visibility', _layersOn?'visible':'none');   // Zustand restaurieren
+  if(_chronoSaved){
+    if(_chronoSaved.p && !_peaksOn) togglePeaks();
+    if(_chronoSaved.h && !_hutsOn) toggleHuts();
+    if(_chronoSaved.s && !_passesOn) togglePasses();
+    _chronoSaved=null;
+  }
+  document.getElementById('cov').style.display='';
+  document.getElementById('chronoBar').classList.remove('open');
+  document.getElementById('chronoBtn').classList.remove('active');
+}
+function chronoToggle(){ _chronoOn?chronoExit():chronoEnter(); }
+
+// Jahres-Chips (nur Jahre mit Touren). Ohne Jahre: Modus ausblenden.
+(function(){
+  const wrap=document.getElementById('chronoChips'), btn=document.getElementById('chronoBtn');
+  if(!wrap) return;
+  if(!CHRONO.years.length){ if(btn) btn.style.display='none'; return; }
+  wrap.innerHTML=CHRONO.years.map((y,i)=>{
+    const m=CHRONO.yearMeta[y]||{}; return '<button class="chip" data-i="'+i+'">'+(m.unsure?'~':'')+y+'</button>';
+  }).join('');
+  [...wrap.children].forEach(b=>b.addEventListener('click',()=>chronoSetYear(+b.dataset.i)));
+})();
 /* PRIV:END */
 </script>
 </body>

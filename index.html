@@ -111,7 +111,7 @@
   #panel .sb-open{font-size:11px;color:var(--muted);margin-top:9px}
 
   /* ── Coverage list (default collapsed) ── */
-  #cov{position:absolute;bottom:16px;left:16px;z-index:5;width:270px;max-height:42vh;
+  #cov{position:absolute;bottom:74px;left:16px;z-index:5;width:270px;max-height:42vh;
     background:var(--panel);backdrop-filter:blur(8px);border:1px solid var(--line);
     border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.45);overflow:hidden}
   #cov .ch{padding:9px 14px;font-size:var(--fs-ui);font-weight:600;cursor:pointer;min-height:var(--row-h);
@@ -222,6 +222,8 @@
     background:rgba(255,255,255,.04);color:var(--muted);font-size:var(--fs-ui);cursor:pointer;
     font-family:inherit;touch-action:manipulation}
   .seg button.on{background:rgba(95,208,197,.16);border-color:var(--accent2);color:var(--txt);font-weight:600}
+
+  
 
   @media(max-width:640px){
     #title{max-width:calc(100vw - 90px)}
@@ -472,6 +474,8 @@ map.on('load',()=>{
       // Reinzoomen). Zoom MUSS top-level stehen (nicht in * / case verschachteln).
       'fill-opacity': ['interpolate',['linear'],['zoom'], 8,0.34, 11.5,0]
     }});
+
+  
 
   // ── STS borders — toggle-controlled, only for non-visited (visited use hl-line) ──
   map.addLayer({id:'sts-line', type:'line', source:'sts',
@@ -1104,6 +1108,9 @@ function overview(){
 }
 
 // ── Coverage list (private build only; click flies to the group) ──────────────
+
+
+// ══ Chronologie-Modus (nur Privat) — Stufe 1: Jahresleiste + kumulative Färbung ══
 
 </script>
 </body>

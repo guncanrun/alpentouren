@@ -165,7 +165,12 @@ for bad, label in [("Tour mit Papa", "private tab label"),
                    ('id="kYears"', "years KPI"),
                    ('"visited":1', "visited=1 data (E8)"),
                    ('"tour_ids":', "tour_ids data (E8)"),
-                   ("Touren ansehen", "coverage button (E8)")]:
+                   ("Touren ansehen", "coverage button (E8)"),
+                   ("chronoBar", "chronology bar (privat-only)"),
+                   ("chrono-past", "chronology fill layer (privat-only)"),
+                   ("function chronoSetYear", "chronology fn (privat-only)"),
+                   ("const CHRONO", "chronology data (privat-only)"),
+                   ("jahr_unsicher", "year-uncertainty field (privat-only)")]:
     if bad in html:
         print(f"FAIL public leak: '{bad}' ({label}) present in index.html")
         errors.append(f"public leak: {bad}")
