@@ -408,6 +408,23 @@ out_mask.write_text(json.dumps(mask_fc, ensure_ascii=False), encoding="utf-8")
 kb_mask = out_mask.stat().st_size / 1024
 print(f"-> soiusa_mask.geojson  {kb_mask:.0f} KB")
 
+# ── Country borders (thin toggleable context layer) ──────────────────────────
+print("\nLandesgrenzen (Natural Earth, vereinfacht)...")
+alps_bbox = box(3.0, 42.0, 19.0, 50.0)
+border_feats = []
+for iso, geom in alpine_countries.items():
+    try:
+        b = geom.simplify(0.01, preserve_topology=True).boundary.intersection(alps_bbox)
+        if b and not b.is_empty:
+            border_feats.append({"type": "Feature", "geometry": mapping(b),
+                                 "properties": {"iso": iso}})
+    except Exception:
+        pass
+out_borders = HERE / "soiusa_borders.geojson"
+out_borders.write_text(json.dumps({"type": "FeatureCollection", "features": border_feats},
+                                  ensure_ascii=False), encoding="utf-8")
+print(f"-> soiusa_borders.geojson  {out_borders.stat().st_size // 1024} KB")
+
 # ── Generate label anchor points (1 per STS, guaranteed inside polygon) ──────
 # Used in build.py as source 'sts-lp' for symbol layers → one label per group,
 # no per-tile / per-polygon duplicates.

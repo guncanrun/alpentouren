@@ -55,6 +55,7 @@ sts_json        = load_compact("soiusa_sts_colored.geojson")
 highlights_json = load_compact("soiusa_highlights_clean.geojson")
 lp_json         = load_compact("soiusa_sts_label_points.geojson")
 mask_json       = load_compact("soiusa_mask.geojson")
+borders_json    = load_compact("soiusa_borders.geojson")
 try:
     wiki_json = load_compact("soiusa_wiki.json")
 except FileNotFoundError:
@@ -87,11 +88,11 @@ TEMPLATE = r"""<!DOCTYPE html>
   #title{position:absolute;top:16px;left:16px;z-index:5;max-width:310px;
     background:var(--panel);backdrop-filter:blur(8px);border:1px solid var(--line);
     border-radius:14px;padding:13px 15px;box-shadow:0 8px 30px rgba(0,0,0,.5)}
-  #title h1{margin:0;font-size:16px;letter-spacing:.2px}
-  #title p{margin:5px 0 0;font-size:11.5px;color:var(--muted);line-height:1.4}
-  #title .kpi{margin-top:8px;display:flex;gap:12px}
-  #title .kpi b{display:block;font-size:18px;color:var(--accent)}
-  #title .kpi span{font-size:10px;color:var(--muted)}
+  #title h1{margin:0;font-size:20px;letter-spacing:.2px}
+  #title p{margin:6px 0 0;font-size:13px;color:var(--muted);line-height:1.45}
+  #title .kpi{margin-top:10px;display:flex;gap:16px}
+  #title .kpi b{display:block;font-size:22px;color:var(--accent)}
+  #title .kpi span{font-size:11px;color:var(--muted)}
   /* ── Legend box (bottom-right, collapsible) ── */
   #legend{position:absolute;bottom:150px;right:16px;z-index:5;width:186px;
     background:var(--panel);backdrop-filter:blur(8px);border:1px solid var(--line);
@@ -166,12 +167,12 @@ TEMPLATE = r"""<!DOCTYPE html>
   #cov{position:absolute;bottom:16px;left:16px;z-index:5;width:270px;max-height:42vh;
     background:var(--panel);backdrop-filter:blur(8px);border:1px solid var(--line);
     border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.45);overflow:hidden}
-  #cov .ch{padding:10px 12px;font-size:12px;font-weight:600;cursor:pointer;
+  #cov .ch{padding:12px 14px;font-size:14px;font-weight:600;cursor:pointer;
     display:flex;justify-content:space-between;align-items:center;user-select:none}
   #cov .ch span{color:var(--muted);font-weight:400;font-size:11px}
   #cov .cl{max-height:0;overflow-y:auto;transition:max-height .3s ease}
   #cov.open .cl{max-height:34vh}
-  #cov .row{padding:6px 12px;font-size:11.5px;cursor:pointer;
+  #cov .row{padding:8px 14px;font-size:13px;cursor:pointer;
     display:flex;justify-content:space-between;gap:8px;
     border-top:1px solid rgba(255,255,255,.06)}
   #cov .row:hover{background:rgba(255,178,77,.10)}
@@ -196,16 +197,50 @@ TEMPLATE = r"""<!DOCTYPE html>
     border:1px solid var(--line);border-radius:14px;padding:14px 16px;
     box-shadow:0 8px 30px rgba(0,0,0,.55);display:none}
   #about.open{display:block}
-  #about h3{margin:0 0 6px;font-size:14px}
-  #about p{margin:5px 0;font-size:11.5px;color:var(--muted);line-height:1.5}
+  #about h3{margin:10px 0 6px;font-size:15px}
+  #about h3:first-of-type{margin-top:0}
+  #about p{margin:5px 0;font-size:13px;color:var(--muted);line-height:1.55}
   #about b{color:var(--txt)}
   #about .x{position:absolute;top:9px;right:11px;cursor:pointer;color:var(--muted);font-size:16px}
   #about a{color:var(--accent2);text-decoration:none}
 
+  /* ── Ebenen-Panel (Toggle-Switches + Legende) ── */
+  #ebenen{position:absolute;top:64px;right:16px;z-index:6;width:232px;
+    background:var(--panel);backdrop-filter:blur(8px);border:1px solid var(--line);
+    border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.5);overflow:hidden}
+  #ebenen .eh{padding:12px 15px;font-size:15px;font-weight:600;cursor:pointer;
+    display:flex;justify-content:space-between;align-items:center;user-select:none}
+  #ebenen .eh::after{content:'▾';color:var(--muted);transition:transform .3s}
+  #ebenen.open .eh::after{transform:rotate(180deg)}
+  #ebenen .eb{max-height:0;overflow:hidden;transition:max-height .35s ease}
+  #ebenen.open .eb{max-height:470px}
+  #ebenen .eb-in{padding:2px 15px 14px}
+  #ebenen .grp{font-size:10.5px;text-transform:uppercase;letter-spacing:1px;
+    color:var(--muted);margin:11px 0 3px}
+  .tgl{display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:8px 2px;cursor:pointer;font-size:14px;min-height:40px}
+  .tgl .sw{position:relative;width:40px;height:23px;border-radius:12px;background:#3a4655;
+    transition:background .2s;flex-shrink:0}
+  .tgl .sw::after{content:'';position:absolute;top:3px;left:3px;width:17px;height:17px;
+    border-radius:50%;background:#e8edf2;transition:transform .2s}
+  .tgl.on .sw{background:#3fa972}
+  .tgl.on .sw::after{transform:translateX(17px)}
+  #ebenen .lrow{display:flex;align-items:center;gap:9px;padding:4px 2px;font-size:12.5px}
+  #ebenen .lsep{height:1px;background:var(--line);margin:6px 2px}
+  /* ── Info "?" + Home ── */
+  #btnInfo{position:absolute;top:16px;right:16px;z-index:8;width:40px;height:40px;
+    border-radius:50%;background:var(--panel);border:1px solid var(--line);color:var(--txt);
+    font-size:19px;font-weight:700;cursor:pointer;backdrop-filter:blur(8px)}
+  #btnInfo:hover{border-color:var(--accent2);color:var(--accent2)}
+  #home{position:absolute;bottom:150px;right:16px;z-index:6;width:40px;height:40px;
+    border-radius:10px;background:var(--panel);border:1px solid var(--line);color:var(--txt);
+    font-size:18px;cursor:pointer;backdrop-filter:blur(8px)}
+  #home:hover{border-color:var(--accent2);color:var(--accent2)}
+
   @media(max-width:640px){
-    #title{max-width:none;right:16px}
-    #controls{top:auto;bottom:60px;left:16px}
-    #panel{width:auto;left:16px;right:16px;top:auto;bottom:16px}
+    #title{max-width:calc(100vw - 90px)}
+    #panel{width:auto;left:16px;right:16px;top:auto;bottom:16px;z-index:9}
+    #ebenen{max-width:calc(100vw - 32px)}
     #cov{display:none}
   }
 </style>
@@ -223,18 +258,16 @@ TEMPLATE = r"""<!DOCTYPE html>
   </div>
 </div>
 
-<div id="controls">
-  <button id="btnFarbung" class="btn active" onclick="toggleFarbung()">F&auml;rbung</button>
-  <button id="toggleLayers" class="btn" onclick="toggleLayers()">Namen</button>
-  <button id="btnPeaks" class="btn" onclick="togglePeaks()">Gipfel</button>
-  <button id="btnHuts" class="btn" onclick="toggleHuts()">H&uuml;tten</button>
-  <button id="btnPasses" class="btn" onclick="togglePasses()">P&auml;sse</button>
-  <button class="btn" onclick="overview()">Alpen&uuml;berblick</button>
-  <button id="btnAbout" class="btn" onclick="toggleAbout()">Info</button>
-</div>
+<button id="btnInfo" onclick="toggleAbout()" title="Info &amp; Anleitung">?</button>
+<button id="home" onclick="overview()" title="Standardansicht">&#8962;</button>
 
 <div id="about">
   <div class="x" onclick="toggleAbout()">&times;</div>
+  <h3>So bedienst du die Karte</h3>
+  <p>Auf eine <b>farbige Fl&auml;che tippen</b> &rarr; Steckbrief &amp; besuchte Touren. Rechts im
+     Panel <b>„Ebenen"</b> schaltest du F&auml;rbung, Namen, Gipfel, H&uuml;tten &amp; P&auml;sse.
+     Unten links <b>„Touren ansehen"</b> f&uuml;hrt zu den besuchten Gebieten; das Haus-Icon
+     setzt die <b>Standardansicht</b> zur&uuml;ck.</p>
   <h3>&Uuml;ber diese Karte</h3>
   <p>Interaktive 3D-Karte der Alpen: welche <b>SOIUSA-Untergruppen</b> ich besucht habe,
      eingebettet in die Gesamtstruktur des Gebirges.</p>
@@ -262,14 +295,23 @@ TEMPLATE = r"""<!DOCTYPE html>
 
 <div id="cov">
   <div class="ch" onclick="document.getElementById('cov').classList.toggle('open')">
-    Besuchte Gebiete <span id="covCount"></span>
+Touren ansehen <span id="covCount"></span>
   </div>
   <div class="cl" id="covList"></div>
 </div>
 
-<div id="legend" class="open">
-  <div class="lh" onclick="document.getElementById('legend').classList.toggle('open')">Legende</div>
-  <div class="ll">
+<div id="ebenen" class="open">
+  <div class="eh" onclick="document.getElementById('ebenen').classList.toggle('open')">Ebenen</div>
+  <div class="eb"><div class="eb-in">
+    <div class="grp">Struktur</div>
+    <div id="tglFarbung" class="tgl on" onclick="toggleFarbung()"><span>F&auml;rbung</span><span class="sw"></span></div>
+    <div id="tglNamen" class="tgl" onclick="toggleLayers()"><span>Namen</span><span class="sw"></span></div>
+    <div id="tglBorders" class="tgl" onclick="toggleBorders()"><span>Landesgrenzen</span><span class="sw"></span></div>
+    <div class="grp">Punkte</div>
+    <div id="tglPeaks" class="tgl" onclick="togglePeaks()"><span>Gipfel</span><span class="sw"></span></div>
+    <div id="tglHuts" class="tgl" onclick="toggleHuts()"><span>H&uuml;tten</span><span class="sw"></span></div>
+    <div id="tglPasses" class="tgl" onclick="togglePasses()"><span>P&auml;sse</span><span class="sw"></span></div>
+    <div class="grp">Farben (Settori)</div>
     <div class="lrow"><span class="sw-nw"></span>Nordwestalpen</div>
     <div class="lrow"><span class="sw-sw"></span>S&uuml;dwestalpen</div>
     <div class="lrow"><span class="sw-zo"></span>Zentralostalpen</div>
@@ -277,7 +319,7 @@ TEMPLATE = r"""<!DOCTYPE html>
     <div class="lrow"><span class="sw-so"></span>S&uuml;dostalpen</div>
     <div class="lsep"></div>
     <div class="lrow"><span class="sw-hl"></span>besucht</div>
-  </div>
+  </div></div>
 </div>
 
 <script>
@@ -286,6 +328,7 @@ const SOIUSA_STS = __SOIUSA_STS_GEOJSON__;
 const SOIUSA_HIGHLIGHTS = __SOIUSA_HIGHLIGHTS_GEOJSON__;
 const SOIUSA_LBL_PTS    = __SOIUSA_LBL_PTS_GEOJSON__;
 const MASK = __MASK_GEOJSON__;
+const BORDERS = __BORDERS_GEOJSON__;
 const WIKI = __SOIUSA_WIKI_JSON__;
 const PRIV = __PRIV__;
 const CNAMES = {AT:'Österreich',CH:'Schweiz',DE:'Deutschland',
@@ -369,6 +412,7 @@ map.on('zoomend', e=>{
 const stsPopup = new maplibregl.Popup({
   closeButton:true, closeOnClick:false, offset:10, maxWidth:'260px'});
 const hoverPop = new maplibregl.Popup({closeButton:false, closeOnClick:false, offset:8});
+let _hoverTimer=null;
 function toggleAbout(){ document.getElementById('about').classList.toggle('open'); }
 function showStsPopup(lngLat, props){
   hoverPop.remove();
@@ -400,6 +444,10 @@ map.on('load',()=>{
   // ── Non-Alpine mask — always on ───────────────────────────────────────────
   map.addLayer({id:'mask-fill', type:'fill', source:'mask',
     paint:{'fill-color':'#000816','fill-opacity':0.42}});
+  map.addSource('borders', {type:'geojson', data:BORDERS});
+  map.addLayer({id:'borders', type:'line', source:'borders',
+    layout:{'visibility':'none','line-join':'round'},
+    paint:{'line-color':'#e2ebf7','line-width':1.2,'line-opacity':0.55,'line-dasharray':[3,2]}});
 
   // ── STS mosaic fill — toggle-controlled ──────────────────────────────────
   // 'coalesce' prevents MapLibre crash when fill_color is undefined on a feature.
@@ -603,14 +651,17 @@ map.on('load',()=>{
   map.on('mouseenter','sts-fill',()=>map.getCanvas().style.cursor='pointer');
   map.on('mousemove','sts-fill',e=>{
     if(document.getElementById('panel').classList.contains('open')) return;  // kein Doppel-Popup
-    const p=e.features[0].properties, nm=p.name_de||p.STS||'';
+    clearTimeout(_hoverTimer);                                               // Dwell: erst nach 700 ms Ruhe
+    const p=e.features[0].properties, ll=e.lngLat, nm=p.name_de||p.STS||'';
     let sub=p.settore||'';
     if(p.visited===1){ try{const n=JSON.parse(p.tour_ids||'[]').length; sub=n+(n===1?' Tour':' Touren');}catch(_){} }
-    hoverPop.setLngLat(e.lngLat)
-      .setHTML('<div class="hp-n">'+nm+'</div>'+(sub?'<div class="hp-s">'+sub+'</div>':''))
-      .addTo(map);
+    _hoverTimer=setTimeout(()=>{
+      hoverPop.setLngLat(ll)
+        .setHTML('<div class="hp-n">'+nm+'</div>'+(sub?'<div class="hp-s">'+sub+'</div>':''))
+        .addTo(map);
+    }, 700);
   });
-  map.on('mouseleave','sts-fill',()=>{map.getCanvas().style.cursor='';hoverPop.remove();});
+  map.on('mouseleave','sts-fill',()=>{map.getCanvas().style.cursor='';clearTimeout(_hoverTimer);hoverPop.remove();});
   map.on('click','sts-fill',e=>{
     if(map.queryRenderedFeatures(e.point,{layers:['t-dot']}).length) return;
     const feat=e.features[0];
@@ -841,7 +892,7 @@ function toggleLayers(){
   const v=_layersOn?'visible':'none';
   map.setLayoutProperty('sts-label',   'visibility',v);
   map.setLayoutProperty('sts-label-hl','visibility',v);
-  document.getElementById('toggleLayers').classList.toggle('active',_layersOn);
+  document.getElementById('tglNamen').classList.toggle('on',_layersOn);
 }
 
 // ── Settore-Färbung an/aus (Fill; Fade bleibt beim Reinzoomen) ────────────────
@@ -849,7 +900,14 @@ let _farbungOn=true;
 function toggleFarbung(){
   _farbungOn=!_farbungOn;
   map.setLayoutProperty('sts-fill','visibility',_farbungOn?'visible':'none');
-  document.getElementById('btnFarbung').classList.toggle('active',_farbungOn);
+  document.getElementById('tglFarbung').classList.toggle('on',_farbungOn);
+}
+// ── Landesgrenzen an/aus ──────────────────────────────────────────────────────
+let _bordersOn=false;
+function toggleBorders(){
+  _bordersOn=!_bordersOn;
+  map.setLayoutProperty('borders','visibility',_bordersOn?'visible':'none');
+  document.getElementById('tglBorders').classList.toggle('on',_bordersOn);
 }
 
 // ── OSM overlays (zuschaltbar, zoom-gated) ────────────────────────────────────
@@ -858,19 +916,19 @@ function togglePeaks(){
   _peaksOn=!_peaksOn; const v=_peaksOn?'visible':'none';
   ['osm-peaks','osm-landmark-glow','osm-landmarks','peaks-in-group','peaks-highest']
     .forEach(l=>map.setLayoutProperty(l,'visibility',v));
-  document.getElementById('btnPeaks').classList.toggle('active',_peaksOn);
+  document.getElementById('tglPeaks').classList.toggle('on',_peaksOn);
 }
 let _hutsOn=false;
 function toggleHuts(){
   _hutsOn=!_hutsOn; const v=_hutsOn?'visible':'none';
   ['osm-huts-club','osm-huts-other','osm-huts-wild'].forEach(l=>map.setLayoutProperty(l,'visibility',v));
-  document.getElementById('btnHuts').classList.toggle('active',_hutsOn);
+  document.getElementById('tglHuts').classList.toggle('on',_hutsOn);
 }
 let _passesOn=false;
 function togglePasses(){
   _passesOn=!_passesOn; const v=_passesOn?'visible':'none';
   ['osm-passes','osm-passes-famous'].forEach(l=>map.setLayoutProperty(l,'visibility',v));
-  document.getElementById('btnPasses').classList.toggle('active',_passesOn);
+  document.getElementById('tglPasses').classList.toggle('on',_passesOn);
 }
 
 function closePanel(){
@@ -901,6 +959,7 @@ html = TEMPLATE.replace("__TOUREN_GEOJSON__",        touren_json)
 html = html.replace("__SOIUSA_STS_GEOJSON__",         sts_json)
 html = html.replace("__SOIUSA_HIGHLIGHTS_GEOJSON__",  highlights_json)
 html = html.replace("__MASK_GEOJSON__",               mask_json)
+html = html.replace("__BORDERS_GEOJSON__",            borders_json)
 html = html.replace("__SOIUSA_LBL_PTS_GEOJSON__",    lp_json)
 html = html.replace("__SOIUSA_WIKI_JSON__",          wiki_json)
 html = html.replace("__TITEL__", TITEL).replace("__UNTER__", UNTER)
