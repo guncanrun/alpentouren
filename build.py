@@ -992,6 +992,9 @@ map.on('load',()=>{
   map.resize();
   setTimeout(()=>map.resize(), 150);
   map.once('idle',()=>map.resize());
+  // P0: Gate-UI erst nach dem Settle final setzen (Initial-Zoom steht dann verlässlich)
+  // -> Topo-Button unter z11 sofort ausgegraut, nicht erst beim ersten Zoom-Event.
+  map.once('idle',updateTopoGate);
 });
 
 // ── Keyless canvas icons for OSM symbols ──────────────────────────────────────
