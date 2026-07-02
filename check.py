@@ -66,6 +66,13 @@ checks = [
     ("osm huts wild layer",           "id:'osm-huts-wild'"),
     ("peak triangle icon",            "map.addImage('peak'"),
     ("peak rank tiering by ele",      "'icon-opacity':['step',['zoom']"),
+    ("peak tier icon match",          "'icon-image':['match',['get','tier']"),
+    ("Mont Blanc star icon",          "'peak-star'"),
+    ("makeStar fn",                   "function makeStar"),
+    ("passes url source",             "./soiusa_osm_passes.geojson"),
+    ("passes famous layer",           "id:'osm-passes-famous'"),
+    ("togglePasses fn",               "function togglePasses"),
+    ("passes button",                 'id="btnPasses"'),
     ("hut club icon",                 "'hut-club'"),
     # Phase 2c — Berge nach Klick
     ("peaks-in-group layer",          "id:'peaks-in-group'"),

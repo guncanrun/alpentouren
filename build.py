@@ -228,6 +228,7 @@ TEMPLATE = r"""<!DOCTYPE html>
   <button id="toggleLayers" class="btn" onclick="toggleLayers()">Namen</button>
   <button id="btnPeaks" class="btn" onclick="togglePeaks()">Gipfel</button>
   <button id="btnHuts" class="btn" onclick="toggleHuts()">H&uuml;tten</button>
+  <button id="btnPasses" class="btn" onclick="togglePasses()">P&auml;sse</button>
   <button class="btn" onclick="overview()">Alpen&uuml;berblick</button>
   <button id="btnAbout" class="btn" onclick="toggleAbout()">Info</button>
 </div>
@@ -345,7 +346,7 @@ const map = new maplibregl.Map({
   center:ALPS.center, zoom:ALPS.zoom, pitch:ALPS.pitch, bearing:ALPS.bearing,
   maxPitch:70, hash:true,
   attributionControl:{compact:true,
-    customAttribution:'SOIUSA © Arpa Piemonte · Marazzi et al. · Accorsi · Gipfel/Hütten © OpenStreetMap (ODbL)'}
+    customAttribution:'SOIUSA © Arpa Piemonte · Marazzi et al. · Accorsi · Gipfel/Hütten/Pässe © OpenStreetMap (ODbL)'}
 });
 map.addControl(new maplibregl.NavigationControl({visualizePitch:true}), 'bottom-right');
 
@@ -394,6 +395,7 @@ map.on('load',()=>{
   // OSM overlays as URL sources (not inlined) — keeps index.html small.
   map.addSource('osm-peaks', {type:'geojson', data:'./soiusa_osm_peaks.geojson'});
   map.addSource('osm-huts',  {type:'geojson', data:'./soiusa_osm_huts.geojson'});
+  map.addSource('osm-passes',{type:'geojson', data:'./soiusa_osm_passes.geojson'});
 
   // ── Non-Alpine mask — always on ───────────────────────────────────────────
   map.addLayer({id:'mask-fill', type:'fill', source:'mask',
@@ -451,27 +453,40 @@ map.on('load',()=>{
     x.beginPath(); x.moveTo(s*0.5,s*0.13); x.lineTo(s*0.9,s*0.85); x.lineTo(s*0.1,s*0.85); x.closePath();
     x.fillStyle='#0b0b0b'; x.fill(); x.lineWidth=1.7; x.strokeStyle='#ffffff'; x.lineJoin='round'; x.stroke();
   }), {pixelRatio:2});
+  map.addImage('peak-hi', makeIcon(24,(x,s)=>{      // Länder-Höchste: gold-umrandetes Dreieck
+    x.beginPath(); x.moveTo(s*0.5,s*0.1); x.lineTo(s*0.9,s*0.86); x.lineTo(s*0.1,s*0.86); x.closePath();
+    x.fillStyle='#1a1400'; x.fill(); x.lineWidth=2.4; x.strokeStyle='#ffd24d'; x.lineJoin='round'; x.stroke();
+  }), {pixelRatio:2});
+  map.addImage('peak-star', makeStar('#ffcf3d'), {pixelRatio:2});     // Mont Blanc (Alpen-König)
+  map.addImage('pass', makeIcon(18,(x,s)=>{         // Pass: liegende Raute
+    x.beginPath(); x.moveTo(s*0.5,s*0.28); x.lineTo(s*0.78,s*0.5); x.lineTo(s*0.5,s*0.72); x.lineTo(s*0.22,s*0.5); x.closePath();
+    x.fillStyle='#e8c766'; x.fill(); x.lineWidth=1.4; x.strokeStyle='#06101a'; x.lineJoin='round'; x.stroke();
+  }), {pixelRatio:2});
   map.addImage('hut-club',  houseIcon('#e2574c'), {pixelRatio:2});   // Verbandshütte (Tier 1)
   map.addImage('hut-other', houseIcon('#9fb0c0'), {pixelRatio:2});   // sonstige bewirtschaftet
   map.addImage('hut-wild',  houseOutline('#a8bccc'), {pixelRatio:2}); // unbewirtschaftet/Refugio (Tier 2)
 
   // Peaks — black triangle, name+height label from higher zoom
-  map.addLayer({id:'osm-peaks', type:'symbol', source:'osm-peaks', minzoom:8,
-    layout:{'visibility':'none','icon-image':'peak','icon-anchor':'bottom','icon-allow-overlap':false,
-      'icon-size':['interpolate',['linear'],['zoom'], 8,0.55, 12,1.0],
-      // Rang≈Höhe: step(zoom) TOP-LEVEL, Ausgaben = konstante Höhenschwellen (Zoom nie verschachteln).
+  map.addLayer({id:'osm-peaks', type:'symbol', source:'osm-peaks', minzoom:5,
+    layout:{'visibility':'none','icon-anchor':'bottom','icon-allow-overlap':false,
+      // Tier 0 = Mont Blanc (Stern), 1 = Länder-Höchste (Gold-Dreieck), 2-4 = Höhenbänder.
+      'icon-image':['match',['get','tier'], 0,'peak-star', 1,'peak-hi', 'peak'],
+      'icon-size':['match',['get','tier'], 0,1.9, 1,1.35, 2,1.05, 3,0.82, 0.62],
+      // Labels tier-/zoom-gestaffelt: Mont Blanc immer, Länder ab z8, 4000er z10, 3000er z11, alle z12.
       'text-field':['step',['zoom'],
-        '',
-        10,['case',['>=',['get','ele'],2800],['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],''],
-        11,['case',['>=',['get','ele'],2400],['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],''],
+        ['case',['==',['get','tier'],0],['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],''],
+        8, ['case',['<=',['get','tier'],1],['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],''],
+        10,['case',['<=',['get','tier'],2],['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],''],
+        11,['case',['<=',['get','tier'],3],['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],''],
         12,['concat',['get','name'],'\n',['to-string',['get','ele']],' m']],
-      'text-font':['Noto Sans Bold'],'text-size':9.5,'text-offset':[0,0.4],
-      'text-anchor':'top','text-optional':true,'text-allow-overlap':false},
-    paint:{'text-color':'#dbe7ff','text-halo-color':'#06101a','text-halo-width':1.4,
+      'text-font':['Noto Sans Bold'],'text-size':['match',['get','tier'], 0,12, 1,11, 9.5],
+      'text-offset':[0,0.3],'text-anchor':'top','text-optional':true,'text-allow-overlap':false},
+    paint:{'text-color':['match',['get','tier'], 0,'#ffe08a', 1,'#ffd24d', '#dbe7ff'],
+      'text-halo-color':'#06101a','text-halo-width':1.4,
+      // Sichtbarkeit tier-/zoom-gestaffelt: Tier0-2 (bis 4000er) früh, 3000er ab z8, alle ab z11.
       'icon-opacity':['step',['zoom'],
-        ['case',['>=',['get','ele'],3000],1,0],
-        9, ['case',['>=',['get','ele'],2600],1,0],
-        10,['case',['>=',['get','ele'],2200],1,0],
+        ['case',['<=',['get','tier'],2],1,0],
+        8, ['case',['<=',['get','tier'],3],1,0],
         11, 1]}});
 
   // Huts — sonstige (grau, ab höherem Zoom)
@@ -500,6 +515,20 @@ map.on('load',()=>{
       'text-field':['step',['zoom'], '', 9, ['get','name']],'text-font':['Noto Sans Bold'],
       'text-size':9.5,'text-offset':[0,0.4],'text-anchor':'top','text-optional':true,'text-allow-overlap':false},
     paint:{'text-color':'#ffcabf','text-halo-color':'#06101a','text-halo-width':1.4}});
+
+  // ── Pässe (toggle): berühmte früh, restliche erst bei hohem Zoom ───────────
+  map.addLayer({id:'osm-passes', type:'symbol', source:'osm-passes', minzoom:10.5,
+    filter:['==',['get','famous'],0],
+    layout:{'visibility':'none','icon-image':'pass','icon-allow-overlap':false,'icon-size':0.8,
+      'text-field':['step',['zoom'], '', 12, ['get','name']],'text-font':['Noto Sans Bold'],
+      'text-size':8.5,'text-offset':[0,0.6],'text-anchor':'top','text-optional':true,'text-allow-overlap':false},
+    paint:{'text-color':'#e8d9a0','text-halo-color':'#06101a','text-halo-width':1.2}});
+  map.addLayer({id:'osm-passes-famous', type:'symbol', source:'osm-passes', minzoom:6.5,
+    filter:['==',['get','famous'],1],
+    layout:{'visibility':'none','icon-image':'pass','icon-allow-overlap':false,'icon-size':1.05,
+      'text-field':['step',['zoom'], '', 8, ['get','name']],'text-font':['Noto Sans Bold'],
+      'text-size':10,'text-offset':[0,0.6],'text-anchor':'top','text-optional':true,'text-allow-overlap':false},
+    paint:{'text-color':'#f0dfa0','text-halo-color':'#06101a','text-halo-width':1.5}});
 
   // ── Peaks of the clicked group (within-filter, reuse peak icon) ────────────
   map.addLayer({id:'peaks-in-group', type:'symbol', source:'osm-peaks',
@@ -606,6 +635,16 @@ function houseIcon(color){
     x.fillStyle=color; x.strokeStyle='#06101a'; x.lineWidth=1.5; x.lineJoin='round';
     x.beginPath(); x.moveTo(s*0.5,s*0.16); x.lineTo(s*0.86,s*0.5); x.lineTo(s*0.14,s*0.5); x.closePath(); x.fill(); x.stroke();
     x.beginPath(); x.rect(s*0.27,s*0.5,s*0.46,s*0.34); x.fill(); x.stroke();
+  });
+}
+// 5-point star (Mont Blanc / Alpen-König)
+function makeStar(color){
+  return makeIcon(26,(x,s)=>{
+    const cx=s/2, cy=s/2, R=s*0.44, r=s*0.19;
+    x.beginPath();
+    for(let i=0;i<10;i++){ const a=-Math.PI/2 + i*Math.PI/5, rad=(i%2)?r:R;
+      const px=cx+Math.cos(a)*rad, py=cy+Math.sin(a)*rad; i?x.lineTo(px,py):x.moveTo(px,py); }
+    x.closePath(); x.fillStyle=color; x.fill(); x.lineWidth=1.6; x.strokeStyle='#06101a'; x.lineJoin='round'; x.stroke();
   });
 }
 // Unbewirtschaftet / Refugio / Biwak: hollow house (outline only), muted.
@@ -798,6 +837,12 @@ function toggleHuts(){
   _hutsOn=!_hutsOn; const v=_hutsOn?'visible':'none';
   ['osm-huts-club','osm-huts-other','osm-huts-wild'].forEach(l=>map.setLayoutProperty(l,'visibility',v));
   document.getElementById('btnHuts').classList.toggle('active',_hutsOn);
+}
+let _passesOn=false;
+function togglePasses(){
+  _passesOn=!_passesOn; const v=_passesOn?'visible':'none';
+  ['osm-passes','osm-passes-famous'].forEach(l=>map.setLayoutProperty(l,'visibility',v));
+  document.getElementById('btnPasses').classList.toggle('active',_passesOn);
 }
 
 function closePanel(){
