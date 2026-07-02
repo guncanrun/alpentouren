@@ -484,17 +484,26 @@ map.on('load',()=>{
     paint:{'text-color':'#f0dfa0','text-halo-color':'#06101a','text-halo-width':1.5}});
 
   // ── Peaks of the clicked group (within-filter, reuse peak icon) ────────────
-  map.addLayer({id:'peaks-in-group', type:'symbol', source:'osm-peaks',
+  map.addLayer({id:'peaks-in-group', type:'symbol', source:'osm-peaks', minzoom:5,
     filter:['==',['get','name'],'__none__'],
-    layout:{'icon-image':'peak','icon-anchor':'bottom','icon-allow-overlap':true,'icon-size':0.8,
-      'text-field':['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],
+    layout:{'visibility':'none','icon-image':'peak','icon-anchor':'bottom','icon-allow-overlap':false,
+      'icon-size':['match',['get','tier'], 2,1.0, 3,0.82, 0.64],
+      // gleiche Rang-/Zoom-Staffelung wie die Basis-Gipfel: nur prominente bei mittlerem Zoom.
+      'text-field':['step',['zoom'],
+        ['case',['<=',['get','tier'],2],['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],''],
+        11,['case',['<=',['get','tier'],3],['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],''],
+        12,['concat',['get','name'],'\n',['to-string',['get','ele']],' m']],
       'text-font':['Noto Sans Bold'],'text-size':9.5,'text-offset':[0,0.4],
       'text-anchor':'top','text-optional':true,'text-allow-overlap':false},
-    paint:{'text-color':'#eaf1ff','text-halo-color':'#06101a','text-halo-width':1.5}});
+    paint:{'text-color':'#eaf1ff','text-halo-color':'#06101a','text-halo-width':1.5,
+      'icon-opacity':['step',['zoom'],
+        ['case',['<=',['get','tier'],2],1,0],
+        10,['case',['<=',['get','tier'],3],1,0],
+        12,1]}});
   // Highlight: the group's highest peak (bigger triangle + bold gold label)
   map.addLayer({id:'peaks-highest', type:'symbol', source:'osm-peaks',
     filter:['==',['get','name'],'__none__'],
-    layout:{'icon-image':'peak','icon-anchor':'bottom','icon-allow-overlap':true,'icon-size':1.5,
+    layout:{'visibility':'none','icon-image':'peak','icon-anchor':'bottom','icon-allow-overlap':true,'icon-size':1.5,
       'text-field':['concat',['get','name'],'  ',['to-string',['get','ele']],' m'],
       'text-font':['Noto Sans Bold'],'text-size':12,'text-offset':[0,0.5],
       'text-anchor':'top','text-allow-overlap':true},
@@ -782,7 +791,8 @@ function toggleFarbung(){
 let _peaksOn=false;
 function togglePeaks(){
   _peaksOn=!_peaksOn; const v=_peaksOn?'visible':'none';
-  ['osm-peaks','osm-landmark-glow','osm-landmarks'].forEach(l=>map.setLayoutProperty(l,'visibility',v));
+  ['osm-peaks','osm-landmark-glow','osm-landmarks','peaks-in-group','peaks-highest']
+    .forEach(l=>map.setLayoutProperty(l,'visibility',v));
   document.getElementById('btnPeaks').classList.toggle('active',_peaksOn);
 }
 let _hutsOn=false;
