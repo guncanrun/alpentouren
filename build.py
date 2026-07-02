@@ -389,6 +389,8 @@ TEMPLATE = r"""<!DOCTYPE html>
   .cc-d{font-size:12px;color:var(--muted)}
   .cc-t{font-size:13px;color:var(--txt);line-height:1.45;margin-top:3px}
   .cc-who{font-style:italic;color:var(--muted)}
+  .cc-memo{font-size:11.5px;color:var(--muted);line-height:1.4;margin-top:1px;
+    border-left:2px solid rgba(255,178,77,.5);padding-left:7px}
   /* PRIV:END */
 
   @media(max-width:640px){
@@ -1454,7 +1456,10 @@ function chronoCaption(Y){
     const gip=(Array.isArray(t.gipfel)?t.gipfel:[]).map(g=>_esc(g&&g.name)).filter(Boolean).join(', ');
     const parts=[]; if(loc) parts.push(loc); if(gip) parts.push(gip);
     const who=t.teilnehmer?' · <span class="cc-who">'+_esc(t.teilnehmer)+'</span>':'';
-    return '<div class="cc-t">'+(parts.join(' &mdash; ')||'&nbsp;')+who+'</div>';
+    // Stufe 3: Memo-Vorschau (~100 Zeichen, an Wortgrenze) wenn befüllt.
+    const memo=(t.memo||'').trim();
+    const mp = memo ? '<div class="cc-memo">'+_esc(memo.length>100?memo.slice(0,100).replace(/\s+\S*$/,'')+'…':memo)+'</div>' : '';
+    return '<div class="cc-t">'+(parts.join(' &mdash; ')||'&nbsp;')+who+'</div>'+mp;
   }).join('');
   cap.innerHTML=h;
 }
