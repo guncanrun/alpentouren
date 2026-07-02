@@ -6,6 +6,9 @@
 <title>Alpen-Atlas</title>
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<!-- P4 Stufe 1: Höhenlinien clientseitig aus der vorhandenen DEM-Quelle (keyless).
+     Laden defensiv: fehlt das Global, wird der Contour-Teil einfach übersprungen. -->
+<script src="https://unpkg.com/maplibre-contour@0.0.5/dist/index.min.js"></script>
 <style>
   :root{
     --bg:#0a0e14; --panel:rgba(14,20,28,.93); --line:rgba(255,255,255,.12);
@@ -418,7 +421,8 @@ const map = new maplibregl.Map({
 // ── Attribution (dynamic per basemap) ─────────────────────────────────────────
 const ATTRIB = {
   sat:'Imagery © Esri, Maxar, Earthstar · Höhen: Mapzen/AWS · SOIUSA © Arpa Piemonte · '+
-      'Gipfel/Hütten/Pässe © OpenStreetMap (ODbL)',
+      'Gipfel/Hütten/Pässe © OpenStreetMap (ODbL) · Wege © OpenFreeMap (OpenMapTiles/OSM) · '+
+      'Höhenlinien: maplibre-contour aus DEM',
   topo:'© OpenStreetMap-Mitwirkende, SRTM · Kartendarstellung © OpenTopoMap (CC-BY-SA) · '+
        'Höhen: Mapzen/AWS · SOIUSA © Arpa Piemonte'
 };
@@ -758,6 +762,42 @@ map.on('load',()=>{
     if(!map.queryRenderedFeatures(e.point,{layers:['sts-fill','hl-line'].concat(TOUR_LAYERS)}).length)
       stsPopup.remove();
   });
+
+  // ── P4: Vektor-Topo-Overlay Stufe 1+2 (über Satellit, gate z>=11) ─────────
+  // UNVERIFIZIERT (keine Browser-Prüfung hier möglich) -> Cowork-Review am Morgen.
+  // Alles defensiv gekapselt: faellt eine externe Quelle (contour-Global / OFM-Tiles)
+  // aus, bleibt die Karte voll funktionsfaehig (Overlay erscheint dann nur nicht).
+  // Toggle/Legende/Perf = Stufe 3 (bewusst NICHT hier).
+  try {
+    const OV_BEFORE = 'osm-landmark-glow';   // Overlay unter Gipfel/Hütten/Pässe einsortieren
+    // Stufe 1 — Höhenlinien aus der vorhandenen Terrarium-DEM (maplibre-contour).
+    if (typeof mlcontour !== 'undefined') {
+      const demSource = new mlcontour.DemSource({
+        url:'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png',
+        encoding:'terrarium', maxzoom:10, worker:true });
+      demSource.setupMaplibre(maplibregl);
+      map.addSource('contours', { type:'vector', maxzoom:14,
+        tiles:[ demSource.contourProtocolUrl({
+          thresholds:{ 11:[100,500], 12:[100,500], 13:[50,250], 14:[20,100] },
+          elevationKey:'ele', levelKey:'level', contourLayer:'contours' }) ] });
+      map.addLayer({ id:'contour-lines', type:'line', source:'contours',
+        'source-layer':'contours', minzoom:11,
+        paint:{ 'line-color':'rgba(120,92,64,0.55)',
+          'line-width':['match',['get','level'], 1, 1.1, 0.5] } }, OV_BEFORE);
+      map.addLayer({ id:'contour-labels', type:'symbol', source:'contours',
+        'source-layer':'contours', minzoom:13, filter:['>',['get','level'],0],
+        layout:{ 'symbol-placement':'line','text-field':['concat',['to-string',['get','ele']],' m'],
+          'text-font':['Noto Sans Bold'],'text-size':9.5,'symbol-spacing':190 },
+        paint:{ 'text-color':'rgba(92,70,50,0.95)','text-halo-color':'rgba(255,255,255,0.5)','text-halo-width':1 } }, OV_BEFORE);
+    }
+    // Stufe 2 — Wanderwege aus OpenFreeMap (OpenMapTiles-Schema), NUR path/track.
+    map.addSource('ofm', { type:'vector', url:'https://tiles.openfreemap.org/planet' });
+    map.addLayer({ id:'ofm-paths', type:'line', source:'ofm', 'source-layer':'transportation',
+      minzoom:11, filter:['match',['get','class'], ['path','track'], true, false],
+      layout:{ 'line-join':'round','line-cap':'round' },
+      paint:{ 'line-color':'rgba(242,236,226,0.62)',
+        'line-width':['interpolate',['linear'],['zoom'], 11,0.8, 15,1.9],'line-dasharray':[2,1.6] } }, OV_BEFORE);
+  } catch(e){ console.warn('Topo-Overlay uebersprungen:', e); }
 
   // ── Basemap init (localStorage) + Interim-Gate ────────────────────────────
   let _bm='sat';
