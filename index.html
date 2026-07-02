@@ -577,23 +577,29 @@ map.on('load',()=>{
       // Tier 0 = Mont Blanc (Stern), 1 = Länder-Höchste (Gold-Dreieck), 2-4 = Höhenbänder.
       'icon-image':['match',['get','tier'], 0,'peak-star', 1,'peak-hi', 'peak'],
       'icon-size':['match',['get','tier'], 0,1.9, 1,1.35, 2,1.05, 3,0.82, 0.62],
-      // Labels tier-/zoom-gestaffelt: Mont Blanc immer, Länder ab z8, 4000er z10, 3000er z11, alle z12.
+      // P3: Rang = tier + ele. Labels tier-gestaffelt bis z11; das riesige tier-4-Band
+      // (2000er) ab z12 zusätzlich nach ele ausgedünnt (>=2600), ab z13 vollständig.
       'text-field':['step',['zoom'],
         ['case',['==',['get','tier'],0],['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],''],
         8, ['case',['<=',['get','tier'],1],['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],''],
         10,['case',['<=',['get','tier'],2],['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],''],
         11,['case',['<=',['get','tier'],3],['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],''],
-        12,['concat',['get','name'],'\n',['to-string',['get','ele']],' m']],
+        12,['case',['<=',['get','tier'],3],['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],
+           ['case',['>=',['get','ele'],2600],['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],'']],
+        13,['concat',['get','name'],'\n',['to-string',['get','ele']],' m']],
       'text-font':['Noto Sans Bold'],'text-size':['match',['get','tier'], 0,12+LB, 1,11+LB, 9.5+LB],
       'symbol-sort-key':['get','tier'],   // wichtige Gipfel zuerst platziert; < Pässe (80/90) -> Gipfel gewinnen
       'text-offset':[0,0.3],'text-anchor':'top','text-optional':true,'text-allow-overlap':false},
     paint:{'text-color':['match',['get','tier'], 0,'#ffe08a', 1,'#ffd24d', '#dbe7ff'],
       'text-halo-color':'#06101a','text-halo-width':1.4,
-      // Sichtbarkeit tier-/zoom-gestaffelt: Tier0-2 (bis 4000er) früh, 3000er ab z8, alle ab z11.
+      // Icon-Sichtbarkeit: Tier0-2 früh, 3000er ab z8; tier-4 (2000er) nach ele gerampt
+      // (z11 >=2600, z12 >=2300, z13 alle) -> ruhige Übersicht, volle Dichte im Detail.
       'icon-opacity':['step',['zoom'],
         ['case',['<=',['get','tier'],2],1,0],
-        8, ['case',['<=',['get','tier'],3],1,0],
-        11, 1]}});
+        8,  ['case',['<=',['get','tier'],3],1,0],
+        11, ['case',['<=',['get','tier'],3],1,['case',['>=',['get','ele'],2600],1,0]],
+        12, ['case',['<=',['get','tier'],3],1,['case',['>=',['get','ele'],2300],1,0]],
+        13, 1]}});
 
   // Landmark-Gipfel: eigener Rang — Icon nach Tier, Label immer, ab Übersicht sichtbar.
   map.addLayer({id:'osm-landmarks', type:'symbol', source:'osm-peaks', minzoom:5,
