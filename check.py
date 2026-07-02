@@ -68,6 +68,8 @@ checks = [
     ("peak rank tiering by ele",      "'icon-opacity':['step',['zoom']"),
     ("peak tier icon match",          "'icon-image':['match',['get','tier']"),
     ("Mont Blanc star icon",          "'peak-star'"),
+    ("landmark glow layer",           "id:'osm-landmark-glow'"),
+    ("landmarks layer",               "id:'osm-landmarks'"),
     ("makeStar fn",                   "function makeStar"),
     ("passes url source",             "./soiusa_osm_passes.geojson"),
     ("passes famous layer",           "id:'osm-passes-famous'"),

@@ -290,8 +290,8 @@
         "IT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Hochgall",
+      "hoehe_m": 3436,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -458,8 +458,8 @@
         "FR"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Pointe de Ronce",
+      "hoehe_m": 3612,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -470,8 +470,8 @@
         "IT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Chaberton",
+      "hoehe_m": 3131,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -542,8 +542,8 @@
         "DE"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Krottenkopf",
+      "hoehe_m": 2086,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -806,8 +806,8 @@
         "IT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Uia di Ciamarella",
+      "hoehe_m": 3676,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -926,8 +926,8 @@
         "IT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Cima di Cece",
+      "hoehe_m": 2754,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -1142,8 +1142,8 @@
         "IT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Pizzo Arera",
+      "hoehe_m": 2512,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -1166,8 +1166,8 @@
         "IT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Cornone di Blumone",
+      "hoehe_m": 2843,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -1238,8 +1238,8 @@
         "AT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Ötscher",
+      "hoehe_m": 1893,
       "wiki_url": "https://de.wikipedia.org/wiki/Nieder%C3%B6sterreichische_Voralpen",
       "bild_url": "",
       "bild_attr": ""
@@ -1334,8 +1334,8 @@
         "FR"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Pointe Percée",
+      "hoehe_m": 2750,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -1370,8 +1370,8 @@
         "FR"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Mont Buet",
+      "hoehe_m": 3096,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -1442,7 +1442,7 @@
         "FR"
       ],
       "region_kanton": [],
-      "hoechster_berg": "Haute Cime (Dents du Midi)",
+      "hoechster_berg": "Dents du Midi",
       "hoehe_m": 3257,
       "wiki_url": "",
       "bild_url": "",
@@ -1514,8 +1514,8 @@
         "CH"
       ],
       "region_kanton": [],
-      "hoechster_berg": "Le Tarent",
-      "hoehe_m": null,
+      "hoechster_berg": "Vanil Noir",
+      "hoehe_m": 2389,
       "wiki_url": "https://de.wikipedia.org/wiki/Waadtl%C3%A4nder_und_Freiburger_Voralpen",
       "bild_url": "",
       "bild_attr": ""
@@ -1622,8 +1622,8 @@
         "AT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Rettlkirchspitze",
+      "hoehe_m": 2475,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""

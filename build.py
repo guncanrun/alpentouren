@@ -467,7 +467,14 @@ map.on('load',()=>{
   map.addImage('hut-wild',  houseOutline('#a8bccc'), {pixelRatio:2}); // unbewirtschaftet/Refugio (Tier 2)
 
   // Peaks — black triangle, name+height label from higher zoom
+  // Landmark-Glow (hinter den Gipfeln)
+  map.addLayer({id:'osm-landmark-glow', type:'circle', source:'osm-peaks', minzoom:5,
+    filter:['==',['get','landmark'],1],
+    layout:{'visibility':'none'},
+    paint:{'circle-radius':['interpolate',['linear'],['zoom'], 6,7, 12,16],
+      'circle-color':'#ffd24d','circle-opacity':0.28,'circle-blur':0.9}});
   map.addLayer({id:'osm-peaks', type:'symbol', source:'osm-peaks', minzoom:5,
+    filter:['!=',['get','landmark'],1],
     layout:{'visibility':'none','icon-anchor':'bottom','icon-allow-overlap':false,
       // Tier 0 = Mont Blanc (Stern), 1 = Länder-Höchste (Gold-Dreieck), 2-4 = Höhenbänder.
       'icon-image':['match',['get','tier'], 0,'peak-star', 1,'peak-hi', 'peak'],
@@ -488,6 +495,17 @@ map.on('load',()=>{
         ['case',['<=',['get','tier'],2],1,0],
         8, ['case',['<=',['get','tier'],3],1,0],
         11, 1]}});
+
+  // Landmark-Gipfel: eigener Rang — Icon nach Tier, Label immer, ab Übersicht sichtbar.
+  map.addLayer({id:'osm-landmarks', type:'symbol', source:'osm-peaks', minzoom:5,
+    filter:['==',['get','landmark'],1],
+    layout:{'visibility':'none','icon-anchor':'bottom','icon-allow-overlap':true,
+      'icon-image':['match',['get','tier'], 0,'peak-star', 1,'peak-hi', 'peak'],
+      'icon-size':['match',['get','tier'], 0,1.95, 1,1.4, 1.15],
+      'text-field':['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],
+      'text-font':['Noto Sans Bold'],'text-size':11,'text-offset':[0,0.3],
+      'text-anchor':'top','text-optional':true,'text-allow-overlap':false},
+    paint:{'text-color':'#ffe6a0','text-halo-color':'#06101a','text-halo-width':1.8}});
 
   // Huts — sonstige (grau, ab höherem Zoom)
   map.addLayer({id:'osm-huts-other', type:'symbol', source:'osm-huts', minzoom:8,
@@ -829,7 +847,7 @@ function toggleFarbung(){
 let _peaksOn=false;
 function togglePeaks(){
   _peaksOn=!_peaksOn; const v=_peaksOn?'visible':'none';
-  map.setLayoutProperty('osm-peaks','visibility',v);
+  ['osm-peaks','osm-landmark-glow','osm-landmarks'].forEach(l=>map.setLayoutProperty(l,'visibility',v));
   document.getElementById('btnPeaks').classList.toggle('active',_peaksOn);
 }
 let _hutsOn=false;

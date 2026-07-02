@@ -57,6 +57,28 @@ def peak_tier(name, ele):
     return 4
 
 
+# Landmark peaks (touristic icons) — flag independent of height. name substr : approx ele.
+LANDMARKS = {
+    "Matterhorn": 4478, "Eiger": 3967, "Mönch": 4107, "Jungfrau": 4158, "Mont Blanc": 4806,
+    "Großglockner": 3798, "Grossglockner": 3798, "Zugspitze": 2962, "Watzmann": 2713,
+    "Cima Grande": 2999, "Drei Zinnen": 2999, "Marmolada": 3343, "Marmolata": 3343,
+    "Langkofel": 3181, "Sassolungo": 3181, "Schlern": 2563, "Sciliar": 2563,
+    "Hoher Dachstein": 2995, "Säntis": 2502, "Triglav": 2864, "Piz Bernina": 4048,
+    "Ortler": 3905, "Ortles": 3905, "Grandes Jorasses": 4208, "Dent du Géant": 4013,
+    "Großvenediger": 3657, "Wildspitze": 3768, "Tofana di Rozes": 3225, "Civetta": 3220,
+    "Monte Pelmo": 3168, "Cima Tosa": 3136, "Dufourspitze": 4634, "Dom": 4545,
+    "Dent Blanche": 4357, "Gran Paradiso": 4061,
+}
+
+
+def is_landmark(name, ele):
+    low = (name or "").lower()
+    for k, ke in LANDMARKS.items():
+        if k.lower() in low and abs(ele - ke) <= 70:
+            return True
+    return False
+
+
 # Famous passes — matched against OSM name in any language.
 FAMOUS_PASS_RE = re.compile(
     r"Stilfser|Stelvio|Timmelsjoch|Passo del Rombo|Hochtor|Brennerpass|Passo del Brennero|"
@@ -67,6 +89,18 @@ FAMOUS_PASS_RE = re.compile(
     r"Col du Galibier|Col de l.Iseran|Bonette|Mont ?Cenis|Moncenisio|Sellajoch|Passo (di )?Sella|"
     r"Pordoijoch|Passo Pordoi|Grödnerjoch|Groednerjoch|Passo Gardena|Falzarego|Gaviapass|Passo di Gavia|"
     r"Tonalepass|Passo del Tonale", re.IGNORECASE)
+
+# Curated famous passes with coordinates (Wikidata) — guarantees these get famous=1
+# even if the OSM name misses the regex; matched by nearest OSM pass.
+FAMOUS_PASS_COORDS = [
+    (46.5300, 10.4540), (46.9053, 11.0967), (47.0071, 11.5065), (46.8344, 10.5101),
+    (47.3625, 10.8310), (47.1298, 10.2106), (46.5617, 8.3453), (46.5728, 8.4167),
+    (46.7300, 8.4490), (46.5592, 8.5617), (46.4970, 9.1720), (46.5055, 9.3304),
+    (46.4722, 9.7278), (46.4000, 9.6958), (46.4108, 10.0275), (46.7515, 9.9486),
+    (46.2502, 8.0317), (45.8691, 7.1704), (45.0640, 6.4080), (45.4169, 7.0308),
+    (44.3267, 6.8072), (46.5067, 11.7572), (46.4877, 11.8136), (46.5500, 11.8094),
+    (46.5189, 12.0094), (46.3436, 10.4881), (46.2581, 10.5808),
+]
 
 
 def query(q):
@@ -212,9 +246,14 @@ else:
     pf = peaks_geojson(query(PEAKS_Q).get("elements", []))
 before = len(pf)
 pf = alps_filter(pf)
-for f in pf:                       # hierarchy tier (0 Mont Blanc / 1 Länder-Höchste / 2-4 bands)
-    f["properties"]["tier"] = peak_tier(f["properties"].get("name", ""), f["properties"].get("ele", 0))
-save("soiusa_osm_peaks.geojson", pf, f"Gipfel (von {before} nach SOIUSA-Clip)")
+lm = 0
+for f in pf:                       # hierarchy tier + landmark flag
+    nm, ele = f["properties"].get("name", ""), f["properties"].get("ele", 0)
+    f["properties"]["tier"] = peak_tier(nm, ele)
+    if is_landmark(nm, ele):
+        f["properties"]["landmark"] = 1
+        lm += 1
+save("soiusa_osm_peaks.geojson", pf, f"Gipfel (von {before} nach SOIUSA-Clip, {lm} Landmarks)")
 tier01 = [f["properties"]["name"] for f in pf if f["properties"]["tier"] <= 1]
 print(f"   Tier 0/1 (Alpen-König + Länder-Höchste): {tier01}")
 
@@ -228,6 +267,15 @@ print("Overpass: Paesse...")
 xf = passes_geojson(query(PASS_Q).get("elements", []))
 before = len(xf)
 xf = alps_filter(xf)
+for clat, clon in FAMOUS_PASS_COORDS:      # guarantee curated famous passes via nearest match
+    best, bd = None, 9e9
+    for f in xf:
+        lo, la = f["geometry"]["coordinates"]
+        d = (la - clat) ** 2 + (lo - clon) ** 2
+        if d < bd:
+            bd, best = d, f
+    if best and bd <= 0.03 ** 2:
+        best["properties"]["famous"] = 1
 fam = sum(1 for f in xf if f["properties"]["famous"])
 save("soiusa_osm_passes.geojson", xf, f"Paesse (von {before} nach Clip, {fam} famous)")
 print("Naechster Schritt: python build.py")
