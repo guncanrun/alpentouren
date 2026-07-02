@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Derive touren_public.json (committed) from touren.json (local canon).
+"""OBSOLETE since E8 (Public = neutral SOIUSA atlas).
 
-WHITELIST principle (SPEC_Build_Teilung E1): the public JSON keeps ONLY `gruppe`
-and `besucht`. Every other field — years (wann), coordinates, gipfel, participants,
-notes, and any FUTURE field — is dropped automatically. No "wann" leaves the WWW.
-Run before the public build.
+The public build no longer reads ANY tour data: build.py loads touren.json only
+for --private, and touren_public.json is no longer committed (it still named the
+visited groups = personal). This script is kept for reference/history only.
+
+(Historic) Derive touren_public.json from touren.json using a WHITELIST that keeps
+ONLY `gruppe` and `besucht`.
 """
 import json
 import pathlib

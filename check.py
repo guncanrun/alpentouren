@@ -44,7 +44,6 @@ checks = [
     ("line-join round",               "'line-join':'round'"),
     # Functions
     ("openSts fn",                    "function openSts"),
-    ("openGroup fn (coverage)",       "function openGroup"),
     ("toggleLayers fn",               "function toggleLayers"),
     ("featBbox fn",                   "function featBbox"),
     ("featBbox GeometryCollection",   "GeometryCollection"),
@@ -107,11 +106,11 @@ checks = [
     ("map.resize on load",            "map.resize()"),
     ("resize setTimeout",             "setTimeout(()=>map.resize()"),
     ("idle resize",                   "map.once('idle',()=>map.resize())"),
-    # Public build hygiene
-    ("public neutral title",          "Alpentouren — wo ich war"),
-    # KPI
-    ("KPI dynamic total",             "features.length+'/'+SOIUSA_STS.features.length"),
-    ("tour_ids JSON.parse",           "JSON.parse(props.tour_ids)"),
+    # Public build hygiene (E8: neutral atlas)
+    ("public atlas title",            "Alpen-Atlas"),
+    # KPI (public: computed atlas stats)
+    ("KPI Settori label",             "Settori"),
+    ("KPI Vereinshütten label",       "Vereinsh&uuml;tten"),
     # Data integrity
     ("Silvretta / Verwall",           "Silvretta / Verwall"),
     ("Settore legend Nordwestalpen",  "Nordwestalpen"),
@@ -123,7 +122,6 @@ checks = [
     ("toggleAbout fn",                "function toggleAbout"),
     ("hover tooltip popup",           "const hoverPop"),
     ("hover on sts-fill mousemove",   "map.on('mousemove','sts-fill'"),
-    ("cov default collapsed",         '<div id="cov">'),
     # Map setup
     ("overflow hidden",               "overflow:hidden"),
     ("maxBounds",                     "maxBounds"),
@@ -143,20 +141,31 @@ for name, marker in checks:
     if not ok:
         errors.append(name)
 
-# ── Public-hygiene negative guards (SPEC_Build_Teilung) ───────────────────────
-# The public index.html must carry NO private markers, NO year fields, and NO
-# private-only functions/KPIs (openTour, kYears).
+# ── Public-hygiene negative guards (SPEC_Build_Teilung E1/E2 + E8 atlas) ──────
+# The public index.html must carry NO private markers, NO year fields, NO
+# private-only functions/KPIs, and (E8) NO visited/tour layer whatsoever.
 for bad, label in [("Tour mit Papa", "private tab label"),
                    ("PRIV:START", "PRIV start marker"),
                    ("PRIV:END", "PRIV end marker"),
+                   ("PUB:START", "PUB start marker (must be stripped)"),
                    ('"jahr"', "year field"),
                    ("function openTour", "tour-marker function"),
-                   ('id="kYears"', "years KPI")]:
+                   ('id="kYears"', "years KPI"),
+                   ('"visited":1', "visited=1 data (E8)"),
+                   ('"tour_ids":', "tour_ids data (E8)"),
+                   ("Touren ansehen", "coverage button (E8)")]:
     if bad in html:
         print(f"FAIL public leak: '{bad}' ({label}) present in index.html")
         errors.append(f"public leak: {bad}")
     else:
         print(f"OK   public free of '{bad}'")
+
+# E8: the word "besucht" (any case) must not appear in the public atlas.
+if "besucht" in html.lower():
+    print("FAIL public leak: 'besucht' present in index.html (E8)")
+    errors.append("public leak: besucht")
+else:
+    print("OK   public free of 'besucht' (E8)")
 
 # Whitelist guard: touren_public.json may only contain gruppe/besucht.
 import json as _json

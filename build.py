@@ -14,10 +14,11 @@ HERE = pathlib.Path(__file__).parent
 
 # ── Build mode: public (default, deployed) vs private (--private, local only) ──
 PUBLIC = "--private" not in sys.argv
-SRC   = "touren_public.json" if PUBLIC else "touren.json"
+SRC   = "touren.json"   # only the private build reads tour data (E8)
 OUT   = "index.html" if PUBLIC else "index_privat.html"
-TITEL = "Alpentouren — wo ich war" if PUBLIC else "Alpentouren mit Papa"
-UNTER = ("SOIUSA-Untergruppen nach Alpen-Struktur (Settori) — Orange = besucht. Fläche anklicken."
+TITEL = "Alpen-Atlas" if PUBLIC else "Alpentouren mit Papa"
+UNTER = ("Die Alpen nach SOIUSA — Settori, Gruppen, Gipfel, Hütten & Pässe interaktiv. "
+         "Fläche anklicken für Steckbrief."
          if PUBLIC else
          "SOIUSA-Untergruppen nach Alpen-Struktur — Orange = besucht. Fläche anklicken.")
 
@@ -45,24 +46,65 @@ def normalize_label(s):
 
 
 # ── Data sources ─────────────────────────────────────────────────────────────
-_raw = (HERE / SRC).read_text(encoding="utf-8").replace("\x00", "").strip()
-data = json.loads(_raw)
-for t in data["touren"]:
-    for k in ("gebirge", "gegend"):
-        if t.get(k): t[k] = normalize_label(t[k])
-touren_json = json.dumps(data["touren"], ensure_ascii=False)
+# E8: the PUBLIC build is a neutral SOIUSA atlas — it does NOT read any tour data.
+if PUBLIC:
+    data = {"touren": []}
+    touren_json = "[]"
+else:
+    _raw = (HERE / SRC).read_text(encoding="utf-8").replace("\x00", "").strip()
+    data = json.loads(_raw)
+    for t in data["touren"]:
+        for k in ("gebirge", "gegend"):
+            if t.get(k): t[k] = normalize_label(t[k])
+    touren_json = json.dumps(data["touren"], ensure_ascii=False)
 
 sts_json        = load_compact("soiusa_sts_colored.geojson")
 highlights_json = load_compact("soiusa_highlights_clean.geojson")
 lp_json         = load_compact("soiusa_sts_label_points.geojson")
 mask_json       = load_compact("soiusa_mask.geojson")
+
+# E8: strip the personal "visited" layer from the PUBLIC embedded data.
+# visited -> 0 everywhere (so the visited-only layers render nothing and every
+# group is drawn uniformly), tour_ids dropped, highlights emptied.
+if PUBLIC:
+    _sts = json.loads(sts_json)
+    for f in _sts["features"]:
+        p = f["properties"]
+        p["visited"] = 0
+        p.pop("tour_ids", None)
+    sts_json = json.dumps(_sts, ensure_ascii=False, separators=(",", ":"))
+    _lp = json.loads(lp_json)
+    for f in _lp["features"]:
+        p = f["properties"]
+        p["visited"] = 0
+        p.pop("tour_ids", None)
+    lp_json = json.dumps(_lp, ensure_ascii=False, separators=(",", ":"))
+    highlights_json = '{"type":"FeatureCollection","features":[]}'
 try:
     wiki_json = load_compact("soiusa_wiki.json")
 except FileNotFoundError:
     wiki_json = '{"gruppen":{}}'
 
+# E8: the wiki meta text mentions visited counts ("12 besuchte …") — neutralize
+# it in the public build (the group profiles themselves are impersonal, kept).
+if PUBLIC:
+    _wiki = json.loads(wiki_json)
+    _wiki["meta"] = {"quelle": "de.wikipedia + Wikidata",
+                     "lizenz": "Text CC BY-SA; Bilder Wikimedia CC BY-SA"}
+    wiki_json = json.dumps(_wiki, ensure_ascii=False, separators=(",", ":"))
+
 sts_count = len(json.loads(sts_json)["features"])
 hl_count  = len(json.loads(highlights_json)["features"])
+
+# ── Public KPIs (computed from data, not hardcoded) ───────────────────────────
+_sts_feats = json.loads(sts_json)["features"]
+kpi_gruppen = sts_count
+kpi_settori = len({f["properties"].get("settore") for f in _sts_feats if f["properties"].get("settore")})
+try:
+    _huts = json.loads((HERE / "soiusa_osm_huts.geojson").read_text(encoding="utf-8"))
+    kpi_huetten = sum(1 for f in _huts["features"] if f["properties"].get("kat") == "club")
+except Exception:
+    kpi_huetten = 0
 
 TEMPLATE = r"""<!DOCTYPE html>
 <html lang="de">
@@ -259,9 +301,8 @@ TEMPLATE = r"""<!DOCTYPE html>
   <h1>__TITEL__</h1>
   <p>__UNTER__</p>
   <div class="kpi">
-    <!-- PRIV:START --><div><b id="kTours">–</b><span>Touren</span></div><!-- PRIV:END -->
-    <div><b id="kGroups">–</b><span>SOIUSA-Gruppen</span></div>
-    <!-- PRIV:START --><div><b id="kYears">–</b><span>Jahre</span></div><!-- PRIV:END -->
+    <!-- PUB:START --><div><b>__KPI_GRUPPEN__</b><span>Gruppen</span></div><div><b>__KPI_SETTORI__</b><span>Settori</span></div><div><b>__KPI_HUETTEN__</b><span>Vereinsh&uuml;tten</span></div><!-- PUB:END -->
+    <!-- PRIV:START --><div><b id="kTours">–</b><span>Touren</span></div><div><b id="kGroups">–</b><span>SOIUSA-Gruppen</span></div><div><b id="kYears">–</b><span>Jahre</span></div><!-- PRIV:END -->
   </div>
 </div>
 
@@ -271,13 +312,20 @@ TEMPLATE = r"""<!DOCTYPE html>
 <div id="about">
   <div class="x" onclick="toggleAbout()">&times;</div>
   <h3>So bedienst du die Karte</h3>
-  <p>Auf eine <b>farbige Fl&auml;che tippen</b> &rarr; Steckbrief &amp; besuchte Touren. Rechts im
+  <!-- PUB:START --><p>Auf eine <b>farbige Fl&auml;che tippen</b> &rarr; Steckbrief der Gruppe
+     (h&ouml;chster Berg, Lage, Land). Rechts im Panel <b>„Ebenen"</b> schaltest du
+     F&auml;rbung, Namen, Landesgrenzen, Gipfel, H&uuml;tten &amp; P&auml;sse; das Haus-Icon
+     setzt die <b>Standardansicht</b> zur&uuml;ck.</p><!-- PUB:END -->
+  <!-- PRIV:START --><p>Auf eine <b>farbige Fl&auml;che tippen</b> &rarr; Steckbrief &amp; besuchte Touren. Rechts im
      Panel <b>„Ebenen"</b> schaltest du F&auml;rbung, Namen, Gipfel, H&uuml;tten &amp; P&auml;sse.
      Unten links <b>„Touren ansehen"</b> f&uuml;hrt zu den besuchten Gebieten; das Haus-Icon
-     setzt die <b>Standardansicht</b> zur&uuml;ck.</p>
+     setzt die <b>Standardansicht</b> zur&uuml;ck.</p><!-- PRIV:END -->
   <h3>&Uuml;ber diese Karte</h3>
-  <p>Interaktive 3D-Karte der Alpen: welche <b>SOIUSA-Untergruppen</b> ich besucht habe,
-     eingebettet in die Gesamtstruktur des Gebirges.</p>
+  <!-- PUB:START --><p>Ein interaktiver <b>Alpen-Atlas</b> nach der <b>SOIUSA</b>-Klassifikation:
+     alle 131 Untergruppen, ihre f&uuml;nf <b>Grandi Settori</b>, dazu Gipfel, H&uuml;tten und
+     P&auml;sse aus OpenStreetMap.</p><!-- PUB:END -->
+  <!-- PRIV:START --><p>Interaktive 3D-Karte der Alpen: welche <b>SOIUSA-Untergruppen</b> ich besucht habe,
+     eingebettet in die Gesamtstruktur des Gebirges.</p><!-- PRIV:END -->
   <p><b>Tech:</b> Datenaufbereitung in <b>Python</b>, Rendering mit <b>MapLibre GL JS</b>,
      3D-Terrain aus offenem DEM. Komplett <b>statisch &amp; keyless</b> auf GitHub Pages
      (kein Server, kein API-Key).</p>
@@ -300,12 +348,14 @@ TEMPLATE = r"""<!DOCTYPE html>
   </div>
 </div>
 
+<!-- PRIV:START -->
 <div id="cov">
   <div class="ch" onclick="document.getElementById('cov').classList.toggle('open')">
 Touren ansehen <span id="covCount"></span>
   </div>
   <div class="cl" id="covList"></div>
 </div>
+<!-- PRIV:END -->
 
 <div id="ebenen" class="open">
   <div class="eh" onclick="document.getElementById('ebenen').classList.toggle('open')">Ebenen</div>
@@ -324,8 +374,8 @@ Touren ansehen <span id="covCount"></span>
     <div class="lrow"><span class="sw-zo"></span>Zentralostalpen</div>
     <div class="lrow"><span class="sw-no"></span>Nordostalpen</div>
     <div class="lrow"><span class="sw-so"></span>S&uuml;dostalpen</div>
-    <div class="lsep"></div>
-    <div class="lrow"><span class="sw-hl"></span>besucht</div>
+    <!-- PRIV:START --><div class="lsep"></div>
+    <div class="lrow"><span class="sw-hl"></span>besucht</div><!-- PRIV:END -->
   </div></div>
 </div>
 
@@ -353,16 +403,15 @@ const CNAMES = {AT:'Österreich',CH:'Schweiz',DE:'Deutschland',
 console.log('SOIUSA:', SOIUSA_STS.features.length, 'Untergruppen,',
             SOIUSA_HIGHLIGHTS.features.length, 'Highlights');
 
-// ── Coverage: from visited SOIUSA groups (public-safe, no "wann") ─────────────
+// ── Coverage (private build only — visited groups + years) ────────────────────
+/* PRIV:START */
 const visitedGroups = SOIUSA_STS.features.filter(f=>f.properties.visited===1)
   .map(f=>f.properties)
   .sort((a,b)=>String(a.name_de||a.STS).localeCompare(String(b.name_de||b.STS)));
-
 document.getElementById('kGroups').textContent = SOIUSA_HIGHLIGHTS.features.length+'/'+SOIUSA_STS.features.length;
-document.getElementById('covCount').textContent = SOIUSA_HIGHLIGHTS.features.length + ' Gebiete';
-/* PRIV:START */
 document.getElementById('kTours').textContent = TOUREN.length;
-document.getElementById('covCount').textContent += ' · ' + TOUREN.length + ' Touren';
+document.getElementById('covCount').textContent =
+  SOIUSA_HIGHLIGHTS.features.length + ' Gebiete · ' + TOUREN.length + ' Touren';
 { const ys=TOUREN.map(t=>parseInt(String(t.jahr||'').replace(/[^0-9]/g,'').slice(0,4))).filter(Boolean);
   if(ys.length) document.getElementById('kYears').textContent = Math.min(...ys)+'–'+Math.max(...ys); }
 /* PRIV:END */
@@ -683,7 +732,9 @@ map.on('load',()=>{
     clearTimeout(_hoverTimer);                                               // Dwell: erst nach 700 ms Ruhe
     const p=e.features[0].properties, ll=e.lngLat, nm=p.name_de||p.STS||'';
     let sub=p.settore||'';
+    /* PRIV:START */
     if(p.visited===1){ try{const n=JSON.parse(p.tour_ids||'[]').length; sub=n+(n===1?' Tour':' Touren');}catch(_){} }
+    /* PRIV:END */
     _hoverTimer=setTimeout(()=>{
       hoverPop.setLngLat(ll)
         .setHTML('<div class="hp-n">'+nm+'</div>'+(sub?'<div class="hp-s">'+sub+'</div>':''))
@@ -878,6 +929,7 @@ function steckbriefHtml(stsName, props){
 }
 
 // ── Tour markup for a visited group (private build only) ──────────────────────
+/* PRIV:START */
 function groupTourHtml(props){
   const tourIds = typeof props.tour_ids==='string'
     ? JSON.parse(props.tour_ids) : (Array.isArray(props.tour_ids)?props.tour_ids:[]);
@@ -897,6 +949,7 @@ function groupTourHtml(props){
   });
   return html;
 }
+/* PRIV:END */
 
 // ── Open: STS polygon (visited or not) ───────────────────────────────────────
 function openSts(feat){
@@ -908,13 +961,18 @@ function openSts(feat){
 
   document.getElementById('pGroup').textContent = props.name_de || stsName;
   document.getElementById('pGegend').textContent = stsName + (props.CODICE?' · '+props.CODICE:'');
+  document.getElementById('pYear').textContent = '';
+  /* PRIV:START */
   document.getElementById('pYear').textContent = visited ? 'Besucht' : 'Noch nicht besucht';
+  /* PRIV:END */
 
   document.getElementById('pAbout').innerHTML = steckbriefHtml(stsName, props);
   setTourTab(visited ? groupTourHtml(props) : '');
   showGroupPeaks(stsName);
 
+  /* PRIV:START */
   document.getElementById('cov').classList.remove('open');   // Touren-Liste einklappen (kein Overlap)
+  /* PRIV:END */
   document.getElementById('panel').classList.add('open');
   const bb=featBbox(feat);
   if(bb) map.fitBounds(bb,{padding:{top:80,bottom:80,left:320,right:80},
@@ -980,7 +1038,8 @@ function overview(){
   map.flyTo({...ALPS,duration:1200,essential:true});
 }
 
-// ── Coverage list (visited SOIUSA groups; click flies to the group) ───────────
+// ── Coverage list (private build only; click flies to the group) ──────────────
+/* PRIV:START */
 function openGroup(sts){ const f=SOIUSA_STS.features.find(x=>x.properties.STS===sts); if(f) openSts(f); }
 const cl=document.getElementById('covList');
 cl.innerHTML=visitedGroups.map(g=>{
@@ -988,7 +1047,6 @@ cl.innerHTML=visitedGroups.map(g=>{
   const key=String(g.STS||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
   return '<div class="row" onclick="openGroup(\''+key+'\')"><span>'+nm+'</span><span class="yr"></span></div>';
 }).join('');
-/* PRIV:START */
 [...cl.children].forEach((row,i)=>{
   const g=visitedGroups[i]; if(!g) return;
   const ids = typeof g.tour_ids==='string'?JSON.parse(g.tour_ids||'[]'):(g.tour_ids||[]);
@@ -1009,13 +1067,24 @@ html = html.replace("__SOIUSA_LBL_PTS_GEOJSON__",    lp_json)
 html = html.replace("__SOIUSA_WIKI_JSON__",          wiki_json)
 html = html.replace("__TITEL__", TITEL).replace("__UNTER__", UNTER)
 html = html.replace("__PRIV__", "false" if PUBLIC else "true")
+html = html.replace("__KPI_GRUPPEN__",  str(kpi_gruppen))
+html = html.replace("__KPI_SETTORI__",  str(kpi_settori))
+html = html.replace("__KPI_HUETTEN__",  str(kpi_huetten))
 
-# ── Hard-strip private blocks in the public build (E2) ────────────────────────
-# Private HTML/CSS: <!-- PRIV:START --> … <!-- PRIV:END -->
-# Private JS:       /* PRIV:START */ … /* PRIV:END */
+# ── Symmetric marker stripping (E2 + E8) ──────────────────────────────────────
+# PRIV blocks = private-only, removed in the public build (hard strip, no leak).
+# PUB  blocks = public-only,  removed in the private build.
+# HTML/CSS: <!-- X:START --> … <!-- X:END -->   ·   JS: /* X:START */ … /* X:END */
 if PUBLIC:
     html = re.sub(r"<!-- PRIV:START -->.*?<!-- PRIV:END -->", "", html, flags=re.S)
     html = re.sub(r"/\* PRIV:START \*/.*?/\* PRIV:END \*/", "", html, flags=re.S)
+else:
+    html = re.sub(r"<!-- PUB:START -->.*?<!-- PUB:END -->", "", html, flags=re.S)
+    html = re.sub(r"/\* PUB:START \*/.*?/\* PUB:END \*/", "", html, flags=re.S)
+# Strip any surviving marker comments (the kept family's markers would linger).
+for _m in ("<!-- PRIV:START -->", "<!-- PRIV:END -->", "<!-- PUB:START -->", "<!-- PUB:END -->",
+           "/* PRIV:START */", "/* PRIV:END */", "/* PUB:START */", "/* PUB:END */"):
+    html = html.replace(_m, "")
 
 # Tab bar only in the private build — keeps the string "Tour mit Papa" out of public HTML.
 PTABS = "" if PUBLIC else (
