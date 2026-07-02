@@ -119,6 +119,18 @@ checks = [
     # UI
     ("Info button",                   'id="btnInfo"'),
     ("About card",                    'id="about"'),
+    # Search + basemap
+    ("search input",                  'id="sInput"'),
+    ("search index fn",               "function buildSearchIndex"),
+    ("coord parser fn",               "function parseCoord"),
+    ("search query fn",               "function searchQuery"),
+    ("search diacritics norm",        "function sNorm"),
+    ("basemap switch fn",             "function setBasemap"),
+    ("basemap segmented Topo",        'id="bmTopo"'),
+    ("topo raster layer",             "id:'topo'"),
+    ("OpenTopoMap tiles",             "opentopomap.org"),
+    ("OTM attribution CC-BY-SA",      "OpenTopoMap (CC-BY-SA)"),
+    ("basemap localStorage",          "alpen_basemap"),
     ("toggleAbout fn",                "function toggleAbout"),
     ("hover tooltip popup",           "const hoverPop"),
     ("hover on sts-fill mousemove",   "map.on('mousemove','sts-fill'"),

@@ -285,6 +285,32 @@ TEMPLATE = r"""<!DOCTYPE html>
     border-radius:11px;background:var(--panel);border:1px solid var(--line);color:var(--txt);
     font-size:19px;cursor:pointer;backdrop-filter:blur(8px);touch-action:manipulation}
   #home:hover{border-color:var(--accent2);color:var(--accent2)}
+  /* ── Suche ── */
+  #search{position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:9;
+    display:flex;align-items:center;background:var(--panel);backdrop-filter:blur(8px);
+    border:1px solid var(--line);border-radius:24px;box-shadow:0 6px 24px rgba(0,0,0,.45)}
+  #sToggle{width:46px;height:46px;border:none;background:none;color:var(--txt);font-size:18px;
+    cursor:pointer;border-radius:50%;flex-shrink:0;touch-action:manipulation}
+  #sInput{width:0;padding:0;border:none;background:none;color:var(--txt);font-size:15px;
+    outline:none;transition:width .25s,padding .25s;font-family:inherit}
+  #sInput::placeholder{color:var(--muted)}
+  #search.open #sInput{width:min(52vw,340px);padding:0 12px 0 2px}
+  #sRes{display:none;position:absolute;top:52px;left:0;right:0;background:var(--panel);
+    backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:12px;
+    box-shadow:0 8px 30px rgba(0,0,0,.5);max-height:min(60vh,420px);overflow-y:auto}
+  .sr{display:flex;align-items:center;gap:10px;padding:10px 12px;min-height:44px;cursor:pointer;
+    border-top:1px solid rgba(255,255,255,.06);font-size:14px;touch-action:manipulation}
+  .sr:first-child{border-top:none}
+  .sr.sel,.sr:hover{background:rgba(95,208,197,.15)}
+  .sr .ic{width:22px;text-align:center;flex-shrink:0;font-size:15px}
+  .sr .nm{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sr .sb{color:var(--muted);font-size:12px;flex-shrink:0;white-space:nowrap}
+  /* ── Basemap segmented (Ebenen-Panel) ── */
+  .seg{display:flex;gap:6px;margin:2px 0 2px}
+  .seg button{flex:1;min-height:40px;padding:8px;border:1px solid var(--line);border-radius:9px;
+    background:rgba(255,255,255,.04);color:var(--muted);font-size:13.5px;cursor:pointer;
+    font-family:inherit;touch-action:manipulation}
+  .seg button.on{background:rgba(95,208,197,.16);border-color:var(--accent2);color:var(--txt);font-weight:600}
 
   @media(max-width:640px){
     #title{max-width:calc(100vw - 90px)}
@@ -308,6 +334,13 @@ TEMPLATE = r"""<!DOCTYPE html>
 
 <button id="btnInfo" onclick="toggleAbout()" title="Info &amp; Anleitung">?</button>
 <button id="home" onclick="overview()" title="Standardansicht">&#8962;</button>
+
+<div id="search">
+  <button id="sToggle" onclick="toggleSearch()" title="Suche" aria-label="Suche">&#128269;</button>
+  <input id="sInput" type="text" autocomplete="off" spellcheck="false"
+    placeholder="Gipfel, H&uuml;tte, Pass, Gruppe, Koordinate&hellip;" />
+  <div id="sRes"></div>
+</div>
 
 <div id="about">
   <div class="x" onclick="toggleAbout()">&times;</div>
@@ -360,6 +393,11 @@ Touren ansehen <span id="covCount"></span>
 <div id="ebenen" class="open">
   <div class="eh" onclick="document.getElementById('ebenen').classList.toggle('open')">Ebenen</div>
   <div class="eb"><div class="eb-in">
+    <div class="grp">Karte</div>
+    <div class="seg">
+      <button id="bmSat" class="on" onclick="setBasemap('sat')">Satellit</button>
+      <button id="bmTopo" onclick="setBasemap('topo')">Topo</button>
+    </div>
     <div class="grp">Struktur</div>
     <div id="tglFarbung" class="tgl on" onclick="toggleFarbung()"><span>F&auml;rbung</span><span class="sw"></span></div>
     <div id="tglNamen" class="tgl" onclick="toggleLayers()"><span>Namen</span><span class="sw"></span></div>
@@ -439,24 +477,39 @@ const map = new maplibregl.Map({
     glyphs:'./fonts/{fontstack}/{range}.pbf',
     sources:{
       sat:{type:'raster', tileSize:256,
-        tiles:['https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
-        attribution:'Imagery © Esri, Maxar, Earthstar Geographics'},
+        tiles:['https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}']},
+      topo:{type:'raster', tileSize:256, maxzoom:17,
+        tiles:['https://a.tile.opentopomap.org/{z}/{x}/{y}.png',
+               'https://b.tile.opentopomap.org/{z}/{x}/{y}.png',
+               'https://c.tile.opentopomap.org/{z}/{x}/{y}.png']},
       dem:{type:'raster-dem', tileSize:256, encoding:'terrarium', maxzoom:10,
-        tiles:['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
-        attribution:'Elevation: Mapzen Terrain Tiles / AWS Open Data'}
+        tiles:['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png']}
     },
     layers:[
       {id:'bg',  type:'background', paint:{'background-color':'#0a0e14'}},
       {id:'sat', type:'raster', source:'sat', paint:{'raster-opacity':0.95}},
+      {id:'topo',type:'raster', source:'topo', layout:{visibility:'none'}, paint:{'raster-opacity':1}},
       {id:'hill',type:'hillshade', source:'dem',
         paint:{'hillshade-exaggeration':0.25,'hillshade-shadow-color':'#1a2840'}}
     ]
   },
   center:ALPS.center, zoom:ALPS.zoom, pitch:ALPS.pitch, bearing:ALPS.bearing,
   maxPitch:70, hash:true,
-  attributionControl:{compact:true,
-    customAttribution:'SOIUSA © Arpa Piemonte · Marazzi et al. · Accorsi · Gipfel/Hütten/Pässe © OpenStreetMap (ODbL)'}
+  attributionControl:false   // custom control, rebuilt on basemap switch (setAttrib)
 });
+// ── Attribution (dynamic per basemap) ─────────────────────────────────────────
+const ATTRIB = {
+  sat:'Imagery © Esri, Maxar, Earthstar · Höhen: Mapzen/AWS · SOIUSA © Arpa Piemonte · '+
+      'Gipfel/Hütten/Pässe © OpenStreetMap (ODbL)',
+  topo:'© OpenStreetMap-Mitwirkende, SRTM · Kartendarstellung © OpenTopoMap (CC-BY-SA) · '+
+       'Höhen: Mapzen/AWS · SOIUSA © Arpa Piemonte'
+};
+let _attribCtl=null;
+function setAttrib(topo){
+  if(_attribCtl) map.removeControl(_attribCtl);
+  _attribCtl=new maplibregl.AttributionControl({compact:true, customAttribution:topo?ATTRIB.topo:ATTRIB.sat});
+  map.addControl(_attribCtl,'bottom-right');
+}
 map.addControl(new maplibregl.NavigationControl({visualizePitch:true}), 'bottom-right');
 
 // ── Auto-pitch: tilt up as you zoom in. Only on user zoom (wheel/pinch), never
@@ -776,6 +829,14 @@ map.on('load',()=>{
       stsPopup.remove();
   });
 
+  // ── Basemap init (localStorage) + attribution ─────────────────────────────
+  let _bm='sat';
+  try{ if(localStorage.getItem('alpen_basemap')==='topo') _bm='topo'; }catch(_){}
+  setBasemap(_bm);
+
+  // ── Build the search index (groups now; OSM points fetched async) ──────────
+  buildSearchIndex();
+
   // ── Fix blank canvas — map.resize() is more reliable than triggerRepaint ──
   map.resize();
   setTimeout(()=>map.resize(), 150);
@@ -1024,6 +1085,149 @@ function togglePasses(){
   _passesOn=!_passesOn; const v=_passesOn?'visible':'none';
   ['osm-passes','osm-passes-famous'].forEach(l=>map.setLayoutProperty(l,'visibility',v));
   document.getElementById('tglPasses').classList.toggle('on',_passesOn);
+}
+
+// ── Basemap: Satellit ⇄ OpenTopoMap (Redundanz-Regel + localStorage) ──────────
+let _basemap='sat';
+let _savedPts=null;
+function setBasemap(bm){
+  const topo = bm==='topo';
+  if(topo && _basemap!=='topo'){
+    // OTM bakes in peak/hut/pass labels -> switch our own point layers OFF, remember state.
+    _savedPts={p:_peaksOn,h:_hutsOn,s:_passesOn};
+    if(_peaksOn) togglePeaks();
+    if(_hutsOn) toggleHuts();
+    if(_passesOn) togglePasses();
+  } else if(!topo && _basemap==='topo' && _savedPts){
+    if(_savedPts.p && !_peaksOn) togglePeaks();
+    if(_savedPts.h && !_hutsOn) toggleHuts();
+    if(_savedPts.s && !_passesOn) togglePasses();
+    _savedPts=null;
+  }
+  _basemap=bm;
+  map.setLayoutProperty('sat','visibility',topo?'none':'visible');
+  map.setLayoutProperty('topo','visibility',topo?'visible':'none');
+  // Settori fill a touch softer over the busy topo sheet; hillshade lighter (OTM shades itself).
+  map.setPaintProperty('sts-fill','fill-opacity',
+    topo ? ['interpolate',['linear'],['zoom'], 8,0.22, 11.5,0]
+         : ['interpolate',['linear'],['zoom'], 8,0.34, 11.5,0]);
+  map.setPaintProperty('hill','hillshade-exaggeration', topo?0.08:0.25);
+  setAttrib(topo);
+  const bs=document.getElementById('bmSat'), bt=document.getElementById('bmTopo');
+  if(bs) bs.classList.toggle('on',!topo);
+  if(bt) bt.classList.toggle('on',topo);
+  try{localStorage.setItem('alpen_basemap',bm);}catch(_){}
+}
+
+// ══ Suche: Gipfel/Hütten/Pässe/Gruppen + Koordinaten (keyless, client-seitig) ══
+const SEARCH_IDX=[];
+const SCAT={group:'▦',peak:'▲',hut:'\u{1F3E0}',pass:')(',coord:'\u{1F4CD}'};
+function sNorm(s){ return (s||'').toLowerCase()
+  .replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss')
+  .normalize('NFKD').replace(/[̀-ͯ]/g,''); }
+function buildSearchIndex(){
+  SOIUSA_STS.features.forEach(f=>{
+    const p=f.properties, nm=p.name_de||p.STS;
+    SEARCH_IDX.push({cat:'group', name:nm, sub:p.settore||'Gruppe', sts:p.STS,
+      n:sNorm(nm+' '+(p.STS||'')), w:0, ele:0});
+  });
+  const add=(url,cat,w)=>fetch(url).then(r=>r.json()).then(fc=>{
+    (fc.features||[]).forEach(f=>{
+      const p=f.properties||{}, c=f.geometry&&f.geometry.coordinates;
+      if(!p.name||!c) return;
+      SEARCH_IDX.push({cat, name:p.name, ele:+p.ele||0, lon:c[0], lat:c[1], n:sNorm(p.name), w});
+    });
+  }).catch(()=>{});
+  add('./soiusa_osm_peaks.geojson','peak',1);
+  add('./soiusa_osm_huts.geojson','hut',2);
+  add('./soiusa_osm_passes.geojson','pass',3);
+}
+function parseCoord(q){
+  q=(q||'').trim(); if(!q) return null;
+  const dms=q.match(/(\d{1,3})[°º:\s]+(\d{1,2})['′:\s]*(\d{1,2}(?:\.\d+)?)?["″]?\s*([NSns])[,;\s]+(\d{1,3})[°º:\s]+(\d{1,2})['′:\s]*(\d{1,2}(?:\.\d+)?)?["″]?\s*([EWOewo])/);
+  if(dms){
+    let lat=(+dms[1])+(+dms[2])/60+(+(dms[3]||0))/3600;
+    let lon=(+dms[5])+(+dms[6])/60+(+(dms[7]||0))/3600;
+    if(/[sS]/.test(dms[4])) lat=-lat;
+    if(/[wW]/.test(dms[8])) lon=-lon;
+    return {lat,lon};
+  }
+  const cleaned=q.replace(/;/g,' ').replace(/(\d),(\d)/g,'$1.$2');
+  const nums=cleaned.match(/-?\d+(?:\.\d+)?/g);
+  if(nums&&nums.length>=2){
+    const lat=parseFloat(nums[0]), lon=parseFloat(nums[1]);
+    if(isFinite(lat)&&isFinite(lon)&&Math.abs(lat)<=90&&Math.abs(lon)<=180) return {lat,lon};
+  }
+  return null;
+}
+function searchQuery(q){
+  const res=[], co=parseCoord(q);
+  if(co) res.push({cat:'coord', name:co.lat.toFixed(4)+', '+co.lon.toFixed(4), lat:co.lat, lon:co.lon,
+    sub:(co.lat>=43&&co.lat<=49&&co.lon>=4&&co.lon<=17)?'Koordinate':'außerhalb Alpenraum'});
+  const qn=sNorm(q.trim());
+  if(qn.length>=2){
+    const hits=[];
+    for(const it of SEARCH_IDX){
+      const i=it.n.indexOf(qn); if(i<0) continue;
+      hits.push({it, rank: it.n.startsWith(qn)?0:1});
+    }
+    hits.sort((a,b)=> a.rank-b.rank || a.it.w-b.it.w || (b.it.ele-a.it.ele)
+      || a.it.name.localeCompare(b.it.name));
+    for(const h of hits.slice(0, co?7:8)) res.push(h.it);
+  }
+  return res.slice(0,8);
+}
+// UI
+let sCur=[], sSel=-1, _searchMarker=null, _sDeb=null;
+const sBox=document.getElementById('search'), sInput=document.getElementById('sInput'),
+      sRes=document.getElementById('sRes');
+function toggleSearch(){ sBox.classList.contains('open')?closeSearch():openSearch(); }
+function openSearch(){ sBox.classList.add('open'); sInput.focus(); }
+function closeSearch(){ sBox.classList.remove('open'); sRes.style.display='none'; sRes.innerHTML='';
+  sCur=[]; sSel=-1; }
+function clearSearchMarker(){ if(_searchMarker){ _searchMarker.remove(); _searchMarker=null; } }
+function renderResults(list){
+  sCur=list; sSel=-1;
+  if(!list.length){ sRes.style.display='none'; sRes.innerHTML=''; return; }
+  sRes.innerHTML=list.map((r,i)=>{
+    const sub = r.cat==='peak'||r.cat==='hut' ? (r.ele?r.ele+' m':'')
+      : r.cat==='group' ? (r.sub||'Gruppe') : r.cat==='pass' ? 'Pass' : (r.sub||'');
+    return '<div class="sr" data-i="'+i+'"><span class="ic">'+(SCAT[r.cat]||'')+'</span>'+
+      '<span class="nm">'+String(r.name||'').replace(/</g,'&lt;')+'</span>'+
+      (sub?'<span class="sb">'+sub+'</span>':'')+'</div>';
+  }).join('');
+  sRes.style.display='block';
+  [...sRes.children].forEach(el=>el.addEventListener('click',()=>pickResult(+el.dataset.i)));
+}
+function pickResult(i){
+  const r=sCur[i]; if(!r) return;
+  clearSearchMarker();
+  if(r.cat==='group'){
+    const f=SOIUSA_STS.features.find(x=>x.properties.STS===r.sts); if(f) openSts(f);
+  } else if(r.cat==='coord'){
+    _searchMarker=new maplibregl.Marker({color:'#5fd0c5'}).setLngLat([r.lon,r.lat]).addTo(map);
+    map.flyTo({center:[r.lon,r.lat], zoom:13, duration:1200, essential:true});
+  } else {
+    map.flyTo({center:[r.lon,r.lat], zoom:12.5, duration:1200, essential:true});
+    new maplibregl.Popup({offset:12, closeButton:true})
+      .setLngLat([r.lon,r.lat])
+      .setHTML('<div class="hp-n">'+String(r.name||'').replace(/</g,'&lt;')+'</div>'+
+        (r.ele?'<div class="hp-s">'+r.ele+' m</div>':''))
+      .addTo(map);
+  }
+  closeSearch();
+}
+function sHi(){ [...sRes.children].forEach((el,i)=>el.classList.toggle('sel',i===sSel));
+  if(sRes.children[sSel]) sRes.children[sSel].scrollIntoView({block:'nearest'}); }
+if(sInput){
+  sInput.addEventListener('input',()=>{ clearTimeout(_sDeb);
+    _sDeb=setTimeout(()=>renderResults(searchQuery(sInput.value)),150); });
+  sInput.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){ closeSearch(); sInput.blur(); clearSearchMarker(); }
+    else if(e.key==='ArrowDown'){ e.preventDefault(); sSel=Math.min(sSel+1,sCur.length-1); sHi(); }
+    else if(e.key==='ArrowUp'){ e.preventDefault(); sSel=Math.max(sSel-1,0); sHi(); }
+    else if(e.key==='Enter'){ e.preventDefault(); if(sCur.length) pickResult(sSel<0?0:sSel); }
+  });
 }
 
 function closePanel(){
