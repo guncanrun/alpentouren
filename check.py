@@ -23,7 +23,8 @@ checks = [
     ("sts-selected layer",            "id:'sts-selected'"),
     # Layer semantics
     ("fill_color coalesce",           "'fill-color': ['coalesce',['get','fill_color']"),
-    ("visited opacity expression",    "'fill-opacity': ['case'"),
+    ("fill fog-fade to z12",          "10.5,0.35, 12,0"),
+    ("auto-pitch fn",                 "function pitchForZoom"),
     ("sts-line non-visited filter",   "filter:['==',['get','visited'],0]"),
     ("hl-line orange color",          "'line-color':'#ffb24d'"),
     ("hl-line always (no toggle)",    "id:'hl-line', type:'line'"),

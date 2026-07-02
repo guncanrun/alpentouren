@@ -320,6 +320,17 @@ const map = new maplibregl.Map({
 });
 map.addControl(new maplibregl.NavigationControl({visualizePitch:true}), 'bottom-right');
 
+// ── Auto-pitch: tilt up as you zoom in. Only on user zoom (wheel/pinch), never
+// on flyTo/fitBounds (no originalEvent); manual pitch disables it until Alpenüberblick.
+let _autoPitch=true;
+function pitchForZoom(z){ return Math.max(0, Math.min(45, (z-8)*10)); }  // z8:0 z11:30 z12.5:45
+map.on('pitchstart', e=>{ if(e && e.originalEvent) _autoPitch=false; });
+map.on('zoom', e=>{
+  if(!_autoPitch || !e.originalEvent) return;
+  const t=pitchForZoom(map.getZoom());
+  if(Math.abs(map.getPitch()-t)>2) map.setPitch(t);
+});
+
 // ── Group name popup — shown on every STS click ───────────────────────────────
 // closeOnClick:false — sonst schließt MapLibre den im selben Klick geöffneten Popup
 // wieder (Name erst beim 2. Klick). Schließen via X / closePanel / Leer-Klick unten.
@@ -360,7 +371,11 @@ map.on('load',()=>{
   map.addLayer({id:'sts-fill', type:'fill', source:'sts',
     paint:{
       'fill-color': ['coalesce',['get','fill_color'],'#888888'],
-      'fill-opacity': ['case',['==',['get','visited'],1],0.55,0.34]
+      // Settore-Fill als "Nebel": voll in der Übersicht, blendet zum Detail aus (z12=0).
+      // Outlines (sts-line/hl-line) + besucht-Orange bleiben zur Orientierung.
+      'fill-opacity': ['*',
+        ['case',['==',['get','visited'],1],0.55,0.34],
+        ['interpolate',['linear'],['zoom'], 8,1, 10.5,0.35, 12,0]]
     }});
 
   // ── STS borders — toggle-controlled, only for non-visited (visited use hl-line) ──
@@ -716,6 +731,7 @@ function closePanel(){
 }
 function overview(){
   closePanel();
+  _autoPitch=true;
   map.flyTo({...ALPS,duration:1200,essential:true});
 }
 
