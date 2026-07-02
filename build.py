@@ -17,10 +17,10 @@ PUBLIC = "--private" not in sys.argv
 SRC   = "touren.json"   # only the private build reads tour data (E8)
 OUT   = "index.html" if PUBLIC else "index_privat.html"
 TITEL = "Alpen-Atlas" if PUBLIC else "Alpentouren mit Papa"
-UNTER = ("Die Alpen nach SOIUSA — Settori, Gruppen, Gipfel, Hütten & Pässe interaktiv. "
-         "Fläche anklicken für Steckbrief."
+UNTER = ("Die Alpen nach SOIUSA, der internationalen Alpen-Gliederung — Gruppen, Gipfel, "
+         "Hütten & Pässe interaktiv. Fläche anklicken für Steckbrief."
          if PUBLIC else
-         "SOIUSA-Untergruppen nach Alpen-Struktur — Orange = besucht. Fläche anklicken.")
+         "Alpen-Gebirgsgruppen (SOIUSA) — Orange = besucht. Fläche anklicken.")
 
 
 def load_compact(name):
@@ -374,6 +374,21 @@ TEMPLATE = r"""<!DOCTYPE html>
     touch-action:manipulation;display:flex;align-items:center}
   #chronoChips .chip.on{background:rgba(255,178,77,.18);border-color:var(--accent);
     color:var(--txt);font-weight:600}
+  #chronoPlay{flex:0 0 auto;min-height:var(--row-h);min-width:var(--row-h);padding:0 10px;
+    border-radius:20px;border:1px solid var(--line);background:rgba(95,208,197,.14);
+    color:var(--accent2);font-size:15px;cursor:pointer;font-family:inherit;touch-action:manipulation}
+  #chronoPlay.on{background:rgba(255,178,77,.16);border-color:var(--accent);color:var(--accent)}
+  /* Caption-Karte ueber der Leiste */
+  #chronoCap{position:absolute;left:74px;bottom:76px;z-index:7;display:none;
+    max-width:min(52vw,420px);background:var(--panel);backdrop-filter:blur(8px);
+    border:1px solid var(--line);border-radius:14px;padding:9px 13px;
+    box-shadow:0 8px 30px rgba(0,0,0,.45)}
+  #chronoCap.open{display:block}
+  .cc-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .cc-y{font-size:22px;font-weight:700;color:var(--accent);line-height:1.1}
+  .cc-d{font-size:12px;color:var(--muted)}
+  .cc-t{font-size:13px;color:var(--txt);line-height:1.45;margin-top:3px}
+  .cc-who{font-style:italic;color:var(--muted)}
   /* PRIV:END */
 
   @media(max-width:640px){
@@ -418,9 +433,11 @@ TEMPLATE = r"""<!DOCTYPE html>
      Unten links <b>„Touren ansehen"</b> f&uuml;hrt zu den besuchten Gebieten; das Haus-Icon
      setzt die <b>Standardansicht</b> zur&uuml;ck.</p><!-- PRIV:END -->
   <h3>&Uuml;ber diese Karte</h3>
-  <!-- PUB:START --><p>Ein interaktiver <b>Alpen-Atlas</b> nach der <b>SOIUSA</b>-Klassifikation:
-     alle 131 Untergruppen, ihre f&uuml;nf <b>Grandi Settori</b>, dazu Gipfel, H&uuml;tten und
-     P&auml;sse aus OpenStreetMap.</p><!-- PUB:END -->
+  <!-- PUB:START --><p>Ein interaktiver <b>Alpen-Atlas</b> nach <b>SOIUSA</b>, der internationalen
+     Gliederung der Alpen (italienischer Standard von 2005): alle 131 Gebirgsgruppen, geb&uuml;ndelt
+     in f&uuml;nf Gro&szlig;sektoren (<b>Grandi Settori</b>), dazu Gipfel, H&uuml;tten und P&auml;sse
+     aus OpenStreetMap.</p>
+  <p><a href="https://de.wikipedia.org/wiki/SOIUSA" target="_blank" rel="noopener">SOIUSA auf Wikipedia &rarr;</a></p><!-- PUB:END -->
   <!-- PRIV:START --><p>Interaktive 3D-Karte der Alpen: welche <b>SOIUSA-Untergruppen</b> ich besucht habe,
      eingebettet in die Gesamtstruktur des Gebirges.</p><!-- PRIV:END -->
   <p><b>Tech:</b> Datenaufbereitung in <b>Python</b>, Rendering mit <b>MapLibre GL JS</b>,
@@ -452,9 +469,11 @@ Touren ansehen <span id="covCount"></span>
   </div>
   <div class="cl" id="covList"></div>
 </div>
-<!-- Chronologie-Modus: runder Toggle unten links + Jahresleiste (Stufe 1) -->
+<!-- Chronologie-Modus: runder Toggle unten links + Caption + Jahresleiste (Play) -->
 <button id="chronoBtn" onclick="chronoToggle()" title="Chronologie &ndash; Jahre durchgehen">&#128344;</button>
+<div id="chronoCap"></div>
 <div id="chronoBar">
+  <button id="chronoPlay" onclick="chronoPlayToggle()" title="Abspielen" aria-label="Abspielen">&#9654;</button>
   <div id="chronoChips"></div>
 </div>
 <!-- PRIV:END -->
@@ -475,7 +494,7 @@ Touren ansehen <span id="covCount"></span>
     <div id="tglPeaks" class="tgl" onclick="togglePeaks()"><span>Gipfel</span><span class="sw"></span></div>
     <div id="tglHuts" class="tgl" onclick="toggleHuts()"><span>H&uuml;tten</span><span class="sw"></span></div>
     <div id="tglPasses" class="tgl" onclick="togglePasses()"><span>P&auml;sse</span><span class="sw"></span></div>
-    <div class="grp">Farben (Settori)</div>
+    <div class="grp" title="Settori = die f&uuml;nf Gro&szlig;sektoren der Alpen (SOIUSA)">Farben (Settori)</div>
     <div class="lrow"><span class="sw-nw"></span>Nordwestalpen</div>
     <div class="lrow"><span class="sw-sw"></span>S&uuml;dwestalpen</div>
     <div class="lrow"><span class="sw-zo"></span>Zentralostalpen</div>
@@ -1408,18 +1427,69 @@ const CHRONO = (function(){
   });
   // Jahresleiste = ALLE Touren-Jahre (Spec: „nur Jahre mit Touren"), auch wenn eine
   // Tour (noch) keiner STS-Gruppe zugeordnet ist -> Chip erscheint, Färbung ggf. leer.
-  const yearMeta={};
+  const yearMeta={}, yearTours={};
   TOUREN.forEach(t=>{ const y=jahrSort(t.jahr); if(!y) return;
     if(!yearMeta[y]) yearMeta[y]={label:String(t.jahr), unsure:!!t.jahr_unsicher};
-    if(t.jahr_unsicher) yearMeta[y].unsure=true; });
+    if(t.jahr_unsicher) yearMeta[y].unsure=true;
+    (yearTours[y]=yearTours[y]||[]).push(t); });
   const years=Object.keys(yearMeta).map(Number).sort((a,b)=>a-b);
-  return {stsYears, years, yearMeta};
+  return {stsYears, years, yearMeta, yearTours};
 })();
 
 let _chronoOn=false, _chronoIdx=-1, _chronoSaved=null;
+let _chronoPlaying=false, _chronoTimer=null, _pulseRAF=null;
+const CHRONO_STEP=2500;        // ms pro Jahr (Play)
+const CHRONO_CUR_OP=0.62;      // Basis-Deckkraft aktuelles Jahr (= chrono-cur Layer-Paint)
+function _esc(s){ return String(s==null?'':s).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
+
+// Caption: Jahr groß (Original-String) + datum · je Tour ort/gegend — Gipfel · Teilnehmer (kursiv).
+function chronoCaption(Y){
+  const cap=document.getElementById('chronoCap'); if(!cap) return;
+  const meta=CHRONO.yearMeta[Y]||{}, ts=CHRONO.yearTours[Y]||[];
+  const datums=[...new Set(ts.map(t=>t.datum).filter(Boolean))];
+  let h='<div class="cc-h"><span class="cc-y">'+_esc(meta.label||Y)+'</span>'+
+        (datums.length?'<span class="cc-d">'+_esc(datums.join(' · '))+'</span>':'')+'</div>';
+  h+=ts.map(t=>{
+    const loc=_esc(t.ort||t.gegend||'');
+    const gip=(Array.isArray(t.gipfel)?t.gipfel:[]).map(g=>_esc(g&&g.name)).filter(Boolean).join(', ');
+    const parts=[]; if(loc) parts.push(loc); if(gip) parts.push(gip);
+    const who=t.teilnehmer?' · <span class="cc-who">'+_esc(t.teilnehmer)+'</span>':'';
+    return '<div class="cc-t">'+(parts.join(' &mdash; ')||'&nbsp;')+who+'</div>';
+  }).join('');
+  cap.innerHTML=h;
+}
+
+// FlyTo je Jahr: eine Tour zentriert, mehrere gemeinsame BBox. Padding unten groß (Leiste/Caption).
+function chronoFlyToYear(Y){
+  const ts=(CHRONO.yearTours[Y]||[]).filter(t=>t.lon!=null&&t.lat!=null);
+  if(!ts.length) return;
+  const pad={top:80,bottom:190,left:80,right:80};
+  if(ts.length===1){
+    map.flyTo({center:[ts[0].lon,ts[0].lat], zoom:8.6, padding:pad, duration:1600, essential:true});
+  } else {
+    let x0=180,y0=90,x1=-180,y1=-90;
+    ts.forEach(t=>{x0=Math.min(x0,t.lon);x1=Math.max(x1,t.lon);y0=Math.min(y0,t.lat);y1=Math.max(y1,t.lat);});
+    map.fitBounds([[x0,y0],[x1,y1]],{padding:pad, maxZoom:9, duration:1600, essential:true});
+  }
+}
+
+// Einmalige Puls-Animation auf chrono-cur (auch bei Wiederbesuch).
+function chronoPulse(){
+  if(_pulseRAF) cancelAnimationFrame(_pulseRAF);
+  const t0=performance.now(), peak=0.95, dur=680;
+  (function step(now){
+    const k=Math.min(1,(now-t0)/dur);
+    map.setPaintProperty('chrono-cur','fill-opacity', CHRONO_CUR_OP+(peak-CHRONO_CUR_OP)*Math.sin(k*Math.PI));
+    if(k<1) _pulseRAF=requestAnimationFrame(step);
+    else { map.setPaintProperty('chrono-cur','fill-opacity',CHRONO_CUR_OP); _pulseRAF=null; }
+  })(performance.now());
+}
+
 // Stand Jahr X: Gruppen mit Tour == X kräftig (chrono-cur), nur früher besuchte gedimmt (chrono-past).
-function chronoSetYear(idx){
+function chronoSetYear(idx, opts){
+  opts=opts||{};
   if(idx<0 || idx>=CHRONO.years.length) return;
+  if(opts.manual && _chronoPlaying) chronoPause();      // manueller Chip-Tipp pausiert Play
   _chronoIdx=idx; const Y=CHRONO.years[idx];
   const past=[], cur=[];
   Object.keys(CHRONO.stsYears).forEach(sts=>{
@@ -1432,7 +1502,31 @@ function chronoSetYear(idx){
   const chips=document.querySelectorAll('#chronoChips .chip');
   chips.forEach((c,i)=>c.classList.toggle('on',i===idx));
   if(chips[idx]) chips[idx].scrollIntoView({inline:'center',block:'nearest'});
+  chronoCaption(Y);
+  chronoPulse();
+  if(opts.fly!==false) chronoFlyToYear(Y);
 }
+
+// ── Play/Pause (~2,5 s/Jahr, kein Loop, stoppt am letzten Jahr) ──
+function chronoPlayStep(){
+  if(_chronoIdx>=CHRONO.years.length-1){ chronoPause(); return; }   // kein Loop
+  chronoSetYear(_chronoIdx+1);
+  _chronoTimer=setTimeout(chronoPlayStep, CHRONO_STEP);
+}
+function chronoPlay(){
+  if(!_chronoOn || _chronoPlaying) return;
+  if(_chronoIdx>=CHRONO.years.length-1) chronoSetYear(0,{fly:false});  // am Ende: von vorn
+  _chronoPlaying=true;
+  const b=document.getElementById('chronoPlay'); if(b){ b.textContent='⏸'; b.classList.add('on'); }
+  _chronoTimer=setTimeout(chronoPlayStep, CHRONO_STEP);
+}
+function chronoPause(){
+  _chronoPlaying=false;
+  if(_chronoTimer){ clearTimeout(_chronoTimer); _chronoTimer=null; }
+  const b=document.getElementById('chronoPlay'); if(b){ b.textContent='▶'; b.classList.remove('on'); }
+}
+function chronoPlayToggle(){ _chronoPlaying?chronoPause():chronoPlay(); }
+
 function chronoEnter(){
   if(_chronoOn || !CHRONO.years.length) return;
   _chronoOn=true;
@@ -1440,14 +1534,19 @@ function chronoEnter(){
   if(_peaksOn) togglePeaks(); if(_hutsOn) toggleHuts(); if(_passesOn) togglePasses();
   ['hl-line','sts-label-hl'].forEach(l=>map.setLayoutProperty(l,'visibility','none'));  // „alle besucht" aus
   ['chrono-past','chrono-cur'].forEach(l=>map.setLayoutProperty(l,'visibility','visible'));
+  map.setPaintProperty('chrono-cur','fill-opacity',CHRONO_CUR_OP);
   document.getElementById('cov').style.display='none';
   document.getElementById('chronoBar').classList.add('open');
+  document.getElementById('chronoCap').classList.add('open');
   document.getElementById('chronoBtn').classList.add('active');
   overview();
-  chronoSetYear(0);                                       // Beginn beim frühesten Jahr
+  chronoSetYear(0,{fly:false});                          // Beginn: frühestes Jahr, Übersicht halten
 }
 function chronoExit(){
   if(!_chronoOn) return; _chronoOn=false;
+  chronoPause();
+  if(_pulseRAF){ cancelAnimationFrame(_pulseRAF); _pulseRAF=null; }
+  map.setPaintProperty('chrono-cur','fill-opacity',CHRONO_CUR_OP);
   ['chrono-past','chrono-cur'].forEach(l=>map.setLayoutProperty(l,'visibility','none'));
   map.setLayoutProperty('hl-line','visibility','visible');
   map.setLayoutProperty('sts-label-hl','visibility', _layersOn?'visible':'none');   // Zustand restaurieren
@@ -1459,6 +1558,7 @@ function chronoExit(){
   }
   document.getElementById('cov').style.display='';
   document.getElementById('chronoBar').classList.remove('open');
+  document.getElementById('chronoCap').classList.remove('open');
   document.getElementById('chronoBtn').classList.remove('active');
 }
 function chronoToggle(){ _chronoOn?chronoExit():chronoEnter(); }
@@ -1471,7 +1571,7 @@ function chronoToggle(){ _chronoOn?chronoExit():chronoEnter(); }
   wrap.innerHTML=CHRONO.years.map((y,i)=>{
     const m=CHRONO.yearMeta[y]||{}; return '<button class="chip" data-i="'+i+'">'+(m.unsure?'~':'')+y+'</button>';
   }).join('');
-  [...wrap.children].forEach(b=>b.addEventListener('click',()=>chronoSetYear(+b.dataset.i)));
+  [...wrap.children].forEach(b=>b.addEventListener('click',()=>chronoSetYear(+b.dataset.i,{manual:true})));
 })();
 /* PRIV:END */
 </script>
