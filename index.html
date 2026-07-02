@@ -361,10 +361,14 @@ map.on('load',()=>{
   map.addLayer({id:'osm-peaks', type:'symbol', source:'osm-peaks', minzoom:8,
     layout:{'visibility':'none','icon-image':'peak','icon-anchor':'bottom','icon-allow-overlap':false,
       'icon-size':['interpolate',['linear'],['zoom'], 8,0.55, 12,1.0],
-      'text-field':['step',['zoom'], '', 10.5, ['concat',['get','name'],'\n',['to-string',['get','ele']],' m']],
+      // Rang≈Höhe: Labels nur für hohe Gipfel bei niedrigem Zoom, alle beim Reinzoomen (gegen Label-Brei).
+      'text-field':['case',['>=',['get','ele'],['step',['zoom'], 99999, 10,3000, 11,2600, 12,2200, 13,0]],
+        ['concat',['get','name'],'\n',['to-string',['get','ele']],' m'], ''],
       'text-font':['Noto Sans Bold'],'text-size':9.5,'text-offset':[0,0.4],
       'text-anchor':'top','text-optional':true,'text-allow-overlap':false},
-    paint:{'text-color':'#dbe7ff','text-halo-color':'#06101a','text-halo-width':1.4}});
+    paint:{'text-color':'#dbe7ff','text-halo-color':'#06101a','text-halo-width':1.4,
+      // Icons ebenfalls nach Höhe stufen: niedrige Gipfel erst bei hohem Zoom.
+      'icon-opacity':['case',['>=',['get','ele'],['step',['zoom'], 3200, 9,2900, 10,2500, 11,2200, 12,0]],1,0]}});
 
   // Huts — sonstige (grau, ab höherem Zoom)
   map.addLayer({id:'osm-huts-other', type:'symbol', source:'osm-huts', minzoom:9,
