@@ -210,6 +210,7 @@ TEMPLATE = r"""<!DOCTYPE html>
 </div>
 
 <div id="controls">
+  <button id="btnFarbung" class="btn active" onclick="toggleFarbung()">F&auml;rbung</button>
   <button id="toggleLayers" class="btn" onclick="toggleLayers()">Namen</button>
   <button id="btnPeaks" class="btn" onclick="togglePeaks()">Gipfel</button>
   <button id="btnHuts" class="btn" onclick="toggleHuts()">H&uuml;tten</button>
@@ -325,10 +326,12 @@ map.addControl(new maplibregl.NavigationControl({visualizePitch:true}), 'bottom-
 let _autoPitch=true;
 function pitchForZoom(z){ return Math.max(0, Math.min(45, (z-8)*10)); }  // z8:0 z11:30 z12.5:45
 map.on('pitchstart', e=>{ if(e && e.originalEvent) _autoPitch=false; });
-map.on('zoom', e=>{
-  if(!_autoPitch || !e.originalEvent) return;
+// Only ease pitch AFTER the zoom gesture ends (no per-frame setPitch -> no jitter),
+// and only for user zoom (originalEvent), never for flyTo/fitBounds.
+map.on('zoomend', e=>{
+  if(!_autoPitch || !(e && e.originalEvent)) return;
   const t=pitchForZoom(map.getZoom());
-  if(Math.abs(map.getPitch()-t)>2) map.setPitch(t);
+  if(Math.abs(map.getPitch()-t)>3) map.easeTo({pitch:t, duration:500});
 });
 
 // ── Group name popup — shown on every STS click ───────────────────────────────
@@ -371,11 +374,9 @@ map.on('load',()=>{
   map.addLayer({id:'sts-fill', type:'fill', source:'sts',
     paint:{
       'fill-color': ['coalesce',['get','fill_color'],'#888888'],
-      // Settore-Fill als "Nebel": voll in der Übersicht, blendet zum Detail aus (z12=0).
-      // Outlines (sts-line/hl-line) + besucht-Orange bleiben zur Orientierung.
-      'fill-opacity': ['*',
-        ['case',['==',['get','visited'],1],0.55,0.34],
-        ['interpolate',['linear'],['zoom'], 8,1, 10.5,0.35, 12,0]]
+      // Settore-Fill als "Nebel": voll bis z8, linear auf 0 bis z11.5 (freie Sicht beim
+      // Reinzoomen). Zoom MUSS top-level stehen (nicht in * / case verschachteln).
+      'fill-opacity': ['interpolate',['linear'],['zoom'], 8,0.34, 11.5,0]
     }});
 
   // ── STS borders — toggle-controlled, only for non-visited (visited use hl-line) ──
@@ -427,14 +428,20 @@ map.on('load',()=>{
   map.addLayer({id:'osm-peaks', type:'symbol', source:'osm-peaks', minzoom:8,
     layout:{'visibility':'none','icon-image':'peak','icon-anchor':'bottom','icon-allow-overlap':false,
       'icon-size':['interpolate',['linear'],['zoom'], 8,0.55, 12,1.0],
-      // Rang≈Höhe: Labels nur für hohe Gipfel bei niedrigem Zoom, alle beim Reinzoomen (gegen Label-Brei).
-      'text-field':['case',['>=',['get','ele'],['step',['zoom'], 99999, 10,3000, 11,2600, 12,2200, 13,0]],
-        ['concat',['get','name'],'\n',['to-string',['get','ele']],' m'], ''],
+      // Rang≈Höhe: step(zoom) TOP-LEVEL, Ausgaben = konstante Höhenschwellen (Zoom nie verschachteln).
+      'text-field':['step',['zoom'],
+        '',
+        10,['case',['>=',['get','ele'],2800],['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],''],
+        11,['case',['>=',['get','ele'],2400],['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],''],
+        12,['concat',['get','name'],'\n',['to-string',['get','ele']],' m']],
       'text-font':['Noto Sans Bold'],'text-size':9.5,'text-offset':[0,0.4],
       'text-anchor':'top','text-optional':true,'text-allow-overlap':false},
     paint:{'text-color':'#dbe7ff','text-halo-color':'#06101a','text-halo-width':1.4,
-      // Icons ebenfalls nach Höhe stufen: niedrige Gipfel erst bei hohem Zoom.
-      'icon-opacity':['case',['>=',['get','ele'],['step',['zoom'], 3200, 9,2900, 10,2500, 11,2200, 12,0]],1,0]}});
+      'icon-opacity':['step',['zoom'],
+        ['case',['>=',['get','ele'],3000],1,0],
+        9, ['case',['>=',['get','ele'],2600],1,0],
+        10,['case',['>=',['get','ele'],2200],1,0],
+        11, 1]}});
 
   // Huts — sonstige (grau, ab höherem Zoom)
   map.addLayer({id:'osm-huts-other', type:'symbol', source:'osm-huts', minzoom:9,
@@ -729,6 +736,14 @@ function toggleLayers(){
   map.setLayoutProperty('sts-label',   'visibility',v);
   map.setLayoutProperty('sts-label-hl','visibility',v);
   document.getElementById('toggleLayers').classList.toggle('active',_layersOn);
+}
+
+// ── Settore-Färbung an/aus (Fill; Fade bleibt beim Reinzoomen) ────────────────
+let _farbungOn=true;
+function toggleFarbung(){
+  _farbungOn=!_farbungOn;
+  map.setLayoutProperty('sts-fill','visibility',_farbungOn?'visible':'none');
+  document.getElementById('btnFarbung').classList.toggle('active',_farbungOn);
 }
 
 // ── OSM overlays (zuschaltbar, zoom-gated) ────────────────────────────────────

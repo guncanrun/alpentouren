@@ -23,8 +23,11 @@ checks = [
     ("sts-selected layer",            "id:'sts-selected'"),
     # Layer semantics
     ("fill_color coalesce",           "'fill-color': ['coalesce',['get','fill_color']"),
-    ("fill fog-fade to z12",          "10.5,0.35, 12,0"),
+    ("fill fog-fade (top-level)",     "'fill-opacity': ['interpolate',['linear'],['zoom'], 8,0.34, 11.5,0]"),
+    ("Färbung toggle fn",             "function toggleFarbung"),
+    ("Färbung button",                'id="btnFarbung"'),
     ("auto-pitch fn",                 "function pitchForZoom"),
+    ("auto-pitch on zoomend",         "map.on('zoomend'"),
     ("sts-line non-visited filter",   "filter:['==',['get','visited'],0]"),
     ("hl-line orange color",          "'line-color':'#ffb24d'"),
     ("hl-line always (no toggle)",    "id:'hl-line', type:'line'"),
@@ -62,7 +65,7 @@ checks = [
     ("osm huts other layer",          "id:'osm-huts-other'"),
     ("osm huts wild layer",           "id:'osm-huts-wild'"),
     ("peak triangle icon",            "map.addImage('peak'"),
-    ("peak rank tiering by ele",      "'icon-opacity':['case',['>=',['get','ele']"),
+    ("peak rank tiering by ele",      "'icon-opacity':['step',['zoom']"),
     ("hut club icon",                 "'hut-club'"),
     # Phase 2c — Berge nach Klick
     ("peaks-in-group layer",          "id:'peaks-in-group'"),
