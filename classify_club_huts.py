@@ -80,6 +80,34 @@ for f in fc["features"]:
         f["properties"]["club"] = v
         counts[v] = counts.get(v, 0) + 1
 
+# AVS (Südtirol) via coordinates — these run in OSM under CAI/Italian names, so
+# name-matching misses them. Nearest OSM hut within ~250 m gets kat=club, club=AVS.
+AVS_COORDS = [
+    ("Brixner Hütte", 46.9128, 11.6206), ("Dreischusterhütte", 46.6745, 12.2973),
+    ("Friedensbiwak", 46.5683, 12.0288), ("Friedl-Mutschlechner-Haus", 46.8042, 12.3787),
+    ("Guido-Lammer-Biwak", 46.7262, 11.0684), ("Günther-Messner-Hochferner-Biwak", 46.9862, 11.7054),
+    ("Hochfeilerhütte", 46.9639, 11.7003), ("Josef-Pixner-Biwak", 46.8207, 11.1000),
+    ("Marteller Hütte", 46.4696, 10.6732), ("Meraner Hütte", 46.6834, 11.2818),
+    ("Obere Laaser Alm", 46.5708, 10.6800), ("Oberetteshütte", 46.7648, 10.7111),
+    ("Radlseehütte", 46.7078, 11.5803), ("Rieserfernerhütte", 46.8900, 12.0794),
+    ("Schlernbödelehütte", 46.5221, 11.5837), ("Sesvennahütte", 46.7346, 10.4354),
+    ("Sterzinger Hütte", 46.9198, 11.5717), ("Tablander Warter", 46.5859, 10.9881),
+    ("Tiefrastenhütte", 46.8763, 11.7817), ("Walter-Brenninger-Biwak", 46.9387, 11.6955),
+]
+avs_hits = 0
+for _name, clat, clon in AVS_COORDS:
+    best, bd = None, 9e9
+    for f in fc["features"]:
+        lo, la = f["geometry"]["coordinates"]
+        d = (la - clat) ** 2 + (lo - clon) ** 2
+        if d < bd:
+            bd, best = d, f
+    if best and bd <= 0.003 ** 2:      # ~250-330 m
+        best["properties"]["kat"] = "club"
+        best["properties"]["club"] = "AVS"
+        avs_hits += 1
+print(f"AVS Koordinaten-Match: {avs_hits}/{len(AVS_COORDS)}")
+
 total_club = sum(1 for f in fc["features"] if f["properties"].get("kat") == "club")
 p.write_text(json.dumps(fc, ensure_ascii=False), encoding="utf-8")
 print(f"\nNamens-Match je Verband: {dict(sorted(counts.items()))}")
