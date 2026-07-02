@@ -23,7 +23,7 @@ checks = [
     ("sts-selected layer",            "id:'sts-selected'"),
     # Layer semantics
     ("fill_color coalesce",           "'fill-color': ['coalesce',['get','fill_color']"),
-    ("fill fog-fade (top-level)",     "'fill-opacity': ['interpolate',['linear'],['zoom'], 8,0.34, 11.5,0]"),
+    ("fill fog-fade (top-level)",     "'fill-opacity': ['interpolate',['linear'],['zoom'], 8,0.34, 10.5,0.12, 12,0]"),
     ("Färbung toggle fn",             "function toggleFarbung"),
     ("Färbung toggle switch",         'id="tglFarbung"'),
     ("Ebenen panel",                  'id="ebenen"'),

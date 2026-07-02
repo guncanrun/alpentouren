@@ -503,9 +503,9 @@ map.on('load',()=>{
   map.addLayer({id:'sts-fill', type:'fill', source:'sts',
     paint:{
       'fill-color': ['coalesce',['get','fill_color'],'#888888'],
-      // Settore-Fill als "Nebel": voll bis z8, linear auf 0 bis z11.5 (freie Sicht beim
-      // Reinzoomen). Zoom MUSS top-level stehen (nicht in * / case verschachteln).
-      'fill-opacity': ['interpolate',['linear'],['zoom'], 8,0.34, 11.5,0]
+      // Settore-Fill als "Nebel": voll in der Übersicht, ab z10.5 stark ausdünnend,
+      // ab z12 frei (freie Sicht aufs Gelände). Zoom MUSS top-level stehen.
+      'fill-opacity': ['interpolate',['linear'],['zoom'], 8,0.34, 10.5,0.12, 12,0]
     }});
 
   
@@ -1041,8 +1041,8 @@ function setBasemap(bm){
   map.setLayoutProperty('sat','visibility',topo?'none':'visible');
   map.setLayoutProperty('topo','visibility',topo?'visible':'none');
   map.setPaintProperty('sts-fill','fill-opacity',
-    topo ? ['interpolate',['linear'],['zoom'], 8,0.22, 11.5,0]
-         : ['interpolate',['linear'],['zoom'], 8,0.34, 11.5,0]);
+    topo ? ['interpolate',['linear'],['zoom'], 8,0.22, 10.5,0.08, 12,0]
+         : ['interpolate',['linear'],['zoom'], 8,0.34, 10.5,0.12, 12,0]);
   map.setPaintProperty('hill','hillshade-exaggeration', topo?0.08:0.25);
   setAttrib(topo);
   const bs=document.getElementById('bmSat'), bt=document.getElementById('bmTopo');
