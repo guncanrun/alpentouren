@@ -117,7 +117,7 @@ SETTORE = {
     "I/A":  ("Südwestalpen",    "#CC79A7"),  # Rot-Violett
     "I/B":  ("Nordwestalpen",   "#0072B2"),  # Blau
     "II/B": ("Nordostalpen",    "#009E73"),  # Blaugrün
-    "II/A": ("Zentralostalpen", "#56B4E9"),  # Hellblau
+    "II/A": ("Zentralostalpen", "#3FC5DE"),  # Cyan (von #56B4E9 Richtung Cyan, Kontrast zu NW-Blau)
     "II/C": ("Südostalpen",     "#E6C229"),  # Gelb (gedämpft)
 }
 

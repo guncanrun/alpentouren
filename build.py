@@ -109,7 +109,7 @@ TEMPLATE = r"""<!DOCTYPE html>
   .sw-hl{display:inline-block;width:13px;height:13px;border:2px solid #ffb24d;border-radius:3px;flex-shrink:0}
   .sw-nw{display:inline-block;width:13px;height:13px;background:#0072B2;border-radius:3px;flex-shrink:0}
   .sw-sw{display:inline-block;width:13px;height:13px;background:#CC79A7;border-radius:3px;flex-shrink:0}
-  .sw-zo{display:inline-block;width:13px;height:13px;background:#56B4E9;border-radius:3px;flex-shrink:0}
+  .sw-zo{display:inline-block;width:13px;height:13px;background:#3FC5DE;border-radius:3px;flex-shrink:0}
   .sw-no{display:inline-block;width:13px;height:13px;background:#009E73;border-radius:3px;flex-shrink:0}
   .sw-so{display:inline-block;width:13px;height:13px;background:#E6C229;border-radius:3px;flex-shrink:0}
 
