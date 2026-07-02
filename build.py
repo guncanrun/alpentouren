@@ -93,6 +93,13 @@ if PUBLIC:
                      "lizenz": "Text CC BY-SA; Bilder Wikimedia CC BY-SA"}
     wiki_json = json.dumps(_wiki, ensure_ascii=False, separators=(",", ":"))
 
+# Hütten-Enrichment (Wikipedia/Wikidata/Commons) — rein enzyklopädisch, beide Builds.
+# Key = OSM properties.name exakt; Lookup HUTS_WIKI.huetten[name].
+try:
+    huts_wiki_json = load_compact("soiusa_huts_wiki.json")
+except FileNotFoundError:
+    huts_wiki_json = '{"huetten":{}}'
+
 sts_count = len(json.loads(sts_json)["features"])
 hl_count  = len(json.loads(highlights_json)["features"])
 
@@ -245,6 +252,17 @@ TEMPLATE = r"""<!DOCTYPE html>
   .sp-sub{font-size:12px;color:#aebccb;margin-top:2px}
   .hp-n{font:600 var(--fs-popup)/1.2 Inter,system-ui,sans-serif;color:#e8edf2}
   .hp-s{font-size:11.5px;color:#aebccb;margin-top:1px}
+  /* ── Hütten-Popup (Enrichment aus soiusa_huts_wiki.json) ── */
+  .hut-pop{max-width:230px}
+  .hut-badge{display:inline-block;margin:3px 0 5px;padding:1px 8px;border-radius:10px;
+    background:rgba(226,87,76,.18);border:1px solid rgba(226,87,76,.5);color:#ffb3aa;
+    font-size:10.5px;font-weight:600}
+  .hut-meta{font-size:12.5px;color:#c2ccd6;line-height:1.4}
+  .hut-img{width:100%;border-radius:7px;margin:8px 0 2px;display:block}
+  .hut-attr{font-size:8.5px;color:#7d8b99;line-height:1.25}
+  .hut-links{margin-top:7px;display:flex;flex-direction:column;gap:3px}
+  .hut-links a{font-size:12px;color:var(--accent2);text-decoration:none}
+  .hut-links a:hover{text-decoration:underline}
 
   /* ── About / Info card ── */
   #about{position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:10;
@@ -441,6 +459,7 @@ const COUNTRY_LABELS = {type:'FeatureCollection',features:[
   {type:'Feature',geometry:{type:'Point',coordinates:[9.55,47.15]},properties:{name:'Liechtenstein',iso:'LI'}}
 ]};
 const WIKI = __SOIUSA_WIKI_JSON__;
+const HUTS_WIKI = __SOIUSA_HUTS_WIKI_JSON__;   // Hütten-Steckbriefe, Key = OSM-Name
 const PRIV = __PRIV__;
 const TOUR_LAYERS = PRIV ? ['t-dot'] : [];   // tour markers only exist in the private build
 const CNAMES = {AT:'Österreich',CH:'Schweiz',DE:'Deutschland',
@@ -539,10 +558,12 @@ map.on('zoomend', e=>{
 const stsPopup = new maplibregl.Popup({
   closeButton:true, closeOnClick:false, offset:10, maxWidth:'260px'});
 const hoverPop = new maplibregl.Popup({closeButton:false, closeOnClick:false, offset:8});
+const hutPopup = new maplibregl.Popup({closeButton:true, closeOnClick:false, offset:12, maxWidth:'250px'});
 let _hoverTimer=null;
 function toggleAbout(){ document.getElementById('about').classList.toggle('open'); }
 function showStsPopup(lngLat, props){
   hoverPop.remove();
+  hutPopup.remove();   // Gruppen- und Hütten-Popup schließen sich gegenseitig aus
   const name = props.name_de || props.STS || '—';
   const sub  = props.visited!==1 && props.settore && props.settore!=='—'
     ? '<div class="sp-sub">'+props.settore+'</div>' : '';
@@ -720,6 +741,19 @@ map.on('load',()=>{
       'text-size':9.5,'text-offset':[0,0.4],'text-anchor':'top','text-optional':true,'text-allow-overlap':false},
     paint:{'text-color':'#ffcabf','text-halo-color':'#06101a','text-halo-width':1.4}});
 
+  // ── Hütten-Klick → Enrichment-Popup (alle kat) ────────────────────────────
+  const HUT_LAYERS = ['osm-huts-club','osm-huts-other','osm-huts-wild'];
+  HUT_LAYERS.forEach(l=>{
+    map.on('mouseenter',l,()=>map.getCanvas().style.cursor='pointer');
+    map.on('mouseleave',l,()=>map.getCanvas().style.cursor='');
+    map.on('click',l,e=>{
+      const f=e.features[0];
+      stsPopup.remove();
+      hutPopup.setLngLat(f.geometry.coordinates.slice())
+        .setHTML(hutPopupHtml(f.properties||{})).addTo(map);
+    });
+  });
+
   // ── Pässe (toggle): berühmte früh, restliche erst bei hohem Zoom ───────────
   map.addLayer({id:'osm-passes', type:'symbol', source:'osm-passes', minzoom:10.5,
     filter:['==',['get','famous'],0],
@@ -805,6 +839,7 @@ map.on('load',()=>{
   map.on('mouseleave','sts-fill',()=>{map.getCanvas().style.cursor='';clearTimeout(_hoverTimer);hoverPop.remove();});
   map.on('click','sts-fill',e=>{
     if(TOUR_LAYERS.length && map.queryRenderedFeatures(e.point,{layers:TOUR_LAYERS}).length) return;
+    if(map.queryRenderedFeatures(e.point,{layers:HUT_LAYERS}).length) return;  // Hütte hat Vorrang
     const feat=e.features[0];
     const props=feat.properties||{};
     showStsPopup(e.lngLat, props);
@@ -833,6 +868,7 @@ map.on('load',()=>{
 
   // ── Click on empty map (no feature) closes the popup ──────────────────────
   map.on('click', e=>{
+    if(!map.queryRenderedFeatures(e.point,{layers:HUT_LAYERS}).length) hutPopup.remove();
     if(!map.queryRenderedFeatures(e.point,{layers:['sts-fill','hl-line'].concat(TOUR_LAYERS)}).length)
       stsPopup.remove();
   });
@@ -995,6 +1031,33 @@ function steckbriefHtml(stsName, props){
   else if(!w)
     html += '<div class="sb-open">Weitere Angaben folgen.</div>';
   return html || '<div class="sb-open">Weitere Angaben folgen.</div>';
+}
+
+// ── Hütten-Popup (beide Builds; Daten = HUTS_WIKI, Key = OSM properties.name) ──
+// Fehlt ein Feld -> weglassen. Ohne Eintrag / nur sb_* -> schlichtes Popup (Name+ele+kat).
+// sb_* werden NICHT gerendert (Datenfelder fuer spaeteren Familien-Filter, G2).
+const HUT_KAT = {club:'Verbandshütte', hut:'Hütte', wild:'Unbewirtschaftet'};
+function hutPopupHtml(p){
+  const esc = s => String(s==null?'':s).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+  const w = (HUTS_WIKI.huetten||{})[p.name] || null;
+  const verband = (w && w.club) || p.club || '';
+  const badge = verband || HUT_KAT[p.kat] || '';
+  const ele = (p.ele!=null && p.ele!=='') ? p.ele : (w ? w.ele : undefined);  // OSM-ele bevorzugen
+  const meta = [];
+  if(ele!=null && ele!=='') meta.push(esc(ele)+' m');
+  if(w && w.bj) meta.push('erbaut '+esc(w.bj));
+  let html = '<div class="hut-pop"><div class="sp-name">'+esc(p.name||'Hütte')+'</div>';
+  if(badge) html += '<span class="hut-badge">'+esc(badge)+'</span>';
+  if(meta.length) html += '<div class="hut-meta">'+meta.join(' · ')+'</div>';
+  if(w && w.img && w.img_attr){          // Bild NUR mit Attribution (Wikimedia CC-Pflicht)
+    html += '<img class="hut-img" src="'+w.img+'" alt="" loading="lazy">'+
+            '<div class="hut-attr">'+esc(w.img_attr)+'</div>';
+  }
+  const links = [];
+  if(w && w.wiki) links.push('<a href="'+w.wiki+'" target="_blank" rel="noopener">Auf Wikipedia →</a>');
+  if(w && w.web)  links.push('<a href="'+w.web+'" target="_blank" rel="noopener">Website →</a>');
+  if(links.length) html += '<div class="hut-links">'+links.join('')+'</div>';
+  return html + '</div>';
 }
 
 // ── Tour markup for a visited group (private build only) ──────────────────────
@@ -1277,6 +1340,7 @@ html = html.replace("__SOIUSA_HIGHLIGHTS_GEOJSON__",  highlights_json)
 html = html.replace("__MASK_GEOJSON__",               mask_json)
 html = html.replace("__SOIUSA_LBL_PTS_GEOJSON__",    lp_json)
 html = html.replace("__SOIUSA_WIKI_JSON__",          wiki_json)
+html = html.replace("__SOIUSA_HUTS_WIKI_JSON__",     huts_wiki_json)
 html = html.replace("__TITEL__", TITEL).replace("__UNTER__", UNTER)
 html = html.replace("__PRIV__", "false" if PUBLIC else "true")
 html = html.replace("__KPI_GRUPPEN__",  str(kpi_gruppen))
