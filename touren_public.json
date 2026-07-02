@@ -1,268 +1,64 @@
 {
   "meta": {
     "titel": "Alpentouren — wo ich war",
-    "stand": "2026-07-01",
-    "anzahl": 14,
-    "hinweis": "Öffentliche Abdeckungskarte (ohne persönliche Angaben)."
+    "hinweis": "Öffentliche Abdeckungskarte — nur besuchte Gebiete, keine Zeit-/Personendaten."
   },
   "touren": [
     {
-      "id": 1,
-      "jahr": "~1993/94",
-      "jahr_unsicher": true,
-      "gegend": "Königssee",
-      "gebirge": "Berchtesgadener Alpen",
-      "land": "DE",
-      "lat": 47.553,
-      "lon": 12.988,
-      "gipfel": [],
-      "verifiziert": false
+      "gruppe": "Berchtesgadener Alpen",
+      "besucht": true
     },
     {
-      "id": 2,
-      "jahr": "1995",
-      "gegend": "Südtirol, Naturns",
-      "gebirge": "Ötztaler Alpen / Texelgruppe",
-      "land": "IT",
-      "lat": 46.66,
-      "lon": 11.035,
-      "gipfel": [
-        {
-          "name": "Ohrnknott",
-          "hoehe_m": 2257
-        }
-      ],
-      "verifiziert": true
+      "gruppe": "Ötztaler Alpen / Texelgruppe",
+      "besucht": true
     },
     {
-      "id": 3,
-      "jahr": "1999",
-      "gegend": "Montafon / Lechquellengebirge",
-      "gebirge": "Lechquellengebirge",
-      "land": "AT",
-      "lat": 47.162,
-      "lon": 9.985,
-      "gipfel": [
-        {
-          "name": "Hoher Fraßen",
-          "hoehe_m": 1979
-        }
-      ],
-      "verifiziert": true
+      "gruppe": "Lechquellengebirge",
+      "besucht": true
     },
     {
-      "id": 4,
-      "jahr": "2001",
-      "gegend": "Wilder Kaiser",
-      "gebirge": "Kaisergebirge",
-      "land": "AT",
-      "lat": 47.553,
-      "lon": 12.3,
-      "gipfel": [
-        {
-          "name": "Scheffauer",
-          "hoehe_m": 2111
-        },
-        {
-          "name": "Ackerlspitze",
-          "hoehe_m": 2329
-        }
-      ],
-      "verifiziert": true
+      "gruppe": "Kaisergebirge",
+      "besucht": true
     },
     {
-      "id": 5,
-      "jahr": "2002",
-      "gegend": "Mont-Blanc-Massiv",
-      "gebirge": "Grajische Alpen / Mont-Blanc-Gruppe",
-      "land": "FR/IT",
-      "lat": 45.845,
-      "lon": 6.929,
-      "gipfel": [
-        {
-          "name": "Pointe Helbronner",
-          "hoehe_m": 3462,
-          "hinweis": "Aussichtspunkt, Seilbahn von Courmayeur"
-        }
-      ],
-      "verifiziert": true
+      "gruppe": "Grajische Alpen / Mont-Blanc-Gruppe",
+      "besucht": true
     },
     {
-      "id": 6,
-      "jahr": "2003",
-      "gegend": "Verwallgruppe",
-      "gebirge": "Verwall",
-      "land": "AT",
-      "lat": 47.05,
-      "lon": 10.23,
-      "gipfel": [
-        {
-          "name": "Kuchenjöchl",
-          "hoehe_m": 2730,
-          "hinweis": "Übergang"
-        }
-      ],
-      "verifiziert": true
+      "gruppe": "Verwall",
+      "besucht": true
     },
     {
-      "id": 7,
-      "jahr": "2005",
-      "gegend": "Karnische Alpen",
-      "gebirge": "Karnische Alpen",
-      "land": "AT/IT",
-      "lat": 46.67,
-      "lon": 12.56,
-      "gipfel": [
-        {
-          "name": "Hochweißstein / Monte Peralba",
-          "hoehe_m": 2694,
-          "hinweis": "Klettersteig"
-        },
-        {
-          "name": "Wildkarlegg",
-          "hoehe_m": 2532,
-          "hinweis": "Klettersteig von Filmoorhöhe"
-        }
-      ],
-      "verifiziert": true
+      "gruppe": "Karnische Alpen",
+      "besucht": true
     },
     {
-      "id": 8,
-      "jahr": "2005",
-      "gegend": "Rätikon",
-      "gebirge": "Rätikon",
-      "land": "AT/CH",
-      "lat": 47.045,
-      "lon": 9.715,
-      "gipfel": [
-        {
-          "name": "Schesaplana",
-          "hoehe_m": 2964
-        },
-        {
-          "name": "Sulzfluh",
-          "hoehe_m": 2818
-        }
-      ],
-      "verifiziert": true
+      "gruppe": "Rätikon",
+      "besucht": true
     },
     {
-      "id": 9,
-      "jahr": "2006",
-      "gegend": "Rosengarten",
-      "gebirge": "Dolomiten / Rosengarten (Catinaccio)",
-      "land": "IT",
-      "lat": 46.478,
-      "lon": 11.62,
-      "gipfel": [
-        {
-          "name": "Kesselkogel",
-          "hoehe_m": 3004,
-          "hinweis": "höchster Gipfel des Rosengartens"
-        },
-        {
-          "name": "Rotwand",
-          "hoehe_m": 2806,
-          "hinweis": "Masare-Klettersteig"
-        }
-      ],
-      "verifiziert": true
+      "gruppe": "Dolomiten / Rosengarten (Catinaccio)",
+      "besucht": true
     },
     {
-      "id": 10,
-      "jahr": "2007",
-      "gegend": "Gardaseeberge",
-      "gebirge": "Gardaseeberge / Südliche Kalkalpen",
-      "land": "IT",
-      "lat": 45.852,
-      "lon": 10.98,
-      "gipfel": [
-        {
-          "name": "Monte Albano",
-          "hinweis": "Klettersteig"
-        }
-      ],
-      "verifiziert": true
+      "gruppe": "Gardaseeberge / Südliche Kalkalpen",
+      "besucht": true
     },
     {
-      "id": 11,
-      "jahr": "2011",
-      "gegend": "Silvretta",
-      "gebirge": "Silvretta",
-      "land": "AT/CH",
-      "lat": 46.858,
-      "lon": 10.108,
-      "gipfel": [
-        {
-          "name": "Piz Buin",
-          "hoehe_m": 3312,
-          "hinweis": "höchster Gipfel Vorarlbergs, über Ochsentaler Gletscher"
-        },
-        {
-          "name": "Hohes Rad",
-          "hoehe_m": 2934
-        }
-      ],
-      "verifiziert": true
+      "gruppe": "Silvretta",
+      "besucht": true
     },
     {
-      "id": 12,
-      "jahr": "2012",
-      "gegend": "Silvretta",
-      "gebirge": "Silvretta",
-      "land": "AT/CH",
-      "lat": 46.885,
-      "lon": 10.12,
-      "gipfel": [
-        {
-          "name": "Silvrettahorn",
-          "hoehe_m": 3244,
-          "hinweis": "über Ochsentaler Gletscher"
-        },
-        {
-          "name": "Dreiländerspitze",
-          "hoehe_m": 3197
-        }
-      ],
-      "verifiziert": true
+      "gruppe": "Silvretta",
+      "besucht": true
     },
     {
-      "id": 13,
-      "jahr": "2013",
-      "gegend": "Stubaital",
-      "gebirge": "Stubaier Alpen",
-      "land": "AT",
-      "lat": 47.01,
-      "lon": 11.11,
-      "gipfel": [
-        {
-          "name": "Egesengrat",
-          "hoehe_m": 2631,
-          "hinweis": "Fernau-Klettersteig"
-        },
-        {
-          "name": "Höllenrachen",
-          "hinweis": "Klettersteig"
-        }
-      ],
-      "verifiziert": true
+      "gruppe": "Stubaier Alpen",
+      "besucht": true
     },
     {
-      "id": 14,
-      "jahr": "2017",
-      "gegend": "Dachstein / Gosausee",
-      "gebirge": "Dachsteingebirge / Gosaukamm",
-      "land": "AT",
-      "lat": 47.53,
-      "lon": 13.49,
-      "gipfel": [
-        {
-          "name": "Großer Donnerkogel",
-          "hoehe_m": 2054,
-          "hinweis": "Klettersteig mit Himmelsleiter"
-        }
-      ],
-      "verifiziert": true
+      "gruppe": "Dachsteingebirge / Gosaukamm",
+      "besucht": true
     }
   ]
 }

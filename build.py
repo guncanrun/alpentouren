@@ -7,6 +7,7 @@ Run:  python build.py
 """
 import json
 import pathlib
+import re
 import sys
 
 HERE = pathlib.Path(__file__).parent
@@ -82,6 +83,9 @@ TEMPLATE = r"""<!DOCTYPE html>
     background:var(--bg);color:var(--txt)}
   #map{position:absolute;inset:0}
   .maplibregl-ctrl-attrib{font-size:10px}
+  /* Touch: enlarge MapLibre zoom/compass buttons to >=44px */
+  .maplibregl-ctrl-group button{width:44px;height:44px;touch-action:manipulation}
+  .maplibregl-ctrl-group button .maplibregl-ctrl-icon{transform:scale(1.15)}
 
   /* ── Title card ── */
   #title{position:absolute;top:16px;left:16px;z-index:5;max-width:310px;
@@ -141,8 +145,8 @@ TEMPLATE = r"""<!DOCTYPE html>
     border-bottom:1px dotted rgba(255,255,255,.08)}
   #panel li b{color:var(--accent);font-variant-numeric:tabular-nums;white-space:nowrap}
   #panel .notiz{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4}
-  #panel .x{position:absolute;top:8px;right:8px;cursor:pointer;color:var(--muted);
-    width:40px;height:40px;border-radius:9px;display:grid;place-items:center;font-size:22px;
+  #panel .x{position:absolute;top:6px;right:6px;cursor:pointer;color:var(--muted);
+    width:44px;height:44px;border-radius:10px;display:grid;place-items:center;font-size:23px;
     touch-action:manipulation;z-index:2}
   #panel .x:hover{background:rgba(255,255,255,.08);color:#fff}
   /* Tabs + Steckbrief */
@@ -202,8 +206,8 @@ TEMPLATE = r"""<!DOCTYPE html>
   #about h3:first-of-type{margin-top:0}
   #about p{margin:5px 0;font-size:13px;color:var(--muted);line-height:1.55}
   #about b{color:var(--txt)}
-  #about .x{position:absolute;top:6px;right:6px;cursor:pointer;color:var(--muted);font-size:22px;
-    width:40px;height:40px;display:grid;place-items:center;border-radius:9px;touch-action:manipulation}
+  #about .x{position:absolute;top:5px;right:5px;cursor:pointer;color:var(--muted);font-size:23px;
+    width:44px;height:44px;display:grid;place-items:center;border-radius:10px;touch-action:manipulation}
   #about .x:hover{background:rgba(255,255,255,.08);color:#fff}
   #about a{color:var(--accent2);text-decoration:none}
 
@@ -255,9 +259,9 @@ TEMPLATE = r"""<!DOCTYPE html>
   <h1>__TITEL__</h1>
   <p>__UNTER__</p>
   <div class="kpi">
-    <div><b id="kTours">–</b><span>Touren</span></div>
+    <!-- PRIV:START --><div><b id="kTours">–</b><span>Touren</span></div><!-- PRIV:END -->
     <div><b id="kGroups">–</b><span>SOIUSA-Gruppen</span></div>
-    <div><b id="kYears">–</b><span>Jahre</span></div>
+    <!-- PRIV:START --><div><b id="kYears">–</b><span>Jahre</span></div><!-- PRIV:END -->
   </div>
 </div>
 
@@ -342,35 +346,36 @@ const COUNTRY_LABELS = {type:'FeatureCollection',features:[
 ]};
 const WIKI = __SOIUSA_WIKI_JSON__;
 const PRIV = __PRIV__;
+const TOUR_LAYERS = PRIV ? ['t-dot'] : [];   // tour markers only exist in the private build
 const CNAMES = {AT:'Österreich',CH:'Schweiz',DE:'Deutschland',
   FR:'Frankreich',IT:'Italien',SI:'Slowenien',LI:'Liechtenstein'};
 
 console.log('SOIUSA:', SOIUSA_STS.features.length, 'Untergruppen,',
             SOIUSA_HIGHLIGHTS.features.length, 'Highlights');
 
-// ── Coverage ─────────────────────────────────────────────────────────────────
-const groups = {};
-TOUREN.forEach(t=>{
-  const k=t.gebirge;
-  if(!groups[k]) groups[k]={name:k, years:[], land:t.land};
-  groups[k].years.push(t.jahr);
-});
-const groupList = Object.values(groups).sort((a,b)=>a.name.localeCompare(b.name));
-const years = TOUREN.map(t=>parseInt(String(t.jahr).replace(/[^0-9]/g,'').slice(0,4))).filter(Boolean);
+// ── Coverage: from visited SOIUSA groups (public-safe, no "wann") ─────────────
+const visitedGroups = SOIUSA_STS.features.filter(f=>f.properties.visited===1)
+  .map(f=>f.properties)
+  .sort((a,b)=>String(a.name_de||a.STS).localeCompare(String(b.name_de||b.STS)));
 
-document.getElementById('kTours').textContent  = TOUREN.length;
 document.getElementById('kGroups').textContent = SOIUSA_HIGHLIGHTS.features.length+'/'+SOIUSA_STS.features.length;
-document.getElementById('kYears').textContent  = Math.min(...years)+'–'+Math.max(...years);
-document.getElementById('covCount').textContent =
-  SOIUSA_HIGHLIGHTS.features.length + ' Gebiete · ' + TOUREN.length + ' Touren';
+document.getElementById('covCount').textContent = SOIUSA_HIGHLIGHTS.features.length + ' Gebiete';
+/* PRIV:START */
+document.getElementById('kTours').textContent = TOUREN.length;
+document.getElementById('covCount').textContent += ' · ' + TOUREN.length + ' Touren';
+{ const ys=TOUREN.map(t=>parseInt(String(t.jahr||'').replace(/[^0-9]/g,'').slice(0,4))).filter(Boolean);
+  if(ys.length) document.getElementById('kYears').textContent = Math.min(...ys)+'–'+Math.max(...ys); }
+/* PRIV:END */
 
-// ── GeoJSON point features ────────────────────────────────────────────────────
+// ── Tour point markers (privat only — public JSON has no coordinates) ─────────
+/* PRIV:START */
 const fc = {type:'FeatureCollection', features: TOUREN.map(t=>({
   type:'Feature',
   geometry:{type:'Point', coordinates:[t.lon, t.lat]},
   properties:{id:t.id, jahr:t.jahr, gegend:t.gegend, gebirge:t.gebirge,
               land:t.land, verifiziert:t.verifiziert?1:0}
 }))};
+/* PRIV:END */
 
 // ── Default camera: full Alpine view, slightly SW-biased ──────────────────────
 const ALPS = {center:[10.2,46.1], zoom:5.3, pitch:0, bearing:0};
@@ -447,7 +452,9 @@ map.on('load',()=>{
   map.addSource('sts',        {type:'geojson', data:SOIUSA_STS});
   map.addSource('highlights', {type:'geojson', data:SOIUSA_HIGHLIGHTS});
   map.addSource('sts-lp',    {type:'geojson', data:SOIUSA_LBL_PTS});
+  /* PRIV:START */
   map.addSource('tours',     {type:'geojson', data:fc});
+  /* PRIV:END */
   // OSM overlays as URL sources (not inlined) — keeps index.html small.
   map.addSource('osm-peaks', {type:'geojson', data:'./soiusa_osm_peaks.geojson'});
   map.addSource('osm-huts',  {type:'geojson', data:'./soiusa_osm_huts.geojson'});
@@ -649,7 +656,8 @@ map.on('load',()=>{
     layout:{'line-join':'round'},
     paint:{'line-color':'#ffffff','line-width':3.2,'line-opacity':0.95}});
 
-  // ── Tour markers ─────────────────────────────────────────────────────────
+  /* PRIV:START */
+  // ── Tour markers (privat only — reveals "wann/wo" per point) ──────────────
   map.addLayer({id:'t-halo', type:'circle', source:'tours',
     paint:{'circle-radius':13,'circle-color':'#ffb24d',
            'circle-opacity':0.18,'circle-blur':0.4}});
@@ -657,7 +665,6 @@ map.on('load',()=>{
     paint:{'circle-radius':6.5,
       'circle-color':['case',['==',['get','verifiziert'],1],'#ffb24d','#5fd0c5'],
       'circle-stroke-width':2,'circle-stroke-color':'#0a0e14'}});
-  // ── Tour marker events ────────────────────────────────────────────────────
   const pop = new maplibregl.Popup({closeButton:false,closeOnClick:false,offset:12});
   map.on('mouseenter','t-dot',e=>{
     map.getCanvas().style.cursor='pointer';
@@ -667,6 +674,7 @@ map.on('load',()=>{
   });
   map.on('mouseleave','t-dot',()=>{map.getCanvas().style.cursor='';pop.remove();});
   map.on('click','t-dot',e=>openTour(e.features[0].properties.id));
+  /* PRIV:END */
 
   // ── STS fill click — popup always; panel only for visited groups ─────────
   map.on('mouseenter','sts-fill',()=>map.getCanvas().style.cursor='pointer');
@@ -684,7 +692,7 @@ map.on('load',()=>{
   });
   map.on('mouseleave','sts-fill',()=>{map.getCanvas().style.cursor='';clearTimeout(_hoverTimer);hoverPop.remove();});
   map.on('click','sts-fill',e=>{
-    if(map.queryRenderedFeatures(e.point,{layers:['t-dot']}).length) return;
+    if(TOUR_LAYERS.length && map.queryRenderedFeatures(e.point,{layers:TOUR_LAYERS}).length) return;
     const feat=e.features[0];
     const props=feat.properties||{};
     showStsPopup(e.lngLat, props);
@@ -701,7 +709,7 @@ map.on('load',()=>{
   map.on('mouseenter','hl-line',()=>map.getCanvas().style.cursor='pointer');
   map.on('mouseleave','hl-line',()=>map.getCanvas().style.cursor='');
   map.on('click','hl-line',e=>{
-    if(map.queryRenderedFeatures(e.point,{layers:['t-dot','sts-fill']}).length) return;
+    if(map.queryRenderedFeatures(e.point,{layers:['sts-fill'].concat(TOUR_LAYERS)}).length) return;
     const hp = e.features[0].properties;
     const matchName = (hp.match_field==='STS') ? hp.soiusa_name : (hp.parent_sts||'');
     const stsFeat = SOIUSA_STS.features.find(f=>f.properties.STS===matchName);
@@ -713,7 +721,7 @@ map.on('load',()=>{
 
   // ── Click on empty map (no feature) closes the popup ──────────────────────
   map.on('click', e=>{
-    if(!map.queryRenderedFeatures(e.point,{layers:['sts-fill','hl-line','t-dot']}).length)
+    if(!map.queryRenderedFeatures(e.point,{layers:['sts-fill','hl-line'].concat(TOUR_LAYERS)}).length)
       stsPopup.remove();
   });
 
@@ -820,7 +828,8 @@ function gipfelUl(gipfel){
     '</span>'+(g.hoehe_m?'<b>'+g.hoehe_m+' m</b>':'')+'</li>').join('')+'</ul>';
 }
 
-// ── Open: tour marker ─────────────────────────────────────────────────────────
+// ── Open: tour marker (privat only) ───────────────────────────────────────────
+/* PRIV:START */
 function openTour(id){
   const t=TOUREN.find(x=>x.id==id); if(!t) return;
   map.setFilter('sts-selected',['==',['get','STS'],'']);
@@ -840,6 +849,7 @@ function openTour(id){
   document.getElementById('panel').classList.add('open');
   map.flyTo({center:[t.lon,t.lat],zoom:9.5,pitch:20,bearing:0,duration:1200,essential:true});
 }
+/* PRIV:END */
 
 // ── Steckbrief markup (public-safe, from soiusa_wiki.json) ────────────────────
 function steckbriefHtml(stsName, props){
@@ -970,13 +980,22 @@ function overview(){
   map.flyTo({...ALPS,duration:1200,essential:true});
 }
 
-// ── Coverage list ─────────────────────────────────────────────────────────────
+// ── Coverage list (visited SOIUSA groups; click flies to the group) ───────────
+function openGroup(sts){ const f=SOIUSA_STS.features.find(x=>x.properties.STS===sts); if(f) openSts(f); }
 const cl=document.getElementById('covList');
-cl.innerHTML=groupList.map(g=>{
-  const t=TOUREN.find(x=>x.gebirge===g.name);
-  return '<div class="row" onclick="openTour('+t.id+')"><span>'+g.name+'</span>'+
-    '<span class="yr">'+g.years.join(', ')+'</span></div>';
+cl.innerHTML=visitedGroups.map(g=>{
+  const nm=(g.name_de||g.STS||'').replace(/</g,'&lt;');
+  const key=String(g.STS||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  return '<div class="row" onclick="openGroup(\''+key+'\')"><span>'+nm+'</span><span class="yr"></span></div>';
 }).join('');
+/* PRIV:START */
+[...cl.children].forEach((row,i)=>{
+  const g=visitedGroups[i]; if(!g) return;
+  const ids = typeof g.tour_ids==='string'?JSON.parse(g.tour_ids||'[]'):(g.tour_ids||[]);
+  const yrs = ids.map(id=>{const t=TOUREN.find(x=>x.id==id);return t&&t.jahr;}).filter(Boolean);
+  const sp=row.querySelector('.yr'); if(sp) sp.textContent=yrs.join(', ');
+});
+/* PRIV:END */
 </script>
 </body>
 </html>
@@ -990,6 +1009,13 @@ html = html.replace("__SOIUSA_LBL_PTS_GEOJSON__",    lp_json)
 html = html.replace("__SOIUSA_WIKI_JSON__",          wiki_json)
 html = html.replace("__TITEL__", TITEL).replace("__UNTER__", UNTER)
 html = html.replace("__PRIV__", "false" if PUBLIC else "true")
+
+# ── Hard-strip private blocks in the public build (E2) ────────────────────────
+# Private HTML/CSS: <!-- PRIV:START --> … <!-- PRIV:END -->
+# Private JS:       /* PRIV:START */ … /* PRIV:END */
+if PUBLIC:
+    html = re.sub(r"<!-- PRIV:START -->.*?<!-- PRIV:END -->", "", html, flags=re.S)
+    html = re.sub(r"/\* PRIV:START \*/.*?/\* PRIV:END \*/", "", html, flags=re.S)
 
 # Tab bar only in the private build — keeps the string "Tour mit Papa" out of public HTML.
 PTABS = "" if PUBLIC else (

@@ -44,7 +44,7 @@ checks = [
     ("line-join round",               "'line-join':'round'"),
     # Functions
     ("openSts fn",                    "function openSts"),
-    ("openTour fn",                   "function openTour"),
+    ("openGroup fn (coverage)",       "function openGroup"),
     ("toggleLayers fn",               "function toggleLayers"),
     ("featBbox fn",                   "function featBbox"),
     ("featBbox GeometryCollection",   "GeometryCollection"),
@@ -143,12 +143,32 @@ for name, marker in checks:
     if not ok:
         errors.append(name)
 
-# Negative guard: the public build must NOT carry the private tab label.
-if "Tour mit Papa" in html:
-    print("FAIL public leak: 'Tour mit Papa' present in index.html")
-    errors.append("public leak: 'Tour mit Papa' in index.html")
-else:
-    print("OK   public build free of 'Tour mit Papa'")
+# ── Public-hygiene negative guards (SPEC_Build_Teilung) ───────────────────────
+# The public index.html must carry NO private markers, NO year fields, and NO
+# private-only functions/KPIs (openTour, kYears).
+for bad, label in [("Tour mit Papa", "private tab label"),
+                   ("PRIV:START", "PRIV start marker"),
+                   ("PRIV:END", "PRIV end marker"),
+                   ('"jahr"', "year field"),
+                   ("function openTour", "tour-marker function"),
+                   ('id="kYears"', "years KPI")]:
+    if bad in html:
+        print(f"FAIL public leak: '{bad}' ({label}) present in index.html")
+        errors.append(f"public leak: {bad}")
+    else:
+        print(f"OK   public free of '{bad}'")
+
+# Whitelist guard: touren_public.json may only contain gruppe/besucht.
+import json as _json
+tp = pathlib.Path(__file__).parent / "touren_public.json"
+if tp.exists():
+    _keys = {k for t in _json.loads(tp.read_text(encoding="utf-8")).get("touren", []) for k in t}
+    _extra = _keys - {"gruppe", "besucht"}
+    if _extra:
+        print(f"FAIL touren_public.json has non-whitelist keys: {_extra}")
+        errors.append(f"public json non-whitelist keys: {_extra}")
+    else:
+        print("OK   touren_public.json whitelist (gruppe/besucht only)")
 
 print()
 if errors:
