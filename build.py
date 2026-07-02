@@ -124,10 +124,10 @@ TEMPLATE = r"""<!DOCTYPE html>
   .btn:hover{border-color:rgba(255,255,255,.3)}
 
   /* ── Detail panel ── */
-  #panel{position:absolute;top:16px;right:16px;z-index:5;width:285px;
+  #panel{position:absolute;top:174px;left:16px;z-index:7;width:285px;
     background:var(--panel);backdrop-filter:blur(8px);border:1px solid var(--line);
     border-radius:14px;padding:0;box-shadow:0 8px 30px rgba(0,0,0,.5);
-    transform:translateX(120%);transition:transform .35s cubic-bezier(.2,.8,.2,1);overflow:hidden}
+    transform:translateX(-120%);transition:transform .35s cubic-bezier(.2,.8,.2,1);overflow:hidden}
   #panel.open{transform:translateX(0)}
   #panel .ph{padding:13px 13px 10px;border-bottom:1px solid var(--line)}
   #panel .yr{font-size:11px;color:var(--accent2);font-weight:600;letter-spacing:.5px}
@@ -880,7 +880,7 @@ function openSts(feat){
 
   document.getElementById('panel').classList.add('open');
   const bb=featBbox(feat);
-  if(bb) map.fitBounds(bb,{padding:{top:80,bottom:80,left:80,right:310},
+  if(bb) map.fitBounds(bb,{padding:{top:80,bottom:80,left:320,right:80},
     pitch:18,bearing:0,maxZoom:10,duration:1200,essential:true});
 }
 
