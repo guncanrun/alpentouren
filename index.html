@@ -67,7 +67,8 @@
   #panel .yr{font-size:11px;color:var(--accent2);font-weight:600;letter-spacing:.5px}
   #panel h2{margin:3px 0 2px;font-size:16px;line-height:1.2}
   #panel .gegend{font-size:10.5px;color:var(--muted)}
-  #panel .body{padding:11px 13px 13px;font-size:12.5px;line-height:1.5;max-height:60vh;overflow-y:auto}
+  #panel .body{padding:11px 14px 14px;font-size:14px;line-height:1.55;max-height:58vh;overflow-y:auto;
+    -webkit-overflow-scrolling:touch}
   #panel .sec{margin:0 0 10px}
   #panel .sec h3{margin:0 0 4px;font-size:9.5px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
   #panel ul{margin:0;padding-left:0;list-style:none}
@@ -75,8 +76,9 @@
     border-bottom:1px dotted rgba(255,255,255,.08)}
   #panel li b{color:var(--accent);font-variant-numeric:tabular-nums;white-space:nowrap}
   #panel .notiz{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4}
-  #panel .x{position:absolute;top:10px;right:10px;cursor:pointer;color:var(--muted);
-    width:22px;height:22px;border-radius:7px;display:grid;place-items:center;font-size:15px}
+  #panel .x{position:absolute;top:8px;right:8px;cursor:pointer;color:var(--muted);
+    width:40px;height:40px;border-radius:9px;display:grid;place-items:center;font-size:22px;
+    touch-action:manipulation;z-index:2}
   #panel .x:hover{background:rgba(255,255,255,.08);color:#fff}
   /* Tabs + Steckbrief */
   #panel .tabs{display:flex;border-bottom:1px solid var(--line)}
@@ -85,8 +87,8 @@
   #panel .tab.active{color:var(--accent2);border-bottom-color:var(--accent2)}
   #panel .pane{display:none}
   #panel .pane.active{display:block}
-  #panel .sb-row{display:flex;justify-content:space-between;gap:10px;padding:4px 0;
-    border-bottom:1px dotted rgba(255,255,255,.08);font-size:12px}
+  #panel .sb-row{display:flex;justify-content:space-between;gap:10px;padding:5px 0;
+    border-bottom:1px dotted rgba(255,255,255,.08);font-size:13.5px}
   #panel .sb-row .k{color:var(--muted);white-space:nowrap}
   #panel .sb-row .v{text-align:right}
   #panel .sb-row .v b{color:var(--accent);font-variant-numeric:tabular-nums}
@@ -101,14 +103,14 @@
   #cov{position:absolute;bottom:16px;left:16px;z-index:5;width:270px;max-height:42vh;
     background:var(--panel);backdrop-filter:blur(8px);border:1px solid var(--line);
     border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.45);overflow:hidden}
-  #cov .ch{padding:12px 14px;font-size:14px;font-weight:600;cursor:pointer;
-    display:flex;justify-content:space-between;align-items:center;user-select:none}
+  #cov .ch{padding:13px 14px;font-size:14px;font-weight:600;cursor:pointer;min-height:44px;
+    display:flex;justify-content:space-between;align-items:center;user-select:none;touch-action:manipulation}
   #cov .ch span{color:var(--muted);font-weight:400;font-size:11px}
   #cov .cl{max-height:0;overflow-y:auto;transition:max-height .3s ease}
   #cov.open .cl{max-height:34vh}
-  #cov .row{padding:8px 14px;font-size:13px;cursor:pointer;
-    display:flex;justify-content:space-between;gap:8px;
-    border-top:1px solid rgba(255,255,255,.06)}
+  #cov .row{padding:11px 14px;font-size:13px;cursor:pointer;min-height:44px;box-sizing:border-box;
+    display:flex;justify-content:space-between;align-items:center;gap:8px;
+    border-top:1px solid rgba(255,255,255,.06);touch-action:manipulation}
   #cov .row:hover{background:rgba(255,178,77,.10)}
   #cov .row .yr{color:var(--muted);font-variant-numeric:tabular-nums}
 
@@ -118,12 +120,12 @@
     border-radius:9px;padding:7px 11px;box-shadow:0 6px 20px rgba(0,0,0,.55);
     min-width:120px}
   .maplibregl-popup-tip{display:none}
-  .maplibregl-popup-close-button{color:#9fb0c0;font-size:15px;right:5px;top:3px;
-    line-height:1;background:none}
-  .sp-name{font:600 13px/1.3 Inter,system-ui,sans-serif;color:#e8edf2}
-  .sp-sub{font-size:10.5px;color:#9fb0c0;margin-top:2px}
-  .hp-n{font:600 12px/1.2 Inter,system-ui,sans-serif;color:#e8edf2}
-  .hp-s{font-size:10px;color:#9fb0c0;margin-top:1px}
+  .maplibregl-popup-close-button{color:#9fb0c0;font-size:22px;width:36px;height:36px;
+    right:2px;top:2px;line-height:1;background:none;touch-action:manipulation}
+  .sp-name{font:600 16px/1.3 Inter,system-ui,sans-serif;color:#e8edf2}
+  .sp-sub{font-size:12px;color:#aebccb;margin-top:2px}
+  .hp-n{font:600 14px/1.2 Inter,system-ui,sans-serif;color:#e8edf2}
+  .hp-s{font-size:11.5px;color:#aebccb;margin-top:1px}
 
   /* ── About / Info card ── */
   #about{position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:7;
@@ -135,24 +137,26 @@
   #about h3:first-of-type{margin-top:0}
   #about p{margin:5px 0;font-size:13px;color:var(--muted);line-height:1.55}
   #about b{color:var(--txt)}
-  #about .x{position:absolute;top:9px;right:11px;cursor:pointer;color:var(--muted);font-size:16px}
+  #about .x{position:absolute;top:6px;right:6px;cursor:pointer;color:var(--muted);font-size:22px;
+    width:40px;height:40px;display:grid;place-items:center;border-radius:9px;touch-action:manipulation}
+  #about .x:hover{background:rgba(255,255,255,.08);color:#fff}
   #about a{color:var(--accent2);text-decoration:none}
 
   /* ── Ebenen-Panel (Toggle-Switches + Legende) ── */
   #ebenen{position:absolute;top:64px;right:16px;z-index:6;width:232px;
     background:var(--panel);backdrop-filter:blur(8px);border:1px solid var(--line);
     border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.5);overflow:hidden}
-  #ebenen .eh{padding:12px 15px;font-size:15px;font-weight:600;cursor:pointer;
-    display:flex;justify-content:space-between;align-items:center;user-select:none}
+  #ebenen .eh{padding:13px 15px;font-size:15px;font-weight:600;cursor:pointer;min-height:44px;
+    display:flex;justify-content:space-between;align-items:center;user-select:none;touch-action:manipulation}
   #ebenen .eh::after{content:'▾';color:var(--muted);transition:transform .3s}
   #ebenen.open .eh::after{transform:rotate(180deg)}
   #ebenen .eb{max-height:0;overflow:hidden;transition:max-height .35s ease}
-  #ebenen.open .eb{max-height:470px}
+  #ebenen.open .eb{max-height:min(72vh,600px);overflow-y:auto}
   #ebenen .eb-in{padding:2px 15px 14px}
   #ebenen .grp{font-size:10.5px;text-transform:uppercase;letter-spacing:1px;
     color:var(--muted);margin:11px 0 3px}
   .tgl{display:flex;align-items:center;justify-content:space-between;gap:12px;
-    padding:8px 2px;cursor:pointer;font-size:14px;min-height:40px}
+    padding:10px 2px;cursor:pointer;font-size:14.5px;min-height:44px;touch-action:manipulation}
   .tgl .sw{position:relative;width:40px;height:23px;border-radius:12px;background:#3a4655;
     transition:background .2s;flex-shrink:0}
   .tgl .sw::after{content:'';position:absolute;top:3px;left:3px;width:17px;height:17px;
@@ -162,13 +166,13 @@
   #ebenen .lrow{display:flex;align-items:center;gap:9px;padding:4px 2px;font-size:12.5px}
   #ebenen .lsep{height:1px;background:var(--line);margin:6px 2px}
   /* ── Info "?" + Home ── */
-  #btnInfo{position:absolute;top:16px;right:16px;z-index:8;width:40px;height:40px;
+  #btnInfo{position:absolute;top:16px;right:16px;z-index:8;width:46px;height:46px;
     border-radius:50%;background:var(--panel);border:1px solid var(--line);color:var(--txt);
-    font-size:19px;font-weight:700;cursor:pointer;backdrop-filter:blur(8px)}
+    font-size:20px;font-weight:700;cursor:pointer;backdrop-filter:blur(8px);touch-action:manipulation}
   #btnInfo:hover{border-color:var(--accent2);color:var(--accent2)}
-  #home{position:absolute;bottom:150px;right:16px;z-index:6;width:40px;height:40px;
-    border-radius:10px;background:var(--panel);border:1px solid var(--line);color:var(--txt);
-    font-size:18px;cursor:pointer;backdrop-filter:blur(8px)}
+  #home{position:absolute;bottom:150px;right:16px;z-index:6;width:46px;height:46px;
+    border-radius:11px;background:var(--panel);border:1px solid var(--line);color:var(--txt);
+    font-size:19px;cursor:pointer;backdrop-filter:blur(8px);touch-action:manipulation}
   #home:hover{border-color:var(--accent2);color:var(--accent2)}
 
   @media(max-width:640px){
@@ -292,7 +296,8 @@ const years = TOUREN.map(t=>parseInt(String(t.jahr).replace(/[^0-9]/g,'').slice(
 document.getElementById('kTours').textContent  = TOUREN.length;
 document.getElementById('kGroups').textContent = SOIUSA_HIGHLIGHTS.features.length+'/'+SOIUSA_STS.features.length;
 document.getElementById('kYears').textContent  = Math.min(...years)+'–'+Math.max(...years);
-document.getElementById('covCount').textContent = groupList.length;
+document.getElementById('covCount').textContent =
+  SOIUSA_HIGHLIGHTS.features.length + ' Gebiete · ' + TOUREN.length + ' Touren';
 
 // ── GeoJSON point features ────────────────────────────────────────────────────
 const fc = {type:'FeatureCollection', features: TOUREN.map(t=>({
@@ -696,10 +701,15 @@ function showGroupPeaks(stsName){
   if(w && w.hoechster_berg) hoch = w.hoechster_berg.replace(/\s*\(.*?\)\s*/g,'').trim();
   map.setFilter('peaks-in-group', ['all',['within',geom],['!=',['get','name'],hoch]]);
   map.setFilter('peaks-highest',  ['all',['within',geom],['==',['get','name'],hoch]]);
+  // immer zeigen — unabhängig vom "Gipfel"-Toggle (der Steckbrief nennt den höchsten Berg)
+  map.setLayoutProperty('peaks-in-group','visibility','visible');
+  map.setLayoutProperty('peaks-highest','visibility','visible');
 }
 function resetGroupPeaks(){
   map.setFilter('peaks-in-group', ['==',['get','name'],'__none__']);
   map.setFilter('peaks-highest',  ['==',['get','name'],'__none__']);
+  map.setLayoutProperty('peaks-in-group','visibility','none');
+  map.setLayoutProperty('peaks-highest','visibility','none');
 }
 
 // ── featBbox: handles Polygon, MultiPolygon, GeometryCollection ───────────────
@@ -829,6 +839,7 @@ function openSts(feat){
   setTourTab(visited ? groupTourHtml(props) : '');
   showGroupPeaks(stsName);
 
+  document.getElementById('cov').classList.remove('open');   // Touren-Liste einklappen (kein Overlap)
   document.getElementById('panel').classList.add('open');
   const bb=featBbox(feat);
   if(bb) map.fitBounds(bb,{padding:{top:80,bottom:80,left:320,right:80},
@@ -865,7 +876,7 @@ function toggleBorders(){
 let _peaksOn=false;
 function togglePeaks(){
   _peaksOn=!_peaksOn; const v=_peaksOn?'visible':'none';
-  ['osm-peaks','osm-landmark-glow','osm-landmarks','peaks-in-group','peaks-highest']
+  ['osm-peaks','osm-landmark-glow','osm-landmarks']
     .forEach(l=>map.setLayoutProperty(l,'visibility',v));
   document.getElementById('tglPeaks').classList.toggle('on',_peaksOn);
 }
