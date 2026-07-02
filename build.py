@@ -534,9 +534,21 @@ console.log('SOIUSA:', SOIUSA_STS.features.length, 'Untergruppen,',
 
 // ── Coverage (private build only — visited groups + years) ────────────────────
 /* PRIV:START */
+// Frühestes Besuchsjahr einer Gruppe (jahr_sort-Logik, aus dem Chronik-Block hoisted).
+function _groupMinYear(props){
+  let ids=[]; try{ ids = typeof props.tour_ids==='string'?JSON.parse(props.tour_ids||'[]'):(props.tour_ids||[]); }catch(_){}
+  let min=Infinity;
+  ids.forEach(id=>{ const t=TOUREN.find(x=>x.id==id); const y=t&&jahrSort(t.jahr); if(y&&y<min) min=y; });
+  return min;
+}
+// Coverage-Liste chronologisch AUFSTEIGEND (ältestes Besuchsjahr zuerst; Tie-Break name_de).
 const visitedGroups = SOIUSA_STS.features.filter(f=>f.properties.visited===1)
   .map(f=>f.properties)
-  .sort((a,b)=>String(a.name_de||a.STS).localeCompare(String(b.name_de||b.STS)));
+  .sort((a,b)=>{
+    const ya=_groupMinYear(a), yb=_groupMinYear(b);
+    if(ya!==yb) return ya-yb;
+    return String(a.name_de||a.STS).localeCompare(String(b.name_de||b.STS));
+  });
 document.getElementById('kGroups').textContent = SOIUSA_HIGHLIGHTS.features.length+'/'+SOIUSA_STS.features.length;
 document.getElementById('kTours').textContent = TOUREN.length;
 document.getElementById('covCount').textContent =
