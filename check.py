@@ -60,6 +60,7 @@ checks = [
     ("osm peaks layer",               "id:'osm-peaks'"),
     ("osm huts club layer",           "id:'osm-huts-club'"),
     ("osm huts other layer",          "id:'osm-huts-other'"),
+    ("osm huts wild layer",           "id:'osm-huts-wild'"),
     ("peak triangle icon",            "map.addImage('peak'"),
     ("peak rank tiering by ele",      "'icon-opacity':['case',['>=',['get','ele']"),
     ("hut club icon",                 "'hut-club'"),

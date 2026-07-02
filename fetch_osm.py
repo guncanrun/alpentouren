@@ -74,8 +74,8 @@ import re
 
 # Exclude alpine dairy farms / pastures (Almen), keep real hiking huts.
 ALM_RE = re.compile(r"Alm|Alpe|Alpage|Malga|\bAlp\b|Rifugio Alpe", re.IGNORECASE)
-# Alpine-club operators → prioritised "club" category.
-CLUB_RE = re.compile(r"Alpenverein|DAV|ÖAV|OeAV|AVS|SAC|CAI|Naturfreunde", re.IGNORECASE)
+# Alpine-club operators → prioritised "club" category (tier 1).
+CLUB_RE = re.compile(r"Alpenverein|DAV|ÖAV|OeAV|AVS|SAC|CAI|FFCAM|Naturfreunde", re.IGNORECASE)
 
 
 def huts_geojson(elements):
@@ -91,7 +91,14 @@ def huts_geojson(elements):
         if ALM_RE.search(name):        # drop Almen/Alpe/Malga
             continue
         op = tags.get("operator", "") or ""
-        props = {"name": name, "kat": "club" if CLUB_RE.search(op) else "hut"}
+        # 3 tiers: club (Verband) > wild (unbewirtschaftet) > hut (sonstige bewirtschaftet)
+        if CLUB_RE.search(op):
+            kat = "club"
+        elif tags.get("tourism") == "wilderness_hut":
+            kat = "wild"
+        else:
+            kat = "hut"
+        props = {"name": name, "kat": kat}
         raw = str(tags.get("ele", "")).replace(",", ".").split()
         if raw:
             try:
