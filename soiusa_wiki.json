@@ -2,7 +2,7 @@
   "meta": {
     "quelle": "de.wikipedia — AVE-Gebirgsgruppenlisten + Gruppen-/Gipfelartikel",
     "lizenz": "Texte CC BY-SA (Wikipedia); Bilder Wikimedia Commons CC BY-SA",
-    "status": "Entwurf — 12 besuchte Cowork-verifiziert inkl. Bilder; unbesuchte teils automatisch (de.wikipedia + OSM), Cowork-Verifikation ausstehend.",
+    "status": "Entwurf — 12 besuchte + 48 unbesuchte Cowork/Wikidata-verifiziert; restliche Voralpen/obskure Gruppen offen (Cowork-Verifikation).",
     "stand": "2026-07-01",
     "hinweis": "Steckbriefe der besuchten SOIUSA-Gruppen. Key = exakter STS-Name."
   },
@@ -255,7 +255,7 @@
       ],
       "region_kanton": [],
       "hoechster_berg": "Monte Argentera",
-      "hoehe_m": null,
+      "hoehe_m": 3297,
       "wiki_url": "https://de.wikipedia.org/wiki/Seealpen",
       "bild_url": "",
       "bild_attr": ""
@@ -279,7 +279,7 @@
       ],
       "region_kanton": [],
       "hoechster_berg": "Pizzo di Coca",
-      "hoehe_m": null,
+      "hoehe_m": 3052,
       "wiki_url": "https://de.wikipedia.org/wiki/Bergamasker_Alpen",
       "bild_url": "",
       "bild_attr": ""
@@ -302,8 +302,8 @@
         "IT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "Hirzer (Sarntaler Alpen)",
-      "hoehe_m": null,
+      "hoechster_berg": "Hirzer",
+      "hoehe_m": 2781,
       "wiki_url": "https://de.wikipedia.org/wiki/Sarntaler_Alpen",
       "bild_url": "",
       "bild_attr": ""
@@ -314,8 +314,8 @@
         "AT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "Hundstein (Salzburger Schieferalpen)",
-      "hoehe_m": null,
+      "hoechster_berg": "Hundstein",
+      "hoehe_m": 2117,
       "wiki_url": "https://de.wikipedia.org/wiki/Salzburger_Schieferalpen",
       "bild_url": "",
       "bild_attr": ""
@@ -387,7 +387,7 @@
       ],
       "region_kanton": [],
       "hoechster_berg": "Sonntagshorn",
-      "hoehe_m": null,
+      "hoehe_m": 1961,
       "wiki_url": "https://de.wikipedia.org/wiki/Chiemgauer_Alpen",
       "bild_url": "",
       "bild_attr": ""
@@ -398,8 +398,8 @@
         "IT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Gran Paradiso",
+      "hoehe_m": 4061,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -410,8 +410,8 @@
         "CH"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Grand Combin",
+      "hoehe_m": 4309,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -422,8 +422,8 @@
         "DE"
       ],
       "region_kanton": [],
-      "hoechster_berg": "Hinteres Sonnwendjoch",
-      "hoehe_m": null,
+      "hoechster_berg": "Rotwand",
+      "hoehe_m": 1884,
       "wiki_url": "https://de.wikipedia.org/wiki/Mangfallgebirge",
       "bild_url": "",
       "bild_attr": ""
@@ -434,8 +434,8 @@
         "IT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Punta Marguareis",
+      "hoehe_m": 2651,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -446,8 +446,8 @@
         "CH"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Dom",
+      "hoehe_m": 4546,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -482,8 +482,8 @@
         "CH"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Monte Leone",
+      "hoehe_m": 3553,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -494,8 +494,8 @@
         "IT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Dufourspitze",
+      "hoehe_m": 4634,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -506,8 +506,8 @@
         "IT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Monte Viso",
+      "hoehe_m": 3841,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -554,8 +554,8 @@
         "CH"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Weisshorn",
+      "hoehe_m": 4506,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -567,7 +567,7 @@
       ],
       "region_kanton": [],
       "hoechster_berg": "Presanella",
-      "hoehe_m": null,
+      "hoehe_m": 3556,
       "wiki_url": "https://de.wikipedia.org/wiki/Adamello-Presanella-Alpen",
       "bild_url": "",
       "bild_attr": ""
@@ -579,7 +579,7 @@
       ],
       "region_kanton": [],
       "hoechster_berg": "Rheinwaldhorn",
-      "hoehe_m": null,
+      "hoehe_m": 3402,
       "wiki_url": "https://de.wikipedia.org/wiki/Adula-Alpen",
       "bild_url": "",
       "bild_attr": ""
@@ -603,7 +603,7 @@
       ],
       "region_kanton": [],
       "hoechster_berg": "Großer Krottenkopf",
-      "hoehe_m": null,
+      "hoehe_m": 2656,
       "wiki_url": "https://de.wikipedia.org/wiki/Allg%C3%A4uer_Alpen",
       "bild_url": "",
       "bild_attr": ""
@@ -614,8 +614,8 @@
         "DE"
       ],
       "region_kanton": [],
-      "hoechster_berg": "Daniel (Berg)",
-      "hoehe_m": null,
+      "hoechster_berg": "Daniel",
+      "hoehe_m": 2342,
       "wiki_url": "https://de.wikipedia.org/wiki/Ammergauer_Alpen",
       "bild_url": "",
       "bild_attr": ""
@@ -626,8 +626,8 @@
         "AT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "Hochtor (Ennstaler Alpen)",
-      "hoehe_m": null,
+      "hoechster_berg": "Hochtor",
+      "hoehe_m": 2369,
       "wiki_url": "https://de.wikipedia.org/wiki/Ennstaler_Alpen",
       "bild_url": "",
       "bild_attr": ""
@@ -650,8 +650,8 @@
         "AT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "Kräuterin",
-      "hoehe_m": null,
+      "hoechster_berg": "Hochstadl",
+      "hoehe_m": 1919,
       "wiki_url": "https://de.wikipedia.org/wiki/Ybbstaler_Alpen",
       "bild_url": "",
       "bild_attr": ""
@@ -662,8 +662,8 @@
         "IT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Grande Sassière",
+      "hoehe_m": 3747,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -674,8 +674,8 @@
         "AT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "Eisenhut (Berg)",
-      "hoehe_m": null,
+      "hoechster_berg": "Eisenhut",
+      "hoehe_m": 2441,
       "wiki_url": "https://de.wikipedia.org/wiki/Gurktaler_Alpen",
       "bild_url": "",
       "bild_attr": ""
@@ -710,8 +710,8 @@
         "CH"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Piz Sesvenna",
+      "hoehe_m": 3204,
       "wiki_url": "https://de.wikipedia.org/wiki/M%C3%BCnstertaler_Alpen",
       "bild_url": "",
       "bild_attr": ""
@@ -723,7 +723,7 @@
       ],
       "region_kanton": [],
       "hoechster_berg": "Laugenspitze",
-      "hoehe_m": null,
+      "hoehe_m": 2434,
       "wiki_url": "https://de.wikipedia.org/wiki/Nonsberggruppe",
       "bild_url": "",
       "bild_attr": ""
@@ -734,8 +734,8 @@
         "FR"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Grande Casse",
+      "hoehe_m": 3855,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -747,7 +747,7 @@
       ],
       "region_kanton": [],
       "hoechster_berg": "Hochfeiler",
-      "hoehe_m": null,
+      "hoehe_m": 3509,
       "wiki_url": "https://de.wikipedia.org/wiki/Zillertaler_Alpen",
       "bild_url": "",
       "bild_attr": ""
@@ -758,8 +758,8 @@
         "FR"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Pic Bayle",
+      "hoehe_m": 3465,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -794,8 +794,8 @@
         "AT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "Kreuzjoch (Kitzbüheler Alpen)",
-      "hoehe_m": null,
+      "hoechster_berg": "Kreuzjoch",
+      "hoehe_m": 2558,
       "wiki_url": "https://de.wikipedia.org/wiki/Kitzb%C3%BCheler_Alpen",
       "bild_url": "",
       "bild_attr": ""
@@ -818,8 +818,8 @@
         "CH"
       ],
       "region_kanton": [],
-      "hoechster_berg": "Cima de’ Piazzi",
-      "hoehe_m": null,
+      "hoechster_berg": "Cima de' Piazzi",
+      "hoehe_m": 3439,
       "wiki_url": "https://de.wikipedia.org/wiki/Livigno-Alpen",
       "bild_url": "",
       "bild_attr": ""
@@ -830,8 +830,8 @@
         "FR"
       ],
       "region_kanton": [],
-      "hoechster_berg": "Tête de l’Estrop",
-      "hoehe_m": null,
+      "hoechster_berg": "Tête de l'Estrop",
+      "hoehe_m": 2961,
       "wiki_url": "https://de.wikipedia.org/wiki/Provenzalische_Alpen",
       "bild_url": "",
       "bild_attr": ""
@@ -842,8 +842,8 @@
         "CH"
       ],
       "region_kanton": [],
-      "hoechster_berg": "Le Sommet des Diablerets",
-      "hoehe_m": null,
+      "hoechster_berg": "Les Diablerets",
+      "hoehe_m": 3216,
       "wiki_url": "https://de.wikipedia.org/wiki/Waadtl%C3%A4nder_Alpen",
       "bild_url": "",
       "bild_attr": ""
@@ -854,8 +854,8 @@
         "AT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Großglockner",
+      "hoehe_m": 3798,
       "wiki_url": "https://de.wikipedia.org/wiki/Hohe_Tauern",
       "bild_url": "",
       "bild_attr": ""
@@ -867,7 +867,7 @@
       ],
       "region_kanton": [],
       "hoechster_berg": "Hochstuhl",
-      "hoehe_m": null,
+      "hoehe_m": 2237,
       "wiki_url": "https://de.wikipedia.org/wiki/Karawanken",
       "bild_url": "",
       "bild_attr": ""
@@ -878,8 +878,8 @@
         "IT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Aiguille du Belvédère",
+      "hoehe_m": 2965,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -890,8 +890,8 @@
         "FR"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Grand pic de Belledonne",
+      "hoehe_m": 2977,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -902,8 +902,8 @@
         "IT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Cima di Vezzana",
+      "hoehe_m": 3192,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -938,8 +938,8 @@
         "IT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Dreischusterspitze",
+      "hoehe_m": 3145,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -950,8 +950,8 @@
         "IT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Monte Pelmo",
+      "hoehe_m": 3168,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -974,8 +974,8 @@
         "AT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "Mölltaler Polinik",
-      "hoehe_m": null,
+      "hoechster_berg": "Polinik",
+      "hoehe_m": 2784,
       "wiki_url": "https://de.wikipedia.org/wiki/Kreuzeckgruppe",
       "bild_url": "",
       "bild_attr": ""
@@ -1010,8 +1010,8 @@
         "FR"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Le Taillefer",
+      "hoehe_m": 2857,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -1082,8 +1082,8 @@
         "AT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Zugspitze",
+      "hoehe_m": 2962,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -1118,8 +1118,8 @@
         "CH"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Säntis",
+      "hoehe_m": 2501,
       "wiki_url": "https://de.wikipedia.org/wiki/Appenzeller_und_St._Galler_Voralpen",
       "bild_url": "",
       "bild_attr": ""
@@ -1322,8 +1322,8 @@
         "FR"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Arcalod",
+      "hoehe_m": 2210,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -1346,8 +1346,8 @@
         "FR"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Obiou",
+      "hoehe_m": 2790,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -1394,8 +1394,8 @@
         "FR"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Grand Veymont",
+      "hoehe_m": 2341,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -1418,8 +1418,8 @@
         "FR"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Chamechaude",
+      "hoehe_m": 2082,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -1442,8 +1442,8 @@
         "FR"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Haute Cime (Dents du Midi)",
+      "hoehe_m": 3257,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -1454,8 +1454,8 @@
         "AT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Glatthorn",
+      "hoehe_m": 2134,
       "wiki_url": "https://de.wikipedia.org/wiki/Bregenzer_Wald",
       "bild_url": "",
       "bild_attr": ""

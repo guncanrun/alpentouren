@@ -444,7 +444,7 @@ map.on('load',()=>{
         11, 1]}});
 
   // Huts — sonstige (grau, ab höherem Zoom)
-  map.addLayer({id:'osm-huts-other', type:'symbol', source:'osm-huts', minzoom:9,
+  map.addLayer({id:'osm-huts-other', type:'symbol', source:'osm-huts', minzoom:8,
     filter:['==',['get','kat'],'hut'],
     layout:{'visibility':'none','icon-image':'hut-other','icon-anchor':'bottom','icon-allow-overlap':false,
       'icon-size':['interpolate',['linear'],['zoom'], 9,0.7, 12,1.0],

@@ -72,8 +72,9 @@ def peaks_geojson(elements):
 
 import re
 
-# Exclude alpine dairy farms / pastures (Almen), keep real hiking huts.
-ALM_RE = re.compile(r"Alm|Alpe|Alpage|Malga|\bAlp\b|Rifugio Alpe", re.IGNORECASE)
+# Exclude alpine dairy farms / pastures / non-hut noise, keep real hiking huts.
+ALM_RE = re.compile(r"Alm|Alpe|Alpage|Malga|\bAlp\b|Rifugio Alpe|Bergerie|forestale|camper|Stazzo",
+                    re.IGNORECASE)
 # Alpine-club operators → prioritised "club" category (tier 1).
 CLUB_RE = re.compile(r"Alpenverein|DAV|ÖAV|OeAV|AVS|SAC|CAI|FFCAM|Naturfreunde", re.IGNORECASE)
 
@@ -99,6 +100,10 @@ def huts_geojson(elements):
         else:
             kat = "hut"
         props = {"name": name, "kat": kat}
+        if op:
+            props["operator"] = op        # keep for reproducibility / DAV cross-check
+        if tags.get("tourism"):
+            props["tourism"] = tags["tourism"]
         raw = str(tags.get("ele", "")).replace(",", ".").split()
         if raw:
             try:
@@ -111,20 +116,41 @@ def huts_geojson(elements):
     return feats
 
 
+def alps_filter(feats):
+    """Keep only features whose point lies inside the SOIUSA polygons (drop non-alpine)."""
+    try:
+        from shapely.geometry import Point, shape
+        from shapely.ops import unary_union
+        from shapely.prepared import prep
+    except ImportError:
+        print("  (shapely fehlt -> kein SOIUSA-Clip)")
+        return feats
+    fc = json.loads((HERE / "soiusa_sts_colored.geojson").read_text(encoding="utf-8"))
+    union = prep(unary_union([shape(f["geometry"]) for f in fc["features"]]))
+    return [f for f in feats if union.contains(Point(f["geometry"]["coordinates"]))]
+
+
+def save(name, feats, label):
+    (HERE / name).write_text(json.dumps({"type": "FeatureCollection", "features": feats},
+                                        ensure_ascii=False), encoding="utf-8")
+    kb = (HERE / name).stat().st_size // 1024
+    print(f"-> {name}  {len(feats)} {label}  {kb} KB")
+
+
 out_p = HERE / "soiusa_osm_peaks.geojson"
 if out_p.exists() and len(json.loads(out_p.read_text(encoding="utf-8"))["features"]) > 1000:
-    print(f"Gipfel bereits vorhanden ({out_p.stat().st_size//1024} KB) — ueberspringe.")
+    print("Gipfel vorhanden — lade + clippe auf SOIUSA...")
+    pf = json.loads(out_p.read_text(encoding="utf-8"))["features"]
 else:
     print("Overpass: Gipfel (kann etwas dauern)...")
     pf = peaks_geojson(query(PEAKS_Q).get("elements", []))
-    out_p.write_text(json.dumps({"type": "FeatureCollection", "features": pf}, ensure_ascii=False),
-                     encoding="utf-8")
-    print(f"-> soiusa_osm_peaks.geojson  {len(pf)} Gipfel (ele>={MIN_ELE})  {out_p.stat().st_size//1024} KB")
+before = len(pf)
+pf = alps_filter(pf)
+save("soiusa_osm_peaks.geojson", pf, f"Gipfel (von {before} nach SOIUSA-Clip)")
 
 print("Overpass: Huetten...")
 hf = huts_geojson(query(HUTS_Q).get("elements", []))
-out_h = HERE / "soiusa_osm_huts.geojson"
-out_h.write_text(json.dumps({"type": "FeatureCollection", "features": hf}, ensure_ascii=False),
-                 encoding="utf-8")
-print(f"-> soiusa_osm_huts.geojson  {len(hf)} Huetten  {out_h.stat().st_size//1024} KB")
+before = len(hf)
+hf = alps_filter(hf)
+save("soiusa_osm_huts.geojson", hf, f"Huetten (von {before} nach SOIUSA-Clip)")
 print("Naechster Schritt: python build.py")
