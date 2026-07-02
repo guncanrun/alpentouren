@@ -353,6 +353,15 @@ TEMPLATE = r"""<!DOCTYPE html>
     background:rgba(255,255,255,.04);color:var(--muted);font-size:var(--fs-ui);cursor:pointer;
     font-family:inherit;touch-action:manipulation}
   .seg button.on{background:rgba(95,208,197,.16);border-color:var(--accent2);color:var(--txt);font-weight:600}
+  .seg button.disabled{opacity:.4;pointer-events:none}          /* Topo-Gate: unter z11 */
+  .tgl.locked{opacity:.4;pointer-events:none}                    /* Färbung/Namen bei Topo gesperrt */
+  /* ── Toast (kurzlebiger Hinweis, kein Modal) ── */
+  #toast{position:absolute;left:50%;bottom:88px;transform:translateX(-50%);z-index:9;
+    background:var(--panel);backdrop-filter:blur(8px);border:1px solid var(--line);
+    border-radius:10px;padding:8px 14px;font-size:13px;color:var(--txt);text-align:center;
+    box-shadow:0 8px 30px rgba(0,0,0,.5);opacity:0;transition:opacity .3s;
+    pointer-events:none;max-width:calc(100vw - 32px)}
+  #toast.show{opacity:1}
 
   /* PRIV:START */
   /* ── Chronologie-Modus (nur Privat-Build) ── */
@@ -403,6 +412,7 @@ TEMPLATE = r"""<!DOCTYPE html>
 </head>
 <body>
 <div id="map"></div>
+<div id="toast"></div>
 
 <div id="title">
   <h1>__TITEL__</h1>
@@ -967,10 +977,13 @@ map.on('load',()=>{
       stsPopup.remove();
   });
 
-  // ── Basemap init (localStorage) + attribution ─────────────────────────────
+  // ── Basemap init (localStorage) + Interim-Gate ────────────────────────────
   let _bm='sat';
   try{ if(localStorage.getItem('alpen_basemap')==='topo') _bm='topo'; }catch(_){}
+  if(_bm==='topo' && map.getZoom()<11) _bm='sat';   // Gate: kein Topo in der Übersicht
   setBasemap(_bm);
+  updateTopoGate();
+  map.on('zoom', updateTopoGate);
 
   // ── Build the search index (groups now; OSM points fetched async) ──────────
   buildSearchIndex();
@@ -1252,27 +1265,46 @@ function togglePasses(){
   document.getElementById('tglPasses').classList.toggle('on',_passesOn);
 }
 
-// ── Basemap: Satellit ⇄ OpenTopoMap (Redundanz-Regel + localStorage) ──────────
+// ── kurzlebiger Hinweis (Toast, kein Modal) ───────────────────────────────────
+let _toastT=null;
+function showToast(msg){
+  const el=document.getElementById('toast'); if(!el) return;
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(_toastT); _toastT=setTimeout(()=>el.classList.remove('show'),2600);
+}
+
+// ── Basemap: Satellit ⇄ OpenTopoMap — Interim-Gate (SPEC_Vektor_Topo_Overlay) ──
+// Topo ist ein Raster für die Draufsicht: nur ab Detail-Zoom, flach, ohne Farb-/
+// Namens-Konkurrenz. Punkte + Highlight-Umrisse + Suche bleiben erlaubt.
 let _basemap='sat';
-let _savedPts=null;
+let _savedToggles=null, _savedPitch=null;
+function _lockStructureToggles(lock){
+  ['tglFarbung','tglNamen'].forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.toggle('locked',lock); });
+}
 function setBasemap(bm){
   const topo = bm==='topo';
+  // Gate: Topo erst ab z11 aktivierbar — Klick darunter ignorieren + Hinweis.
+  if(topo && _basemap!=='topo' && map.getZoom()<11){ showToast('Topo-Karte ab Detail-Zoom – hineinzoomen'); return; }
   if(topo && _basemap!=='topo'){
-    // OTM bakes in peak/hut/pass labels -> switch our own point layers OFF, remember state.
-    _savedPts={p:_peaksOn,h:_hutsOn,s:_passesOn};
-    if(_peaksOn) togglePeaks();
-    if(_hutsOn) toggleHuts();
-    if(_passesOn) togglePasses();
-  } else if(!topo && _basemap==='topo' && _savedPts){
-    if(_savedPts.p && !_peaksOn) togglePeaks();
-    if(_savedPts.h && !_hutsOn) toggleHuts();
-    if(_savedPts.s && !_passesOn) togglePasses();
-    _savedPts=null;
+    _savedPitch=map.getPitch(); _autoPitch=false;                 // Ortho-Zwang: Pitch merken + flach
+    if(map.getPitch()>0.5) map.easeTo({pitch:0, duration:500, essential:true});
+    _savedToggles={farbung:_farbungOn, namen:_layersOn};          // Färbung+Namen aus + sperren
+    if(_farbungOn) toggleFarbung();
+    if(_layersOn)  toggleLayers();
+    _lockStructureToggles(true);
+  } else if(!topo && _basemap==='topo'){
+    _lockStructureToggles(false);                                 // Rückwechsel: entsperren + restaurieren
+    if(_savedToggles){
+      if(_savedToggles.farbung && !_farbungOn) toggleFarbung();
+      if(_savedToggles.namen  && !_layersOn)  toggleLayers();
+      _savedToggles=null;
+    }
+    _autoPitch=true;
+    if(_savedPitch!=null){ if(_savedPitch>0.5) map.easeTo({pitch:_savedPitch, duration:500, essential:true}); _savedPitch=null; }
   }
   _basemap=bm;
   map.setLayoutProperty('sat','visibility',topo?'none':'visible');
   map.setLayoutProperty('topo','visibility',topo?'visible':'none');
-  // Settori fill a touch softer over the busy topo sheet; hillshade lighter (OTM shades itself).
   map.setPaintProperty('sts-fill','fill-opacity',
     topo ? ['interpolate',['linear'],['zoom'], 8,0.22, 11.5,0]
          : ['interpolate',['linear'],['zoom'], 8,0.34, 11.5,0]);
@@ -1281,7 +1313,16 @@ function setBasemap(bm){
   const bs=document.getElementById('bmSat'), bt=document.getElementById('bmTopo');
   if(bs) bs.classList.toggle('on',!topo);
   if(bt) bt.classList.toggle('on',topo);
+  updateTopoGate();
   try{localStorage.setItem('alpen_basemap',bm);}catch(_){}
+}
+// Live-Gate: Button unter z11 ausgegraut; im Topo-Modus unter z10 auto zurück zu Satellit.
+function updateTopoGate(){
+  const bt=document.getElementById('bmTopo'); if(!bt) return;
+  const z=map.getZoom(), ok=z>=11;
+  bt.classList.toggle('disabled', !ok && _basemap!=='topo');
+  bt.title = ok ? '' : 'Topo-Karte ab Detail-Zoom';
+  if(_basemap==='topo' && z<10){ setBasemap('sat'); showToast('Übersicht – zurück zu Satellit'); }
 }
 
 // ══ Suche: Gipfel/Hütten/Pässe/Gruppen + Koordinaten (keyless, client-seitig) ══
