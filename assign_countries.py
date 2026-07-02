@@ -87,6 +87,45 @@ def load_ne_countries():
     return alpine
 
 
+# ── Natural Earth 10m countries (for precise national clipping, e.g. HR) ──────
+NE10C_URL = (
+    "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/"
+    "master/geojson/ne_10m_admin_0_countries.geojson"
+)
+NE10C_CACHE = HERE / "ne_10m_countries.geojson"
+
+
+def load_ne10_country(adm0_a3, admin_name):
+    """Return a (valid) shapely geometry for a single NE-10m country, or None.
+    Downloads + caches the full 10m countries file on first use. Match by
+    ADM0_A3 (ISO_A2 is unreliable in NE, often '-99'); fallback ADMIN==name."""
+    if not NE10C_CACHE.exists():
+        print("  Lade Natural Earth 10m countries von GitHub...")
+        req = urllib.request.Request(NE10C_URL, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=120) as r:
+            NE10C_CACHE.write_bytes(r.read())
+        print(f"  -> {NE10C_CACHE.stat().st_size // 1024} KB gecacht")
+    ne = json.loads(NE10C_CACHE.read_text(encoding="utf-8"))
+    geoms = []
+    for feat in ne["features"]:
+        p = feat["properties"]
+        if p.get("ADM0_A3") == adm0_a3 or p.get("ADMIN") == admin_name:
+            try:
+                g = shape(feat["geometry"])
+                if not g.is_valid:
+                    g = g.buffer(0)
+                if g and not g.is_empty:
+                    geoms.append(g)
+            except Exception:
+                pass
+    if not geoms:
+        return None
+    g = unary_union(geoms) if len(geoms) > 1 else geoms[0]
+    if not g.is_valid:
+        g = g.buffer(0)
+    return g
+
+
 def country_for(sts_geom, alpine_countries):
     """Return ISO code of the country with the largest intersection area."""
     best_iso = "OTHER"
@@ -186,6 +225,34 @@ print(f"Visited-Lookup: {len(visited_by_sts)} STS-Namen")
 # ── Load Natural Earth country polygons ───────────────────────────────────────
 print("\nNatural Earth laden...")
 alpine_countries = load_ne_countries()
+
+# ── Clip STS polygons against Croatia (NE-10m) at the source ──────────────────
+# "Prealpi Slovene orientali" (and any STS touching HR) overspills the real
+# SI/HR border into the Sotla/Sutla area. Difference against the Croatian
+# national polygon so mosaic, mask, labels and country assignment are all
+# already flush with the NE-10m border line. Runs BEFORE any derivation.
+print("\nKroatien-Clip (NE-10m, quellseitig)...")
+HR = load_ne10_country("HRV", "Croatia")
+if HR is None:
+    print("  WARN: Kroatien-Polygon nicht gefunden -- Clip uebersprungen.")
+else:
+    clipped = 0
+    for feat in sts_data["features"]:
+        try:
+            g = shape(feat["geometry"])
+            if not g.is_valid:
+                g = _ensure_valid(g)
+        except Exception:
+            continue
+        if not g.intersects(HR):
+            continue
+        gd = g.difference(HR)
+        if gd.is_empty:
+            continue  # degenerate: leave original geometry untouched
+        feat["geometry"] = mapping(gd)
+        clipped += 1
+        print(f"  geclippt: {feat['properties'].get('STS', '?')[:45]}")
+    print(f"  -> {clipped} STS-Feature(s) gegen HR geclippt")
 
 # ── German name lookup for AT/DE/Südtirol SOIUSA groups ──────────────────────
 # Applied to non-visited features; visited groups keep their tour-derived name_de.
@@ -369,6 +436,12 @@ for i, feat in enumerate(sts_data["features"]):
 
 print("\nLaender-Verteilung:", dict(sorted(country_count.items())))
 print("Settore-Verteilung:", dict(sorted(settore_count.items())))
+
+# Verify the clipped Slovenian group still resolves to SI
+for feat in sts_data["features"]:
+    if feat["properties"].get("STS") == "Prealpi Slovene orientali":
+        print(f"  Check 'Prealpi Slovene orientali' -> country={feat['properties'].get('country')}")
+        break
 
 # ── Write soiusa_sts_colored.geojson ─────────────────────────────────────────
 out_colored = HERE / "soiusa_sts_colored.geojson"

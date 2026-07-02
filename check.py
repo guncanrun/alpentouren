@@ -170,6 +170,70 @@ if tp.exists():
     else:
         print("OK   touren_public.json whitelist (gruppe/besucht only)")
 
+# ── HR-Clip guard: no STS vertex may fall inside Croatia (shrunk by ~300 m) ───
+# The source clip in assign_countries.py removes the Sotla/Sutla overspill of
+# "Prealpi Slovene orientali" (and any STS touching HR). Verify the DERIVED
+# soiusa_sts_colored.geojson carries no vertices inside HR. Do NOT test HU
+# (Styrian pre-Alps are SOIUSA-correct to Kőszeg/Sopron) or SK. Skips
+# gracefully if the NE-10m cache is absent (nothing to derive HR from).
+_here = pathlib.Path(__file__).parent
+_ne10c = _here / "ne_10m_countries.geojson"
+_colored = _here / "soiusa_sts_colored.geojson"
+if not _ne10c.exists():
+    print("SKIP HR-Clip guard (ne_10m_countries.geojson fehlt -- assign_countries zuerst laufen lassen)")
+else:
+    try:
+        from shapely.geometry import shape as _shape
+        from shapely.ops import unary_union as _uu
+        from shapely.prepared import prep as _prep
+
+        _hr_geoms = []
+        for _f in _json.loads(_ne10c.read_text(encoding="utf-8"))["features"]:
+            _p = _f["properties"]
+            if _p.get("ADM0_A3") == "HRV" or _p.get("ADMIN") == "Croatia":
+                _g = _shape(_f["geometry"])
+                if not _g.is_valid:
+                    _g = _g.buffer(0)
+                if _g and not _g.is_empty:
+                    _hr_geoms.append(_g)
+        _hr = _uu(_hr_geoms) if len(_hr_geoms) > 1 else (_hr_geoms[0] if _hr_geoms else None)
+        if _hr is None:
+            print("SKIP HR-Clip guard (Kroatien-Polygon nicht gefunden)")
+        else:
+            _hr_shrunk = _prep(_hr.buffer(-0.003))  # ~300 m inside the border
+
+            def _coords(geom):
+                t = geom["type"]
+                c = geom["coordinates"]
+                if t == "Point":
+                    yield c
+                elif t in ("LineString", "MultiPoint"):
+                    yield from c
+                elif t in ("Polygon", "MultiLineString"):
+                    for ring in c:
+                        yield from ring
+                elif t == "MultiPolygon":
+                    for poly in c:
+                        for ring in poly:
+                            yield from ring
+                elif t == "GeometryCollection":
+                    for gg in geom.get("geometries", []):
+                        yield from _coords(gg)
+
+            from shapely.geometry import Point as _Point
+            _hits = 0
+            for _feat in _json.loads(_colored.read_text(encoding="utf-8"))["features"]:
+                for _xy in _coords(_feat["geometry"]):
+                    if _hr_shrunk.contains(_Point(_xy[0], _xy[1])):
+                        _hits += 1
+            if _hits == 0:
+                print("OK   HR-Clip guard: 0 STS-Vertices in Kroatien (geschrumpft)")
+            else:
+                print(f"FAIL HR-Clip guard: {_hits} STS-Vertices in Kroatien (geschrumpft)")
+                errors.append(f"HR-Clip: {_hits} vertices in Croatia")
+    except ImportError:
+        print("SKIP HR-Clip guard (shapely fehlt)")
+
 print()
 if errors:
     print(f"FEHLER: {len(errors)} Check(s) fehlgeschlagen:")
