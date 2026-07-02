@@ -118,6 +118,14 @@ TEMPLATE = r"""<!DOCTYPE html>
   :root{
     --bg:#0a0e14; --panel:rgba(14,20,28,.93); --line:rgba(255,255,255,.12);
     --txt:#e8edf2; --muted:#9fb0c0; --accent:#ffb24d; --accent2:#5fd0c5;
+    /* Dichte: kompakte Desktop-Basis (fein-Zeiger). Touch ueberschreibt unten. */
+    --row-h:32px; --fs-ui:13.5px; --fs-popup:14px;
+    --ctl:32px;        /* Zeilen-Controls / Schliessen-X */
+    --ctl-round:40px;  /* runde Aktions-Icons (Info/Home/Suche): Maus-freundlich */
+  }
+  /* Touch (Tablet/Handy): grosse, komfortable Ziele. Desktop bleibt kompakt. */
+  @media (pointer: coarse){
+    :root{ --row-h:44px; --fs-ui:16px; --fs-popup:16px; --ctl:44px; --ctl-round:44px; }
   }
   *{box-sizing:border-box}
   html,body{margin:0;height:100%;overflow:hidden;
@@ -125,8 +133,8 @@ TEMPLATE = r"""<!DOCTYPE html>
     background:var(--bg);color:var(--txt)}
   #map{position:absolute;inset:0}
   .maplibregl-ctrl-attrib{font-size:10px}
-  /* Touch: enlarge MapLibre zoom/compass buttons to >=44px */
-  .maplibregl-ctrl-group button{width:44px;height:44px;touch-action:manipulation}
+  /* MapLibre zoom/compass buttons: kompakt am Desktop, >=44px auf Touch (var) */
+  .maplibregl-ctrl-group button{width:var(--ctl);height:var(--ctl);touch-action:manipulation}
   .maplibregl-ctrl-group button .maplibregl-ctrl-icon{transform:scale(1.15)}
 
   /* ── Title card ── */
@@ -188,7 +196,7 @@ TEMPLATE = r"""<!DOCTYPE html>
   #panel li b{color:var(--accent);font-variant-numeric:tabular-nums;white-space:nowrap}
   #panel .notiz{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4}
   #panel .x{position:absolute;top:6px;right:6px;cursor:pointer;color:var(--muted);
-    width:44px;height:44px;border-radius:10px;display:grid;place-items:center;font-size:23px;
+    width:var(--ctl);height:var(--ctl);border-radius:10px;display:grid;place-items:center;font-size:22px;
     touch-action:manipulation;z-index:2}
   #panel .x:hover{background:rgba(255,255,255,.08);color:#fff}
   /* Tabs + Steckbrief */
@@ -214,12 +222,12 @@ TEMPLATE = r"""<!DOCTYPE html>
   #cov{position:absolute;bottom:16px;left:16px;z-index:5;width:270px;max-height:42vh;
     background:var(--panel);backdrop-filter:blur(8px);border:1px solid var(--line);
     border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.45);overflow:hidden}
-  #cov .ch{padding:13px 14px;font-size:14px;font-weight:600;cursor:pointer;min-height:44px;
+  #cov .ch{padding:9px 14px;font-size:var(--fs-ui);font-weight:600;cursor:pointer;min-height:var(--row-h);
     display:flex;justify-content:space-between;align-items:center;user-select:none;touch-action:manipulation}
   #cov .ch span{color:var(--muted);font-weight:400;font-size:11px}
   #cov .cl{max-height:0;overflow-y:auto;transition:max-height .3s ease}
   #cov.open .cl{max-height:34vh}
-  #cov .row{padding:11px 14px;font-size:13px;cursor:pointer;min-height:44px;box-sizing:border-box;
+  #cov .row{padding:8px 14px;font-size:var(--fs-ui);cursor:pointer;min-height:var(--row-h);box-sizing:border-box;
     display:flex;justify-content:space-between;align-items:center;gap:8px;
     border-top:1px solid rgba(255,255,255,.06);touch-action:manipulation}
   #cov .row:hover{background:rgba(255,178,77,.10)}
@@ -231,15 +239,15 @@ TEMPLATE = r"""<!DOCTYPE html>
     border-radius:9px;padding:7px 11px;box-shadow:0 6px 20px rgba(0,0,0,.55);
     min-width:120px}
   .maplibregl-popup-tip{display:none}
-  .maplibregl-popup-close-button{color:#9fb0c0;font-size:22px;width:36px;height:36px;
+  .maplibregl-popup-close-button{color:#9fb0c0;font-size:22px;width:var(--ctl);height:var(--ctl);
     right:2px;top:2px;line-height:1;background:none;touch-action:manipulation}
-  .sp-name{font:600 16px/1.3 Inter,system-ui,sans-serif;color:#e8edf2}
+  .sp-name{font:600 var(--fs-popup)/1.3 Inter,system-ui,sans-serif;color:#e8edf2}
   .sp-sub{font-size:12px;color:#aebccb;margin-top:2px}
-  .hp-n{font:600 14px/1.2 Inter,system-ui,sans-serif;color:#e8edf2}
+  .hp-n{font:600 var(--fs-popup)/1.2 Inter,system-ui,sans-serif;color:#e8edf2}
   .hp-s{font-size:11.5px;color:#aebccb;margin-top:1px}
 
   /* ── About / Info card ── */
-  #about{position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:7;
+  #about{position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:10;
     width:min(360px,calc(100vw - 32px));background:var(--panel);backdrop-filter:blur(8px);
     border:1px solid var(--line);border-radius:14px;padding:14px 16px;
     box-shadow:0 8px 30px rgba(0,0,0,.55);display:none}
@@ -248,8 +256,8 @@ TEMPLATE = r"""<!DOCTYPE html>
   #about h3:first-of-type{margin-top:0}
   #about p{margin:5px 0;font-size:13px;color:var(--muted);line-height:1.55}
   #about b{color:var(--txt)}
-  #about .x{position:absolute;top:5px;right:5px;cursor:pointer;color:var(--muted);font-size:23px;
-    width:44px;height:44px;display:grid;place-items:center;border-radius:10px;touch-action:manipulation}
+  #about .x{position:absolute;top:5px;right:5px;cursor:pointer;color:var(--muted);font-size:22px;
+    width:var(--ctl);height:var(--ctl);display:grid;place-items:center;border-radius:10px;touch-action:manipulation}
   #about .x:hover{background:rgba(255,255,255,.08);color:#fff}
   #about a{color:var(--accent2);text-decoration:none}
 
@@ -257,17 +265,17 @@ TEMPLATE = r"""<!DOCTYPE html>
   #ebenen{position:absolute;top:64px;right:16px;z-index:6;width:232px;
     background:var(--panel);backdrop-filter:blur(8px);border:1px solid var(--line);
     border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.5);overflow:hidden}
-  #ebenen .eh{padding:13px 15px;font-size:15px;font-weight:600;cursor:pointer;min-height:44px;
+  #ebenen .eh{padding:9px 15px;font-size:var(--fs-ui);font-weight:600;cursor:pointer;min-height:var(--row-h);
     display:flex;justify-content:space-between;align-items:center;user-select:none;touch-action:manipulation}
   #ebenen .eh::after{content:'▾';color:var(--muted);transition:transform .3s}
   #ebenen.open .eh::after{transform:rotate(180deg)}
   #ebenen .eb{max-height:0;overflow:hidden;transition:max-height .35s ease}
-  #ebenen.open .eb{max-height:min(72vh,600px);overflow-y:auto}
+  #ebenen.open .eb{max-height:min(72vh,600px);overflow-y:auto;scrollbar-width:thin}
   #ebenen .eb-in{padding:2px 15px 14px}
   #ebenen .grp{font-size:10.5px;text-transform:uppercase;letter-spacing:1px;
     color:var(--muted);margin:11px 0 3px}
   .tgl{display:flex;align-items:center;justify-content:space-between;gap:12px;
-    padding:10px 2px;cursor:pointer;font-size:14.5px;min-height:44px;touch-action:manipulation}
+    padding:6px 2px;cursor:pointer;font-size:var(--fs-ui);min-height:var(--row-h);touch-action:manipulation}
   .tgl .sw{position:relative;width:40px;height:23px;border-radius:12px;background:#3a4655;
     transition:background .2s;flex-shrink:0}
   .tgl .sw::after{content:'';position:absolute;top:3px;left:3px;width:17px;height:17px;
@@ -277,11 +285,11 @@ TEMPLATE = r"""<!DOCTYPE html>
   #ebenen .lrow{display:flex;align-items:center;gap:9px;padding:4px 2px;font-size:12.5px}
   #ebenen .lsep{height:1px;background:var(--line);margin:6px 2px}
   /* ── Info "?" + Home ── */
-  #btnInfo{position:absolute;top:16px;right:16px;z-index:8;width:46px;height:46px;
+  #btnInfo{position:absolute;top:16px;right:16px;z-index:8;width:var(--ctl-round);height:var(--ctl-round);
     border-radius:50%;background:var(--panel);border:1px solid var(--line);color:var(--txt);
     font-size:20px;font-weight:700;cursor:pointer;backdrop-filter:blur(8px);touch-action:manipulation}
   #btnInfo:hover{border-color:var(--accent2);color:var(--accent2)}
-  #home{position:absolute;bottom:150px;right:16px;z-index:6;width:46px;height:46px;
+  #home{position:absolute;bottom:150px;right:16px;z-index:6;width:var(--ctl-round);height:var(--ctl-round);
     border-radius:11px;background:var(--panel);border:1px solid var(--line);color:var(--txt);
     font-size:19px;cursor:pointer;backdrop-filter:blur(8px);touch-action:manipulation}
   #home:hover{border-color:var(--accent2);color:var(--accent2)}
@@ -289,17 +297,17 @@ TEMPLATE = r"""<!DOCTYPE html>
   #search{position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:9;
     display:flex;align-items:center;background:var(--panel);backdrop-filter:blur(8px);
     border:1px solid var(--line);border-radius:24px;box-shadow:0 6px 24px rgba(0,0,0,.45)}
-  #sToggle{width:46px;height:46px;border:none;background:none;color:var(--txt);font-size:18px;
+  #sToggle{width:var(--ctl-round);height:var(--ctl-round);border:none;background:none;color:var(--txt);font-size:18px;
     cursor:pointer;border-radius:50%;flex-shrink:0;touch-action:manipulation}
   #sInput{width:0;padding:0;border:none;background:none;color:var(--txt);font-size:15px;
     outline:none;transition:width .25s,padding .25s;font-family:inherit}
   #sInput::placeholder{color:var(--muted)}
   #search.open #sInput{width:min(52vw,340px);padding:0 12px 0 2px}
-  #sRes{display:none;position:absolute;top:52px;left:0;right:0;background:var(--panel);
+  #sRes{display:none;position:absolute;top:calc(var(--ctl-round) + 6px);left:0;right:0;background:var(--panel);
     backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:12px;
     box-shadow:0 8px 30px rgba(0,0,0,.5);max-height:min(60vh,420px);overflow-y:auto}
-  .sr{display:flex;align-items:center;gap:10px;padding:10px 12px;min-height:44px;cursor:pointer;
-    border-top:1px solid rgba(255,255,255,.06);font-size:14px;touch-action:manipulation}
+  .sr{display:flex;align-items:center;gap:10px;padding:7px 12px;min-height:var(--row-h);cursor:pointer;
+    border-top:1px solid rgba(255,255,255,.06);font-size:var(--fs-ui);touch-action:manipulation}
   .sr:first-child{border-top:none}
   .sr.sel,.sr:hover{background:rgba(95,208,197,.15)}
   .sr .ic{width:22px;text-align:center;flex-shrink:0;font-size:15px}
@@ -307,8 +315,8 @@ TEMPLATE = r"""<!DOCTYPE html>
   .sr .sb{color:var(--muted);font-size:12px;flex-shrink:0;white-space:nowrap}
   /* ── Basemap segmented (Ebenen-Panel) ── */
   .seg{display:flex;gap:6px;margin:2px 0 2px}
-  .seg button{flex:1;min-height:40px;padding:8px;border:1px solid var(--line);border-radius:9px;
-    background:rgba(255,255,255,.04);color:var(--muted);font-size:13.5px;cursor:pointer;
+  .seg button{flex:1;min-height:var(--row-h);padding:6px;border:1px solid var(--line);border-radius:9px;
+    background:rgba(255,255,255,.04);color:var(--muted);font-size:var(--fs-ui);cursor:pointer;
     font-family:inherit;touch-action:manipulation}
   .seg button.on{background:rgba(95,208,197,.16);border-color:var(--accent2);color:var(--txt);font-weight:600}
 
