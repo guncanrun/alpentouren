@@ -89,6 +89,8 @@ checks = [
     ("places-sq K1 layer",            "id:'places-sq'"),
     ("city-square icon",              "map.addImage('citysq'"),
     ("pop-based place class",         "['coalesce',['get','pop'],0]"),
+    # Nachtjob W2 — Orte Atlas-Rot (beide Builds)
+    ("orte atlas-red",                "#cc3322"),
     # Nachtjob W1 — Interaktions-Fixes
     ("compass pitch reset",           "visualizePitch:true"),
     ("attrib init fill",              "setAttrib(false)"),

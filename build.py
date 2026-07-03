@@ -1238,20 +1238,27 @@ map.on('load',()=>{
   // Default aus (Toggle). K1 ≥100k = Quadrat (places-sq), K2 20–100k = großer Kreis,
   // K3 <20k / pop fehlt = kleiner Kreis (places-dot). Kein Rot. Labels staffeln mit.
   const _POP = ['coalesce',['get','pop'],0];   // fehlendes pop -> 0 -> K3
-  // K2/K3 als Kreise; K1 (>=100k) rendert das Quadrat-Symbol (unten) statt eines Kreises.
+  // Orte in ATLAS-ROT (Michael-Entscheid): K1 ≥100k = rotes Quadrat (places-sq),
+  // K2 20–100k = roter Kreis, K3 <20k = kleiner heller Ring. Größe MONOTON über
+  // alle Zooms: K1-Quadratkante > K2-Kreisdurchmesser > K3-Ringdurchmesser.
   map.addLayer({id:'places-dot', type:'circle', source:'osm-places', minzoom:6,
     filter:['<',_POP,100000],
     layout:{visibility:'none'},
-    paint:{'circle-color':'#f3e4c1','circle-stroke-color':'#241a0b','circle-stroke-width':1,
-      'circle-radius':['step',['zoom'],
-        ['case',['>=',_POP,20000],4,2.6],
-        9, ['case',['>=',_POP,20000],5.5,3.4],
-        12,['case',['>=',_POP,20000],7,4.4]]}});
-  // K1 Großstadt: helles Quadrat mit dunklem Kern (ECKIG = städtisch).
+    paint:{
+      'circle-color':['case',['>=',_POP,20000],'#cc3322','rgba(0,0,0,0)'],       // K2 rot, K3 Ring (kein Fill)
+      'circle-stroke-color':['case',['>=',_POP,20000],'#3a0f08','#f2e3c0'],      // K2 dunkler Rand, K3 helle Kontur
+      'circle-stroke-width':['case',['>=',_POP,20000],1,1.3],
+      'circle-radius':['interpolate',['linear'],['zoom'],
+        6, ['case',['>=',_POP,20000],3.5,2.5],     // K2 Ø7 · K3 Ø5
+        9, ['case',['>=',_POP,20000],4.5,3.0],     // K2 Ø9 · K3 Ø6
+        12,['case',['>=',_POP,20000],6.0,4.0]]}}); // K2 Ø12 · K3 Ø8
+  // K1 Großstadt: rotes Quadrat mit heller Kontur + dunklem Kern (ECKIG = städtisch).
+  // icon-size so gewählt, dass die Quadratkante über alle Zooms > K2-Ø bleibt
+  // (citysq: Quadrat ~0,76·20 px Canvas, pixelRatio 2 -> ~7,6 px/Größeneinheit).
   map.addLayer({id:'places-sq', type:'symbol', source:'osm-places', minzoom:6,
     filter:['>=',_POP,100000],
     layout:{visibility:'none','icon-image':'citysq','icon-allow-overlap':true,'icon-ignore-placement':true,
-      'icon-size':['interpolate',['linear'],['zoom'], 6,0.8, 12,1.25]}});
+      'icon-size':['interpolate',['linear'],['zoom'], 6,1.4, 9,1.8, 12,2.3]}});  // Kante ~10,6 / 13,7 / 17,5 px
   map.addLayer({id:'places-label', type:'symbol', source:'osm-places', minzoom:6,
     layout:{visibility:'none',
       // Sichtbarkeit gestaffelt: K1 ab z6, K2 ab z7.5, K3 ab z9 (entzerrt die Dichte).
@@ -1443,19 +1450,25 @@ map.on('load',()=>{
     paint:{'line-color':'#ffffff','line-width':3.2,'line-opacity':0.95}});
 
   /* PRIV:START */
-  // ── Tour markers v2 (privat only): Wanderer-Piktogramm statt Punkt ─────────
-  // Glow (t-halo) unten · unsichtbarer Hit-Kreis (t-hit, ≥40 px Touch-Ziel) ·
-  // SDF-Wanderer (t-dot) oben, orange/teal per verifiziert-Flag + heller Halo.
+  // ── Tour markers v2b (privat, Michael-Eskalation 2): POI-Pin-Charakter ─────
+  // Weiche Glow-Scheibe (t-halo) · KRÄFTIGE helle Badge-Scheibe (t-badge, POI-
+  // Rückgrund) · unsichtbarer Hit-Kreis (t-hit, ≥40 px) · großer SDF-Wanderer
+  // (t-dot, ~2–2,5×) oben. Ziel: auf Satellit-z8 sofort als Symbol erkennbar.
   map.addLayer({id:'t-halo', type:'circle', source:'tours',
-    paint:{'circle-radius':13,'circle-color':'#ffb24d',
-           'circle-opacity':0.18,'circle-blur':0.4}});
+    paint:{'circle-radius':['interpolate',['linear'],['zoom'], 5,15, 9,20, 13,26],
+           'circle-color':'#ffb24d','circle-opacity':0.20,'circle-blur':0.5}});
+  map.addLayer({id:'t-badge', type:'circle', source:'tours',     // helle POI-Scheibe hinter dem Wanderer
+    paint:{'circle-radius':['interpolate',['linear'],['zoom'], 5,11, 8,13, 12,17],
+      'circle-color':'#fff4e0','circle-opacity':0.96,
+      'circle-stroke-color':['case',['==',['get','verifiziert'],1],'#c76a1a','#2c8f86'],
+      'circle-stroke-width':2}});
   map.addLayer({id:'t-hit', type:'circle', source:'tours',       // ≥40 px Hit-Area, unsichtbar
-    paint:{'circle-radius':20,'circle-color':'#000','circle-opacity':0.01}});
+    paint:{'circle-radius':22,'circle-color':'#000','circle-opacity':0.01}});
   map.addLayer({id:'t-dot', type:'symbol', source:'tours',
     layout:{'icon-image':'hiker','icon-allow-overlap':true,'icon-ignore-placement':true,
-      'icon-size':['interpolate',['linear'],['zoom'], 5,0.72, 9,1.0, 13,1.3]},
-    paint:{'icon-color':['case',['==',['get','verifiziert'],1],'#ffb24d','#5fd0c5'],
-      'icon-halo-color':'rgba(255,247,232,0.95)','icon-halo-width':1.7,'icon-halo-blur':0.4}});
+      'icon-size':['interpolate',['linear'],['zoom'], 5,1.5, 9,2.0, 13,2.6]},   // ~2–2,5× (war 0,72–1,3)
+    paint:{'icon-color':['case',['==',['get','verifiziert'],1],'#d9640f','#1f7d74'],  // kräftig auf heller Scheibe
+      'icon-halo-color':'rgba(40,20,5,0.35)','icon-halo-width':1.0}});
   const pop = new maplibregl.Popup({closeButton:false,closeOnClick:false,offset:12});
   map.on('mouseenter','t-hit',e=>{
     map.getCanvas().style.cursor='pointer';
@@ -1636,15 +1649,16 @@ function houseOutline(color){
     x.beginPath(); x.rect(s*0.27,s*0.5,s*0.46,s*0.34); x.fill(); x.stroke();
   });
 }
-// Orts-Klassifizierung v2: K1 (Großstadt ≥100k) = helles Quadrat mit dunklem Kern
-// (ECKIG = städtisch; klassische Atlas-Konvention). Kein Rot (Orange ist reserviert).
+// Orts-Klassifizierung v2: K1 (Großstadt ≥100k) = ATLAS-ROTES Quadrat mit heller
+// Kontur + dunklem Kern-Akzent (ECKIG = städtisch). Quadrat füllt fast das Canvas
+// (randfüllend) -> Rendergröße ≈ icon-size, damit die Kante > K2-Ø bleibt (monoton).
 function citySquare(){
-  return makeIcon(18,(x,s)=>{
-    const a=s*0.24, b=s*0.52;
-    x.fillStyle='#f3e4c1'; x.strokeStyle='#241a0b'; x.lineWidth=1.6; x.lineJoin='miter';
-    x.beginPath(); x.rect(a,a,b,b); x.fill(); x.stroke();          // helles Quadrat
-    x.fillStyle='#241a0b';
-    x.fillRect(s*0.41,s*0.41,s*0.18,s*0.18);                       // dunkler Kern
+  return makeIcon(20,(x,s)=>{
+    const a=s*0.12, b=s*0.76;
+    x.fillStyle='#cc3322'; x.strokeStyle='#f2e3c0'; x.lineWidth=1.8; x.lineJoin='miter';
+    x.beginPath(); x.rect(a,a,b,b); x.fill(); x.stroke();          // rotes Quadrat, helle Kontur
+    x.fillStyle='#2a0d08';
+    x.fillRect(s*0.4,s*0.4,s*0.2,s*0.2);                           // dunkler Kern-Akzent
   });
 }
 // Tour-Marker v2 (Privat): Wanderer-Silhouette als SDF (weiß -> icon-color recolort
