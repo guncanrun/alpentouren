@@ -1346,15 +1346,23 @@ function setBasemap(bm){
   if(topo && _basemap!=='topo'){
     _savedPitch=map.getPitch(); _autoPitch=false;                 // Ortho-Zwang: Pitch merken + flach
     if(map.getPitch()>0.5) map.easeTo({pitch:0, duration:500, essential:true});
-    _savedToggles={farbung:_farbungOn, namen:_layersOn};          // Färbung+Namen aus + sperren
+    // Färbung+Namen aus + GESPERRT. Punkte (Gipfel/Hütten/Pässe) default aus (OTM
+    // hat eigene Signaturen), aber NICHT gesperrt -> manuell wieder einschaltbar.
+    _savedToggles={farbung:_farbungOn, namen:_layersOn, peaks:_peaksOn, huts:_hutsOn, passes:_passesOn};
     if(_farbungOn) toggleFarbung();
     if(_layersOn)  toggleLayers();
-    _lockStructureToggles(true);
+    if(_peaksOn)   togglePeaks();
+    if(_hutsOn)    toggleHuts();
+    if(_passesOn)  togglePasses();
+    _lockStructureToggles(true);                                  // sperrt nur Färbung+Namen
   } else if(!topo && _basemap==='topo'){
     _lockStructureToggles(false);                                 // Rückwechsel: entsperren + restaurieren
     if(_savedToggles){
       if(_savedToggles.farbung && !_farbungOn) toggleFarbung();
       if(_savedToggles.namen  && !_layersOn)  toggleLayers();
+      if(_savedToggles.peaks  && !_peaksOn)   togglePeaks();
+      if(_savedToggles.huts   && !_hutsOn)    toggleHuts();
+      if(_savedToggles.passes && !_passesOn)  togglePasses();
       _savedToggles=null;
     }
     _autoPitch=true;
