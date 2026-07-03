@@ -730,7 +730,7 @@ const OSM_PLACES = __OSM_PLACES__;
 const OSM_CABLE  = __OSM_CABLE__;
 const BORDERS_GJ = __BORDERS__;
 const PRIV = __PRIV__;
-const TOUR_LAYERS = PRIV ? ['t-dot'] : [];   // tour markers only exist in the private build
+const TOUR_LAYERS = PRIV ? ['t-hit'] : [];   // tour markers only exist in the private build (Hit-Kreis)
 const CNAMES = {AT:'Österreich',CH:'Schweiz',DE:'Deutschland',
   FR:'Frankreich',IT:'Italien',SI:'Slowenien',LI:'Liechtenstein'};
 
@@ -1143,6 +1143,8 @@ map.on('load',()=>{
   map.addImage('hut-other', houseIcon('#9fb0c0'), {pixelRatio:2});   // sonstige bewirtschaftet
   map.addImage('hut-wild',  houseOutline('#a8bccc'), {pixelRatio:2}); // unbewirtschaftet/Refugio (Tier 2)
   map.addImage('gondola',   gondolaIcon('#8fd0dd'), {pixelRatio:2});  // Seilbahn-Talstation
+  map.addImage('citysq',    citySquare(), {pixelRatio:2});            // Orte v2: K1 Großstadt-Quadrat
+  if(PRIV) map.addImage('hiker', hikerIcon(), {sdf:true, pixelRatio:2});  // Tour-Marker v2 (SDF, recolorbar)
 
   // Peaks — black triangle, name+height label from higher zoom
   // Landmark-Glow (hinter den Gipfeln)
@@ -1151,28 +1153,40 @@ map.on('load',()=>{
     layout:{'visibility':'none'},
     paint:{'circle-radius':['interpolate',['linear'],['zoom'], 6,7, 12,16],
       'circle-color':'#ffd24d','circle-opacity':0.28,'circle-blur':0.9}});
-  // ── Anreise: Orte (Kreis nach Rang + Label) + Seilbahn-Talstationen ─────────
-  // VOR den Gipfel-/Huetten-Layern einsortiert -> in der Kollision niedrigere Prioritaet
-  // (Ortsnamen weichen Gipfeln/Huetten). Default aus (Toggle). Zoom-Gates: city/town ab
-  // z6, village ab z9, hamlet ab z11; Seilbahnen ab z10.
+  // ── Anreise: Orte v2 (Klassen nach EINWOHNERN, place-Typ nur Fallback) ──────
+  // VOR den Gipfel-/Huetten-Layern einsortiert -> niedrigere Kollisions-Prioritaet.
+  // Default aus (Toggle). K1 ≥100k = Quadrat (places-sq), K2 20–100k = großer Kreis,
+  // K3 <20k / pop fehlt = kleiner Kreis (places-dot). Kein Rot. Labels staffeln mit.
+  const _POP = ['coalesce',['get','pop'],0];   // fehlendes pop -> 0 -> K3
+  // K2/K3 als Kreise; K1 (>=100k) rendert das Quadrat-Symbol (unten) statt eines Kreises.
   map.addLayer({id:'places-dot', type:'circle', source:'osm-places', minzoom:6,
+    filter:['<',_POP,100000],
     layout:{visibility:'none'},
-    paint:{'circle-color':'#e6b566','circle-stroke-color':'#1a1206','circle-stroke-width':1,
+    paint:{'circle-color':'#f3e4c1','circle-stroke-color':'#241a0b','circle-stroke-width':1,
       'circle-radius':['step',['zoom'],
-        ['match',['get','place'],['city','town'],3.5, 0],
-        9, ['match',['get','place'],['city','town'],5,'village',3, 0],
-        11,['match',['get','place'],['city','town'],6.5,'village',4.5,'hamlet',3, 0],
-        14,['match',['get','place'],['city','town'],8,'village',5.5,'hamlet',4, 0]]}});
+        ['case',['>=',_POP,20000],4,2.6],
+        9, ['case',['>=',_POP,20000],5.5,3.4],
+        12,['case',['>=',_POP,20000],7,4.4]]}});
+  // K1 Großstadt: helles Quadrat mit dunklem Kern (ECKIG = städtisch).
+  map.addLayer({id:'places-sq', type:'symbol', source:'osm-places', minzoom:6,
+    filter:['>=',_POP,100000],
+    layout:{visibility:'none','icon-image':'citysq','icon-allow-overlap':true,'icon-ignore-placement':true,
+      'icon-size':['interpolate',['linear'],['zoom'], 6,0.8, 12,1.25]}});
   map.addLayer({id:'places-label', type:'symbol', source:'osm-places', minzoom:6,
     layout:{visibility:'none',
+      // Sichtbarkeit gestaffelt: K1 ab z6, K2 ab z7.5, K3 ab z9 (entzerrt die Dichte).
       'text-field':['step',['zoom'],
-        ['case',['>=',['get','rank'],2],['get','name'],''],
-        9, ['case',['>=',['get','rank'],1],['get','name'],''],
-        11,['get','name']],
-      'text-font':['Noto Sans Bold'],'text-size':['interpolate',['linear'],['zoom'], 6,10, 12,12.5],
-      'text-variable-anchor':['left','right','top','bottom'],'text-radial-offset':0.8,
-      'text-optional':true,'text-allow-overlap':false,'symbol-sort-key':['-',5,['get','rank']]},
-    paint:{'text-color':'#f2ddb6','text-halo-color':'#1a1206','text-halo-width':1.4}});
+        ['case',['>=',_POP,100000],['get','name'],''],
+        7.5,['case',['>=',_POP,20000],['get','name'],''],
+        9, ['get','name']],
+      'text-font':['Noto Sans Bold'],
+      // Label-Größen nach Klasse staffeln (K1 größtes Label).
+      'text-size':['interpolate',['linear'],['zoom'],
+        6, ['case',['>=',_POP,100000],13,['>=',_POP,20000],11,9.5],
+        12,['case',['>=',_POP,100000],16.5,['>=',_POP,20000],13.5,12]],
+      'text-variable-anchor':['left','right','top','bottom'],'text-radial-offset':0.85,
+      'text-optional':true,'text-allow-overlap':false,'symbol-sort-key':['*',-1,_POP]},   // große Städte zuerst
+    paint:{'text-color':'#f2e3c0','text-halo-color':'#1a1206','text-halo-width':1.4}});
   map.addLayer({id:'cable-icon', type:'symbol', source:'osm-cable', minzoom:10,
     layout:{visibility:'none','icon-image':'gondola','icon-size':0.95,'icon-allow-overlap':false,
       'text-field':['step',['zoom'], '', 12, ['get','name']],
@@ -1266,12 +1280,12 @@ map.on('load',()=>{
   });
 
   // ── §7 (W4): Cursor-Pointer auf allen klickbaren Punkt-Layern (Desktop) ────
-  ['osm-peaks','osm-landmarks','osm-passes','osm-passes-famous','places-dot','places-label','cable-icon'].forEach(l=>{
+  ['osm-peaks','osm-landmarks','osm-passes','osm-passes-famous','places-sq','places-dot','places-label','cable-icon'].forEach(l=>{
     map.on('mouseenter',l,()=>map.getCanvas().style.cursor='pointer');
     map.on('mouseleave',l,()=>map.getCanvas().style.cursor='');
   });
   // Anreise: Klick-Popups (Ort = Name/Typ/Höhe/Einwohner; Seilbahn = Name + Tal->Berg).
-  ['places-dot','places-label'].forEach(l=>map.on('click',l,e=>{
+  ['places-sq','places-dot','places-label'].forEach(l=>map.on('click',l,e=>{
     stsPopup.remove();
     hutPopup.setLngLat(e.features[0].geometry.coordinates.slice())
       .setHTML(placePopupHtml(e.features[0].properties||{})).addTo(map);
@@ -1349,23 +1363,28 @@ map.on('load',()=>{
     paint:{'line-color':'#ffffff','line-width':3.2,'line-opacity':0.95}});
 
   /* PRIV:START */
-  // ── Tour markers (privat only — reveals "wann/wo" per point) ──────────────
+  // ── Tour markers v2 (privat only): Wanderer-Piktogramm statt Punkt ─────────
+  // Glow (t-halo) unten · unsichtbarer Hit-Kreis (t-hit, ≥40 px Touch-Ziel) ·
+  // SDF-Wanderer (t-dot) oben, orange/teal per verifiziert-Flag + heller Halo.
   map.addLayer({id:'t-halo', type:'circle', source:'tours',
     paint:{'circle-radius':13,'circle-color':'#ffb24d',
            'circle-opacity':0.18,'circle-blur':0.4}});
-  map.addLayer({id:'t-dot', type:'circle', source:'tours',
-    paint:{'circle-radius':6.5,
-      'circle-color':['case',['==',['get','verifiziert'],1],'#ffb24d','#5fd0c5'],
-      'circle-stroke-width':2,'circle-stroke-color':'#0a0e14'}});
+  map.addLayer({id:'t-hit', type:'circle', source:'tours',       // ≥40 px Hit-Area, unsichtbar
+    paint:{'circle-radius':20,'circle-color':'#000','circle-opacity':0.01}});
+  map.addLayer({id:'t-dot', type:'symbol', source:'tours',
+    layout:{'icon-image':'hiker','icon-allow-overlap':true,'icon-ignore-placement':true,
+      'icon-size':['interpolate',['linear'],['zoom'], 5,0.72, 9,1.0, 13,1.3]},
+    paint:{'icon-color':['case',['==',['get','verifiziert'],1],'#ffb24d','#5fd0c5'],
+      'icon-halo-color':'rgba(255,247,232,0.95)','icon-halo-width':1.7,'icon-halo-blur':0.4}});
   const pop = new maplibregl.Popup({closeButton:false,closeOnClick:false,offset:12});
-  map.on('mouseenter','t-dot',e=>{
+  map.on('mouseenter','t-hit',e=>{
     map.getCanvas().style.cursor='pointer';
     const p=e.features[0].properties;
     pop.setLngLat(e.features[0].geometry.coordinates)
        .setHTML('<b>'+p.gebirge+'</b> · '+p.jahr).addTo(map);
   });
-  map.on('mouseleave','t-dot',()=>{map.getCanvas().style.cursor='';pop.remove();});
-  map.on('click','t-dot',e=>openTour(e.features[0].properties.id));
+  map.on('mouseleave','t-hit',()=>{map.getCanvas().style.cursor='';pop.remove();});
+  map.on('click','t-hit',e=>openTour(e.features[0].properties.id));
   /* PRIV:END */
 
   // ── STS fill click — popup always; panel only for visited groups ─────────
@@ -1407,7 +1426,7 @@ map.on('load',()=>{
   map.on('click','sts-hit',e=>{
     if(TOUR_LAYERS.length && map.queryRenderedFeatures(e.point,{layers:TOUR_LAYERS}).length) return;
     if(map.queryRenderedFeatures(e.point,{layers:HUT_LAYERS}).length) return;  // Hütte hat Vorrang
-    if(map.queryRenderedFeatures(e.point,{layers:['places-dot','places-label','cable-icon']}).length) return;  // Ort/Seilbahn hat Vorrang
+    if(map.queryRenderedFeatures(e.point,{layers:['places-sq','places-dot','places-label','cable-icon']}).length) return;  // Ort/Seilbahn hat Vorrang
     clearTimeout(_hoverTimer); hoverPop.remove(); stsPopup.remove(); hutPopup.remove();  // B: keine klebende Box
     openSts(e.features[0]);                                                   // Steckbrief für JEDE Gruppe
   });
@@ -1433,7 +1452,7 @@ map.on('load',()=>{
     // W1c: Klick ohne Gruppen-/Linien-/Punkt-Feature -> Steckbrief schliessen + Auswahl-Rand weg.
     const feats=map.queryRenderedFeatures(e.point,{layers:
       ['sts-hit','hl-line','osm-peaks','osm-landmarks','osm-passes','osm-passes-famous',
-       'places-dot','places-label','cable-icon']
+       'places-sq','places-dot','places-label','cable-icon']
         .concat(HUT_LAYERS).concat(TOUR_LAYERS)});
     if(!feats.length) closePanel();
   });
@@ -1534,6 +1553,33 @@ function houseOutline(color){
     x.strokeStyle=color; x.lineWidth=1.8; x.lineJoin='round'; x.fillStyle='rgba(10,14,20,0.5)';
     x.beginPath(); x.moveTo(s*0.5,s*0.16); x.lineTo(s*0.86,s*0.5); x.lineTo(s*0.14,s*0.5); x.closePath(); x.fill(); x.stroke();
     x.beginPath(); x.rect(s*0.27,s*0.5,s*0.46,s*0.34); x.fill(); x.stroke();
+  });
+}
+// Orts-Klassifizierung v2: K1 (Großstadt ≥100k) = helles Quadrat mit dunklem Kern
+// (ECKIG = städtisch; klassische Atlas-Konvention). Kein Rot (Orange ist reserviert).
+function citySquare(){
+  return makeIcon(18,(x,s)=>{
+    const a=s*0.24, b=s*0.52;
+    x.fillStyle='#f3e4c1'; x.strokeStyle='#241a0b'; x.lineWidth=1.6; x.lineJoin='miter';
+    x.beginPath(); x.rect(a,a,b,b); x.fill(); x.stroke();          // helles Quadrat
+    x.fillStyle='#241a0b';
+    x.fillRect(s*0.41,s*0.41,s*0.18,s*0.18);                       // dunkler Kern
+  });
+}
+// Tour-Marker v2 (Privat): Wanderer-Silhouette als SDF (weiß -> icon-color recolort
+// orange/teal; heller Halo via icon-halo-*). Punkt suggerierte Präzision — der
+// Wanderer markiert die Tour-Region, kollidiert nicht mit den runden Orts-Punkten.
+function hikerIcon(){
+  return makeIcon(28,(x,s)=>{
+    x.fillStyle='#fff'; x.strokeStyle='#fff'; x.lineJoin='round'; x.lineCap='round';
+    x.beginPath(); x.arc(s*0.44,s*0.19,s*0.1,0,7); x.fill();                    // Kopf
+    x.lineWidth=s*0.14; x.beginPath(); x.moveTo(s*0.45,s*0.3); x.lineTo(s*0.5,s*0.57); x.stroke();  // Rumpf
+    x.lineWidth=s*0.11;
+    x.beginPath(); x.moveTo(s*0.5,s*0.55); x.lineTo(s*0.35,s*0.83); x.stroke(); // hinteres Bein
+    x.beginPath(); x.moveTo(s*0.5,s*0.55); x.lineTo(s*0.63,s*0.81); x.stroke(); // vorderes Bein
+    x.lineWidth=s*0.08;
+    x.beginPath(); x.moveTo(s*0.46,s*0.38); x.lineTo(s*0.67,s*0.49); x.stroke();// Arm
+    x.beginPath(); x.moveTo(s*0.68,s*0.3); x.lineTo(s*0.72,s*0.85); x.stroke(); // Wanderstock
   });
 }
 
@@ -1945,7 +1991,7 @@ function togglePasses(){
 let _placesOn=false;
 function togglePlaces(){
   _placesOn=!_placesOn; const v=_placesOn?'visible':'none';
-  ['places-dot','places-label'].forEach(l=>map.setLayoutProperty(l,'visibility',v));
+  ['places-sq','places-dot','places-label'].forEach(l=>map.setLayoutProperty(l,'visibility',v));
   document.getElementById('tglPlaces').classList.toggle('on',_placesOn);
   persistToggles();
 }

@@ -85,6 +85,10 @@ checks = [
     # Erinnerungs-Feinschliff §3 — Seilbahn-nah-Chip (beide Builds)
     ("hut cable chip fn",             "function hutCableChip"),
     ("hut cable chip label",          "Seilbahn-nah"),
+    # Orte v2 — pop-basierte Klassifizierung (beide Builds)
+    ("places-sq K1 layer",            "id:'places-sq'"),
+    ("city-square icon",              "map.addImage('citysq'"),
+    ("pop-based place class",         "['coalesce',['get','pop'],0]"),
     # Phase 2c — Berge nach Klick
     ("peaks-in-group layer",          "id:'peaks-in-group'"),
     ("peaks-highest layer",           "id:'peaks-highest'"),

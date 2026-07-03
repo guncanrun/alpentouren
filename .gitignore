@@ -41,3 +41,8 @@ index_privat_standalone.html
 
 # Parkplatz-Zaehl-Report (Arbeitsartefakt, Zahlen stehen in der Spec)
 parking_report.json
+
+# Playwright + node_modules (nur lokales Render-/Gesten-Testtooling, nicht Teil der Pipeline)
+node_modules/
+_pw_*.mjs
+package-lock.json
