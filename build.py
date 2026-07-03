@@ -165,7 +165,7 @@ TEMPLATE = r"""<!DOCTYPE html>
   /* Maßstabsleiste (ScaleControl) — dezent, passend zum UI; rechts vom Chronik-Button */
   .maplibregl-ctrl-scale{background:rgba(14,20,28,.72);border:2px solid rgba(232,237,242,.7);
     border-top:none;color:var(--txt);font-size:10.5px;line-height:1.3;padding:1px 5px;
-    backdrop-filter:blur(6px);margin:0 0 10px 68px;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+    backdrop-filter:blur(6px);margin:0 0 10px 14px;box-shadow:0 4px 14px rgba(0,0,0,.35)}
 
   /* ── Title card ── */
   #title{position:absolute;top:16px;left:16px;z-index:5;max-width:310px;
@@ -249,7 +249,7 @@ TEMPLATE = r"""<!DOCTYPE html>
   #panel .sb-open{font-size:11px;color:var(--muted);margin-top:9px}
 
   /* ── Coverage list (default collapsed) ── */
-  #cov{position:absolute;bottom:74px;left:16px;z-index:5;width:270px;max-height:42vh;
+  #cov{position:absolute;bottom:96px;left:16px;z-index:5;width:270px;max-height:42vh;
     background:var(--panel);backdrop-filter:blur(8px);border:1px solid var(--line);
     border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.45);overflow:hidden}
   #cov .ch{padding:9px 14px;font-size:var(--fs-ui);font-weight:600;cursor:pointer;min-height:var(--row-h);
@@ -413,8 +413,11 @@ TEMPLATE = r"""<!DOCTYPE html>
   .cc-d{font-size:12px;color:var(--muted)}
   .cc-t{font-size:13px;color:var(--txt);line-height:1.45;margin-top:3px}
   .cc-who{font-style:italic;color:var(--muted)}
-  .cc-memo{font-size:11.5px;color:var(--muted);line-height:1.4;margin-top:1px;
+  .cc-memo{font-size:11.5px;color:var(--muted);line-height:1.4;margin-top:1px;cursor:pointer;
     border-left:2px solid rgba(255,178,77,.5);padding-left:7px}
+  .cc-more{color:var(--accent2);font-weight:600;white-space:nowrap}
+  #panel .tour-memo{font-size:13px;line-height:1.55;color:var(--txt);margin:6px 0 3px;
+    padding-left:9px;border-left:2px solid rgba(255,178,77,.5)}
   /* ── Fotos: Caption-Thumb, Panel-Scrollband, Lightbox (nur Privat) ── */
   .cc-media{display:flex;gap:8px;align-items:flex-start;margin-top:4px}
   .cc-media .cc-memo{margin-top:0;flex:1}
@@ -435,6 +438,8 @@ TEMPLATE = r"""<!DOCTYPE html>
     border:none;color:#fff;font-size:30px;width:46px;height:64px;border-radius:10px;cursor:pointer;
     touch-action:manipulation}
   #lightbox .lb-prev{left:10px} #lightbox .lb-next{right:10px}
+  /* W1a: Privat-Build — Scale-Bar ueber die Chronik-Uhr heben (sonst verdeckt) */
+  .maplibregl-ctrl-scale{margin:0 0 68px 16px}
   /* PRIV:END */
 
   @media(max-width:640px){
@@ -1075,11 +1080,14 @@ map.on('load',()=>{
     }
   });
 
-  // ── Click on empty map (no feature) closes the popup ──────────────────────
+  // ── Click on empty map (no feature) closes popup + selection ──────────────
   map.on('click', e=>{
     if(!map.queryRenderedFeatures(e.point,{layers:HUT_LAYERS}).length) hutPopup.remove();
-    if(!map.queryRenderedFeatures(e.point,{layers:['sts-fill','hl-line'].concat(TOUR_LAYERS)}).length)
-      stsPopup.remove();
+    // W1c: Klick ohne Gruppen-/Linien-/Punkt-Feature -> Steckbrief schliessen + Auswahl-Rand weg.
+    const feats=map.queryRenderedFeatures(e.point,{layers:
+      ['sts-fill','hl-line','osm-peaks','osm-landmarks','osm-passes','osm-passes-famous']
+        .concat(HUT_LAYERS).concat(TOUR_LAYERS)});
+    if(!feats.length) closePanel();
   });
 
   // ── P4: Vektor-Topo-Overlay Stufe 1+2 (über Satellit, gate z>=11) ─────────
@@ -1328,6 +1336,7 @@ function groupTourHtml(props){
     html+=gipfelUl(t.gipfel);
     if(t.huetten) html+='<div class="notiz"><b style="color:var(--muted)">Hütten:</b> '+t.huetten+'</div>';
     if(t.bemerkung) html+='<div class="notiz">'+t.bemerkung+'</div>';
+    if(t.memo && t.memo.trim()) html+='<div class="tour-memo">'+_esc(t.memo.trim()).replace(/\n/g,'<br>')+'</div>';
     html+=fotoBand(t);
     html+='</div>';
   });
@@ -1340,6 +1349,14 @@ function fotoBand(t){
   return '<div class="foto-band">'+fs.map((f,i)=>
     '<img class="fb-img" src="'+f.src+'" loading="lazy" alt="'+_esc(f.caption||'')+
     '" onclick="openLightbox('+t.id+','+i+')">').join('')+'</div>';
+}
+// W1b: aus der Chronik-Caption das Tour-Panel (Tab „Tour mit Papa") mit Volltext oeffnen.
+function openTourPanel(tourId){
+  const f=SOIUSA_STS.features.find(x=>{
+    let ids=[]; try{ ids=JSON.parse(x.properties.tour_ids||'[]'); }catch(_){}
+    return ids.some(v=>String(v)===String(tourId));
+  });
+  if(f){ openSts(f); showTab('tour'); }
 }
 
 // ── Foto-Lightbox (Vanilla): Fullscreen, Wischen/Pfeile/×, tap ausserhalb schliesst ──
@@ -1744,9 +1761,15 @@ function chronoCaption(Y){
     const gip=(Array.isArray(t.gipfel)?t.gipfel:[]).map(g=>_esc(g&&g.name)).filter(Boolean).join(', ');
     const parts=[]; if(loc) parts.push(loc); if(gip) parts.push(gip);
     const who=t.teilnehmer?' · <span class="cc-who">'+_esc(t.teilnehmer)+'</span>':'';
-    // Stufe 3: Memo-Vorschau (~100 Zeichen, an Wortgrenze) wenn befüllt.
+    // Stufe 3 / W1b: Memo-Vorschau (~100 Zeichen); „… mehr" -> Tour-Panel mit Volltext.
     const memo=(t.memo||'').trim();
-    const mp = memo ? '<div class="cc-memo">'+_esc(memo.length>100?memo.slice(0,100).replace(/\s+\S*$/,'')+'…':memo)+'</div>' : '';
+    let mp='';
+    if(memo){
+      const trunc=memo.length>100;
+      const prev=trunc?_esc(memo.slice(0,100).replace(/\s+\S*$/,'')):_esc(memo);
+      mp='<div class="cc-memo" onclick="openTourPanel('+t.id+')">'+prev+
+         (trunc?'&hellip; <span class="cc-more">mehr</span>':'')+'</div>';
+    }
     // Foto-Thumb (erstes Foto) links neben der Memo-Vorschau; Tap -> Lightbox.
     const fs=Array.isArray(t.fotos)?t.fotos:[];
     const thumb = fs.length ? '<img class="cc-thumb" src="'+fs[0].src+'" loading="lazy" alt="" onclick="openLightbox('+t.id+',0)">' : '';
