@@ -182,7 +182,7 @@ __HEAD_LIBS__
   .maplibregl-ctrl-group button .maplibregl-ctrl-icon{transform:scale(1.15)}
   /* B2: Maßstabsleiste — unten MITTIG im Footer, groesser (Schrift 12px, breitere Bar). */
   #mapfoot{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:5;
-    display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none}
+    display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none;transition:bottom .2s}
   .maplibregl-ctrl-scale{background:rgba(14,20,28,.72);border:2px solid rgba(232,237,242,.8);
     border-top:none;color:var(--txt);font-size:12px;line-height:1.35;padding:2px 8px;
     backdrop-filter:blur(6px);margin:0;box-shadow:0 4px 14px rgba(0,0,0,.35)}
@@ -190,7 +190,8 @@ __HEAD_LIBS__
     border:1px solid var(--line);border-radius:6px;padding:2px 8px;white-space:nowrap;
     font-variant-numeric:tabular-nums;opacity:0;transition:opacity .2s}
   #coords.show{opacity:1}
-  body.chrono #mapfoot{display:none}                 /* Chronik: Jahresleiste hat die Zeile */
+  /* Punkt 1b: bei offener Chronik Scale+Koordinaten ueber die Jahresleiste heben (nicht ausblenden) */
+  body.chrono #mapfoot{bottom:calc(var(--row-h) + 40px)}
   body.tilted .maplibregl-ctrl-scale{display:none}   /* Pitch>30°: Maßstab tiefenabh. falsch */
 
   /* ── Title card ── */
@@ -360,6 +361,25 @@ __HEAD_LIBS__
     border-radius:50%;background:var(--panel);border:1px solid var(--line);color:var(--txt);
     font-size:20px;font-weight:700;cursor:pointer;backdrop-filter:blur(8px);touch-action:manipulation}
   #btnInfo:hover{border-color:var(--accent2);color:var(--accent2)}
+  /* Punkt 2: Attribution als runde „Kartenquellen"-ⓘ oben rechts, LINKS neben dem „?".
+     Eingeklappt = runder dunkler Button (weisses ⓘ) wie #btnInfo; Klick klappt nach links/unten aus. */
+  .maplibregl-ctrl-top-right{top:16px;right:calc(16px + var(--ctl-round) + 8px)}
+  .maplibregl-ctrl-top-right .maplibregl-ctrl-attrib.maplibregl-compact{
+    margin:0;padding:0;min-height:var(--ctl-round);width:var(--ctl-round);height:var(--ctl-round);
+    background:none;box-shadow:none}
+  .maplibregl-ctrl-top-right .maplibregl-ctrl-attrib.maplibregl-compact:after{display:none}
+  .maplibregl-ctrl-top-right .maplibregl-ctrl-attrib-button{
+    width:var(--ctl-round);height:var(--ctl-round);border-radius:50%;position:absolute;top:0;right:0;
+    background-color:var(--panel);border:1px solid var(--line);backdrop-filter:blur(8px);
+    background-size:22px;background-position:center;background-repeat:no-repeat;
+    background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='%23e8edf2' fill-rule='evenodd' viewBox='0 0 20 20'%3E%3Cpath d='M4 10a6 6 0 1 0 12 0 6 6 0 1 0-12 0m5-3a1 1 0 1 0 2 0 1 1 0 1 0-2 0m0 3a1 1 0 1 1 2 0v3a1 1 0 1 1-2 0'/%3E%3C/svg%3E")}
+  .maplibregl-ctrl-top-right .maplibregl-ctrl-attrib-button:hover{border-color:var(--accent2)}
+  .maplibregl-ctrl-top-right .maplibregl-ctrl-attrib.maplibregl-compact-show{
+    width:auto;height:auto;min-height:var(--ctl-round);max-width:min(74vw,360px);
+    padding:7px 42px 7px 12px;background:var(--panel);border:1px solid var(--line);
+    border-radius:14px;backdrop-filter:blur(8px);box-shadow:0 8px 30px rgba(0,0,0,.45)}
+  .maplibregl-ctrl-top-right .maplibregl-ctrl-attrib-inner{color:var(--muted);font-size:10.5px;line-height:1.5}
+  .maplibregl-ctrl-top-right .maplibregl-ctrl-attrib a{color:var(--accent2)}
   /* §2 (W4): runde Controls rechts unten in einer Flucht (right:var(--ctl-right)),
      alle WEISS wie der Zoom-Stack (Michael-Entscheid). Reihenfolge oben->unten:
      2D/3D · Home · [Zoom+/Zoom-/Kompass]. */
@@ -424,7 +444,7 @@ __HEAD_LIBS__
     font-size:18px;cursor:pointer;backdrop-filter:blur(8px);touch-action:manipulation}
   #chronoBtn:hover{border-color:var(--accent2);color:var(--accent2)}
   #chronoBtn.active{border-color:var(--accent);color:var(--accent);background:rgba(255,178,77,.14)}
-  #chronoBar{position:absolute;left:74px;right:64px;bottom:16px;z-index:7;display:none;
+  #chronoBar{position:absolute;left:74px;right:calc(var(--ctl-right) + var(--ctl-round) + 12px);bottom:16px;z-index:7;display:none;
     align-items:center;gap:8px;background:var(--panel);backdrop-filter:blur(8px);
     border:1px solid var(--line);border-radius:14px;padding:6px 8px;
     box-shadow:0 8px 30px rgba(0,0,0,.45)}
@@ -480,8 +500,6 @@ __HEAD_LIBS__
     border:none;color:#fff;font-size:30px;width:46px;height:64px;border-radius:10px;cursor:pointer;
     touch-action:manipulation}
   #lightbox .lb-prev{left:10px} #lightbox .lb-next{right:10px}
-  /* Fix5: Attribution (bottom-left) im Privat-Build rechts von der Uhr */
-  .maplibregl-ctrl-bottom-left .maplibregl-ctrl-attrib{margin-left:66px}
   /* PRIV:END */
 
   @media(max-width:640px){
@@ -730,6 +748,13 @@ const map = new maplibregl.Map({
   },
   center:ALPS.center, zoom:ALPS.zoom, pitch:ALPS.pitch, bearing:ALPS.bearing,
   maxPitch:70, hash:true,
+  // Punkt 3: deutsche Tooltips fuer die maplibre-Default-Controls (Zoom/Kompass/Attribution).
+  locale:{
+    'NavigationControl.ZoomIn':'Hineinzoomen',
+    'NavigationControl.ZoomOut':'Herauszoomen',
+    'NavigationControl.ResetBearing':'Nach Norden ausrichten',
+    'AttributionControl.ToggleAttribution':'Kartenquellen'
+  },
   attributionControl:false   // custom control, rebuilt on basemap switch (setAttrib)
 });
 // ── Attribution (dynamic per basemap) ─────────────────────────────────────────
@@ -745,7 +770,7 @@ function setAttrib(topo){
   const html = topo?ATTRIB.topo:ATTRIB.sat;
   if(!_attribCtl){
     _attribCtl=new maplibregl.AttributionControl({compact:true, customAttribution:html});
-    map.addControl(_attribCtl,'bottom-left');   // Fix5: weg vom Home-Button rechts unten
+    map.addControl(_attribCtl,'top-right');   // Punkt 2: als „Kartenquellen"-ⓘ neben das „?"
     const det=map.getContainer().querySelector('details.maplibregl-ctrl-attrib');
     if(det) det.open=false;                                    // eingeklappt starten
     return;
@@ -2097,14 +2122,14 @@ function chronoPlay(){
   if(!_chronoOn || _chronoPlaying) return;
   if(_chronoIdx>=CHRONO.years.length-1) chronoSetYear(0,{fly:false});  // am Ende: von vorn
   _chronoPlaying=true;
-  const b=document.getElementById('chronoPlay'); if(b){ b.textContent='⏸'; b.classList.add('on'); }
+  const b=document.getElementById('chronoPlay'); if(b){ b.textContent='⏸'; b.title='Pause'; b.classList.add('on'); }
   _chronoTimer=setTimeout(chronoPlayStep, 600);   // kurzer Vorlauf, dann dynamischer Takt
 }
 function chronoPause(){
   _chronoPlaying=false;
   if(_chronoTimer){ clearTimeout(_chronoTimer); _chronoTimer=null; }
   if(_chronoFallback){ clearTimeout(_chronoFallback); _chronoFallback=null; }
-  const b=document.getElementById('chronoPlay'); if(b){ b.textContent='▶'; b.classList.remove('on'); }
+  const b=document.getElementById('chronoPlay'); if(b){ b.textContent='▶'; b.title='Abspielen'; b.classList.remove('on'); }
 }
 function chronoPlayToggle(){ _chronoPlaying?chronoPause():chronoPlay(); }
 
