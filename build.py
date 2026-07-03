@@ -12,10 +12,15 @@ import sys
 
 HERE = pathlib.Path(__file__).parent
 
-# ── Build mode: public (default, deployed) vs private (--private, local only) ──
-PUBLIC = "--private" not in sys.argv
-SRC   = "touren.json"   # only the private build reads tour data (E8)
-OUT   = "index.html" if PUBLIC else "index_privat.html"
+# ── Build mode: public (default, deployed) · private (--private) · standalone ──
+# --standalone => eine file://-taugliche Datei (impliziert private): alle Daten/Libs
+# inline, absolute Glyphs, base64-Fotos. Kein unpkg, kein relativer fetch.
+STANDALONE = "--standalone" in sys.argv
+PRIVATE    = ("--private" in sys.argv) or STANDALONE
+PUBLIC     = not PRIVATE
+SRC   = "touren.json"   # only the private/standalone build reads tour data (E8)
+OUT   = ("index_privat_standalone.html" if STANDALONE
+         else "index.html" if PUBLIC else "index_privat.html")
 TITEL = "Alpen-Atlas" if PUBLIC else "Alpentouren mit Papa"
 UNTER = ("Die Alpen nach SOIUSA, der internationalen Alpen-Gliederung — Gruppen, Gipfel, "
          "Hütten & Pässe interaktiv. Fläche anklicken für Steckbrief."
@@ -56,6 +61,20 @@ else:
     for t in data["touren"]:
         for k in ("gebirge", "gegend"):
             if t.get(k): t[k] = normalize_label(t[k])
+    # Standalone (file://): Foto-src -> base64-data-URI (Datei lesen), damit keine
+    # relativen Pfade noetig sind. Normaler Privat-Build behaelt die relative src.
+    if STANDALONE:
+        import base64 as _b64
+        _foto_bytes = 0
+        for t in data["touren"]:
+            for f in (t.get("fotos") or []):
+                src = f.get("src", "")
+                p = HERE / src
+                if src and p.exists():
+                    b = p.read_bytes(); _foto_bytes += len(b)
+                    f["src"] = "data:image/jpeg;base64," + _b64.b64encode(b).decode("ascii")
+        if _foto_bytes > 6 * 1024 * 1024:
+            print(f"WARN Fotos gesamt {_foto_bytes//1024} KB (>6 MB) -- Qualitaet/Anzahl pruefen.")
     touren_json = json.dumps(data["touren"], ensure_ascii=False)
 
 sts_json        = load_compact("soiusa_sts_colored.geojson")
@@ -119,11 +138,7 @@ TEMPLATE = r"""<!DOCTYPE html>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>__TITEL__</title>
-<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
-<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-<!-- P4 Stufe 1: Höhenlinien clientseitig aus der vorhandenen DEM-Quelle (keyless).
-     Laden defensiv: fehlt das Global, wird der Contour-Teil einfach übersprungen. -->
-<script src="https://unpkg.com/maplibre-contour@0.0.5/dist/index.min.js"></script>
+__HEAD_LIBS__
 <style>
   :root{
     --bg:#0a0e14; --panel:rgba(14,20,28,.93); --line:rgba(255,255,255,.12);
@@ -598,6 +613,11 @@ const COUNTRY_LABELS = {type:'FeatureCollection',features:[
 ]};
 const WIKI = __SOIUSA_WIKI_JSON__;
 const HUTS_WIKI = __SOIUSA_HUTS_WIKI_JSON__;   // Hütten-Steckbriefe, Key = OSM-Name
+// Standalone: inline-GeoJSONs (sonst null -> relative URL/Fetch wie im Normal-Build).
+const OSM_PEAKS  = __OSM_PEAKS__;
+const OSM_HUTS   = __OSM_HUTS__;
+const OSM_PASSES = __OSM_PASSES__;
+const BORDERS_GJ = __BORDERS__;
 const PRIV = __PRIV__;
 const TOUR_LAYERS = PRIV ? ['t-dot'] : [];   // tour markers only exist in the private build
 const CNAMES = {AT:'Österreich',CH:'Schweiz',DE:'Deutschland',
@@ -656,7 +676,7 @@ const map = new maplibregl.Map({
   maxBounds: [[3.5,42.5],[18.5,49.5]],
   style:{
     version:8,
-    glyphs:'./fonts/{fontstack}/{range}.pbf',
+    glyphs:'__GLYPHS__',
     sources:{
       sat:{type:'raster', tileSize:256,
         tiles:['https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}']},
@@ -796,14 +816,14 @@ map.on('load',()=>{
   map.addSource('tours',     {type:'geojson', data:fc});
   /* PRIV:END */
   // OSM overlays as URL sources (not inlined) — keeps index.html small.
-  map.addSource('osm-peaks', {type:'geojson', data:'./soiusa_osm_peaks.geojson'});
-  map.addSource('osm-huts',  {type:'geojson', data:'./soiusa_osm_huts.geojson'});
-  map.addSource('osm-passes',{type:'geojson', data:'./soiusa_osm_passes.geojson'});
+  map.addSource('osm-peaks', {type:'geojson', data:OSM_PEAKS  || './soiusa_osm_peaks.geojson'});
+  map.addSource('osm-huts',  {type:'geojson', data:OSM_HUTS   || './soiusa_osm_huts.geojson'});
+  map.addSource('osm-passes',{type:'geojson', data:OSM_PASSES || './soiusa_osm_passes.geojson'});
 
   // ── Non-Alpine mask — always on ───────────────────────────────────────────
   map.addLayer({id:'mask-fill', type:'fill', source:'mask',
     paint:{'fill-color':'#000816','fill-opacity':0.42}});
-  map.addSource('borders', {type:'geojson', data:'./soiusa_borders.geojson'});
+  map.addSource('borders', {type:'geojson', data:BORDERS_GJ || './soiusa_borders.geojson'});
   map.addLayer({id:'borders', type:'line', source:'borders',
     layout:{'visibility':'none','line-join':'round'},
     paint:{'line-color':'#e2ebf7','line-width':1.2,'line-opacity':0.6,'line-dasharray':[3,2]}});
@@ -1658,16 +1678,18 @@ function buildSearchIndex(){
     SEARCH_IDX.push({cat:'group', name:nm, sub:p.settore||'Gruppe', sts:p.STS,
       n:sNorm(nm+' '+(p.STS||'')), w:0, ele:0});
   });
-  const add=(url,cat,w)=>fetch(url).then(r=>r.json()).then(fc=>{
-    (fc.features||[]).forEach(f=>{
-      const p=f.properties||{}, c=f.geometry&&f.geometry.coordinates;
-      if(!p.name||!c) return;
-      SEARCH_IDX.push({cat, name:p.name, ele:+p.ele||0, lon:c[0], lat:c[1], n:sNorm(p.name), w});
-    });
-  }).catch(()=>{});
-  add('./soiusa_osm_peaks.geojson','peak',1);
-  add('./soiusa_osm_huts.geojson','hut',2);
-  add('./soiusa_osm_passes.geojson','pass',3);
+  // Standalone: src ist bereits das GeoJSON-Objekt (kein fetch); sonst URL -> fetch.
+  const add=(src,cat,w)=>{
+    const use=fc=>{ (fc.features||[]).forEach(f=>{
+        const p=f.properties||{}, c=f.geometry&&f.geometry.coordinates;
+        if(!p.name||!c) return;
+        SEARCH_IDX.push({cat, name:p.name, ele:+p.ele||0, lon:c[0], lat:c[1], n:sNorm(p.name), w}); }); };
+    if(typeof src==='string') return fetch(src).then(r=>r.json()).then(use).catch(()=>{});
+    if(src) use(src); return Promise.resolve();
+  };
+  add(OSM_PEAKS  || './soiusa_osm_peaks.geojson','peak',1);
+  add(OSM_HUTS   || './soiusa_osm_huts.geojson','hut',2);
+  add(OSM_PASSES || './soiusa_osm_passes.geojson','pass',3);
 }
 function parseCoord(q){
   q=(q||'').trim(); if(!q) return null;
@@ -1997,6 +2019,31 @@ html = html.replace("__KPI_GRUPPEN__",  str(kpi_gruppen))
 html = html.replace("__KPI_SETTORI__",  str(kpi_settori))
 html = html.replace("__KPI_HUETTEN__",  str(kpi_huetten))
 
+# ── Modusabhaengig: Vendor-Libs, Glyphs, Inline-GeoJSONs (Standalone) ─────────
+if STANDALONE:
+    def _vend(p): return (HERE / "vendor" / p).read_text(encoding="utf-8")
+    _js1 = _vend("maplibre-gl-4.7.1.min.js").replace("</script>", "<\\/script>")
+    _js2 = _vend("maplibre-contour-0.0.5.min.js").replace("</script>", "<\\/script>")
+    head_libs = ("<style>" + _vend("maplibre-gl-4.7.1.min.css") + "</style>\n"
+                 "<script>" + _js1 + "</script>\n<script>" + _js2 + "</script>")
+    glyphs = "https://guncanrun.github.io/alpentouren/fonts/{fontstack}/{range}.pbf"
+    osm_peaks  = load_compact("soiusa_osm_peaks.geojson")
+    osm_huts   = load_compact("soiusa_osm_huts.geojson")
+    osm_passes = load_compact("soiusa_osm_passes.geojson")
+    borders_gj = load_compact("soiusa_borders.geojson")
+else:
+    head_libs = ('<link href="./vendor/maplibre-gl-4.7.1.min.css" rel="stylesheet" />\n'
+                 '<script src="./vendor/maplibre-gl-4.7.1.min.js"></script>\n'
+                 '<script src="./vendor/maplibre-contour-0.0.5.min.js"></script>')
+    glyphs = "./fonts/{fontstack}/{range}.pbf"
+    osm_peaks = osm_huts = osm_passes = borders_gj = "null"
+html = html.replace("__GLYPHS__", glyphs)
+html = html.replace("__OSM_PEAKS__",  osm_peaks)
+html = html.replace("__OSM_HUTS__",   osm_huts)
+html = html.replace("__OSM_PASSES__", osm_passes)
+html = html.replace("__BORDERS__",    borders_gj)
+html = html.replace("__HEAD_LIBS__",  head_libs)   # zuletzt (Lib-Inhalt nicht rescannen)
+
 # ── Symmetric marker stripping (E2 + E8) ──────────────────────────────────────
 # PRIV blocks = private-only, removed in the public build (hard strip, no leak).
 # PUB  blocks = public-only,  removed in the private build.
@@ -2023,8 +2070,11 @@ html = html.replace("__PTABS__", PTABS)
 out = HERE / OUT
 out.write_text(html, encoding="utf-8")
 size_kb = out.stat().st_size / 1024
-mode = "public" if PUBLIC else "PRIVAT"
-print(f"{OUT} [{mode}]: {len(data['touren'])} Touren · {hl_count}/{sts_count} Untergruppen · {size_kb:.0f} KB")
+mode = "STANDALONE" if STANDALONE else ("public" if PUBLIC else "PRIVAT")
+size_str = f"{size_kb/1024:.1f} MB" if size_kb > 1024 else f"{size_kb:.0f} KB"
+print(f"{OUT} [{mode}]: {len(data['touren'])} Touren · {hl_count}/{sts_count} Untergruppen · {size_str}")
+if STANDALONE and size_kb > 15 * 1024:
+    print(f"WARN Standalone {size_str} > 15 MB (E-Mail-Grenze) -- Fotos/Daten pruefen.")
 
 # ── Backup-Hook (nur Privat-Build): sichert den gitignorierten Privat-Kanon ───
 # (touren.json + _cowork_specs) nach OneDrive. Fehler brechen den Build nie ab.

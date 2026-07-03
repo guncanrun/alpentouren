@@ -35,3 +35,6 @@ touren_public.json
 
 # Private Memoiren-Assets (Fotos/Abzeichen) — nie committen
 privat_assets/
+
+# Standalone-Privat-Build (file://-Versand, base64-Fotos) — nie committen
+index_privat_standalone.html

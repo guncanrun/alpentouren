@@ -211,6 +211,36 @@ if _tj.exists():
     for _src, _kb in _big:
         print(f"WARN Foto > 400 KB: {_src} ({_kb} KB) -> Qualitaet senken")
 
+# ── Standalone-Build (Paket B, SPEC §6): file://-Tauglichkeit + Groesse ────────
+# Standalone ist privat/gitignored -> Skip, wenn nicht gebaut.
+_sa = pathlib.Path(__file__).parent / "index_privat_standalone.html"
+if _sa.exists():
+    _sah = _sa.read_text(encoding="utf-8")
+    _samb = _sa.stat().st_size / (1024 * 1024)
+    for _bad, _lbl in [("fetch('./", "relativer fetch"), ("data:'./", "relative Source-URL"),
+                       ("'./fonts", "relative Glyphs"), ("unpkg.com", "CDN unpkg")]:
+        if _bad in _sah:
+            print(f"FAIL standalone: '{_bad}' ({_lbl}) im Output")
+            errors.append(f"standalone: {_bad}")
+        else:
+            print(f"OK   standalone frei von '{_bad}'")
+    _cmiss = [c for c in ("const OSM_PEAKS", "const OSM_HUTS", "const OSM_PASSES", "const BORDERS_GJ")
+              if c not in _sah]
+    if _cmiss or "Piz Linard" not in _sah:
+        print(f"FAIL standalone: Daten-Konstanten/Stichprobe fehlen: {_cmiss or 'Piz Linard'}")
+        errors.append("standalone: inline data missing")
+    else:
+        print("OK   standalone: 4 Daten-Konstanten + 'Piz Linard' inline")
+    if _samb > 20:
+        print(f"FAIL standalone {_samb:.1f} MB > 20 MB")
+        errors.append("standalone >20MB")
+    elif _samb > 15:
+        print(f"WARN standalone {_samb:.1f} MB > 15 MB (E-Mail-Grenze)")
+    else:
+        print(f"OK   standalone Groesse {_samb:.1f} MB (<=15 MB)")
+else:
+    print("SKIP standalone-Checks (index_privat_standalone.html nicht gebaut)")
+
 # Whitelist guard: touren_public.json may only contain gruppe/besucht.
 import json as _json
 tp = pathlib.Path(__file__).parent / "touren_public.json"
