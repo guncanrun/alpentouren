@@ -683,6 +683,18 @@ function _update2D3DLabel(){
 map.on('pitchend', _update2D3DLabel);
 map.on('load', _update2D3DLabel);
 
+// D) Rotation zoom-gated: ab z>=11 drehen erlaubt (Rechtsklick-Drag / Zwei-Finger),
+// darunter genordet erzwungen. Uebersicht bleibt Atlas-stabil.
+function updateRotationGate(){
+  if(map.getZoom()>=11){ map.dragRotate.enable(); map.touchZoomRotate.enableRotation(); }
+  else { map.dragRotate.disable(); map.touchZoomRotate.disableRotation(); }
+}
+map.on('zoom', updateRotationGate);
+map.on('zoomend', ()=>{                       // beim Rauszoomen unter z11: sanft zuruecknorden
+  if(map.getZoom()<11 && Math.abs(map.getBearing())>0.5) map.easeTo({bearing:0, duration:500, essential:true});
+});
+map.on('load', updateRotationGate);
+
 // ── Group name popup — shown on every STS click ───────────────────────────────
 // closeOnClick:false — sonst schließt MapLibre den im selben Klick geöffneten Popup
 // wieder (Name erst beim 2. Klick). Schließen via X / closePanel / Leer-Klick unten.
