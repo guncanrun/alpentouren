@@ -361,15 +361,17 @@ __HEAD_LIBS__
     border-radius:50%;background:var(--panel);border:1px solid var(--line);color:var(--txt);
     font-size:20px;font-weight:700;cursor:pointer;backdrop-filter:blur(8px);touch-action:manipulation}
   #btnInfo:hover{border-color:var(--accent2);color:var(--accent2)}
-  /* Punkt 2: Attribution als runde „Kartenquellen"-ⓘ oben rechts, LINKS neben dem „?".
-     Eingeklappt = runder dunkler Button (weisses ⓘ) wie #btnInfo; Klick klappt nach links/unten aus. */
-  .maplibregl-ctrl-top-right{top:16px;right:calc(16px + var(--ctl-round) + 8px)}
-  .maplibregl-ctrl-top-right .maplibregl-ctrl-attrib.maplibregl-compact{
-    margin:0;padding:0;min-height:var(--ctl-round);width:var(--ctl-round);height:var(--ctl-round);
-    background:none;box-shadow:none}
+  /* Punkt 2/0: Attribution als runde Info-Taste oben rechts, links neben dem Hilfe-Button.
+     Eingeklappt = runder dunkler Button (helles i) wie #btnInfo; Klick klappt nach links/unten
+     aus. Initial-Zustand KOMPLETT per CSS (kein FOUC des weissen maplibre-Default-Kastens):
+     Basis-Reset greift schon vor dem compact-Klassenwechsel, Inner erst bei compact-show. */
+  .maplibregl-ctrl-top-right{top:16px;right:calc(16px + var(--ctl-round) + 8px);z-index:12}
+  .maplibregl-ctrl-top-right .maplibregl-ctrl-attrib{
+    background:none;box-shadow:none;margin:0;padding:0;min-height:var(--ctl-round)}
+  .maplibregl-ctrl-top-right .maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-inner{display:none}
   .maplibregl-ctrl-top-right .maplibregl-ctrl-attrib.maplibregl-compact:after{display:none}
   .maplibregl-ctrl-top-right .maplibregl-ctrl-attrib-button{
-    width:var(--ctl-round);height:var(--ctl-round);border-radius:50%;position:absolute;top:0;right:0;
+    display:block;width:var(--ctl-round);height:var(--ctl-round);border-radius:50%;position:absolute;top:0;right:0;
     background-color:var(--panel);border:1px solid var(--line);backdrop-filter:blur(8px);
     background-size:22px;background-position:center;background-repeat:no-repeat;
     background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='%23e8edf2' fill-rule='evenodd' viewBox='0 0 20 20'%3E%3Cpath d='M4 10a6 6 0 1 0 12 0 6 6 0 1 0-12 0m5-3a1 1 0 1 0 2 0 1 1 0 1 0-2 0m0 3a1 1 0 1 1 2 0v3a1 1 0 1 1-2 0'/%3E%3C/svg%3E")}
@@ -378,6 +380,7 @@ __HEAD_LIBS__
     width:auto;height:auto;min-height:var(--ctl-round);max-width:min(74vw,360px);
     padding:7px 42px 7px 12px;background:var(--panel);border:1px solid var(--line);
     border-radius:14px;backdrop-filter:blur(8px);box-shadow:0 8px 30px rgba(0,0,0,.45)}
+  .maplibregl-ctrl-top-right .maplibregl-ctrl-attrib.maplibregl-compact-show .maplibregl-ctrl-attrib-inner{display:block}
   .maplibregl-ctrl-top-right .maplibregl-ctrl-attrib-inner{color:var(--muted);font-size:10.5px;line-height:1.5}
   .maplibregl-ctrl-top-right .maplibregl-ctrl-attrib a{color:var(--accent2)}
   /* §2 (W4): runde Controls rechts unten in einer Flucht (right:var(--ctl-right)),
@@ -770,7 +773,7 @@ function setAttrib(topo){
   const html = topo?ATTRIB.topo:ATTRIB.sat;
   if(!_attribCtl){
     _attribCtl=new maplibregl.AttributionControl({compact:true, customAttribution:html});
-    map.addControl(_attribCtl,'top-right');   // Punkt 2: als „Kartenquellen"-ⓘ neben das „?"
+    map.addControl(_attribCtl,'top-right');   // Punkt 2: Attribution als runde Info-Taste neben dem Hilfe-Button
     const det=map.getContainer().querySelector('details.maplibregl-ctrl-attrib');
     if(det) det.open=false;                                    // eingeklappt starten
     return;
@@ -1063,7 +1066,10 @@ map.on('load',()=>{
         13,['concat',['get','name'],'\n',['to-string',['get','ele']],' m']],
       'text-font':['Noto Sans Bold'],'text-size':['match',['get','tier'], 0,12+LB, 1,11+LB, 9.5+LB],
       'symbol-sort-key':['get','tier'],   // wichtige Gipfel zuerst platziert; < Pässe (80/90) -> Gipfel gewinnen
-      'text-offset':[0,0.3],'text-anchor':'top','text-optional':true,'text-allow-overlap':false},
+      // Punkt 2a: Gipfel-Label weicht per variable-anchor aus (oben/unten/seitlich) statt den
+      // Gruppennamen zu verdraengen -> Name + „sein" Gipfel koexistieren.
+      'text-variable-anchor':['top','bottom','left','right'],'text-radial-offset':0.5,
+      'text-optional':true,'text-allow-overlap':false},
     paint:{'text-color':['match',['get','tier'], 0,'#ffe08a', 1,'#ffd24d', '#dbe7ff'],
       'text-halo-color':'#06101a','text-halo-width':1.4,
       // Icon-Sichtbarkeit: Tier0-2 früh, 3000er ab z8; tier-4 (2000er) nach ele gerampt
@@ -1167,8 +1173,9 @@ map.on('load',()=>{
         10,['case',['<=',['get','tier'],2],['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],''],
         12,['case',['<=',['get','tier'],3],['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],''],
         13,['concat',['get','name'],'\n',['to-string',['get','ele']],' m']],
-      'text-font':['Noto Sans Bold'],'text-size':9.5,'text-offset':[0,0.4],
-      'text-anchor':'top','text-optional':true,'text-allow-overlap':false},
+      'text-font':['Noto Sans Bold'],'text-size':9.5,
+      'text-variable-anchor':['top','bottom','left','right'],'text-radial-offset':0.5,  // Punkt 2a
+      'text-optional':true,'text-allow-overlap':false},
     paint:{'text-color':'#eaf1ff','text-halo-color':'#06101a','text-halo-width':1.5,
       'icon-opacity':['step',['zoom'],
         ['case',['<=',['get','tier'],1],1,0],
@@ -1183,6 +1190,13 @@ map.on('load',()=>{
       'text-font':['Noto Sans Bold'],'text-size':12,'text-offset':[0,0.5],
       'text-anchor':'top','text-allow-overlap':true},
     paint:{'text-color':'#ffd47a','text-halo-color':'#06101a','text-halo-width':2}});
+
+  // Punkt 2b: Gruppennamen in der Platzierungs-Reihenfolge UEBER die regulaeren Gipfel
+  // (osm-peaks/landmarks) heben, aber UNTER Huetten/Paesse/Gruppen-Gipfel lassen. MapLibre
+  // platziert spaeter einsortierte Layer zuerst -> Prioritaet: Gruppen-Gipfel > Huetten/
+  // Paesse > Gruppenname > reguläre Gipfel. (Ausgewaehlte Gruppe blendet ihren Namen eh aus.)
+  map.moveLayer('sts-label', 'osm-huts-other');
+  map.moveLayer('sts-label-hl', 'osm-huts-other');
 
   // ── Selection ring — filter-driven, initially empty ───────────────────────
   map.addLayer({id:'sts-selected', type:'line', source:'sts',
@@ -1377,9 +1391,14 @@ function showGroupPeaks(stsName){
   if(w && w.hoechster_berg) hoch = w.hoechster_berg.replace(/\s*\(.*?\)\s*/g,'').trim();
   map.setFilter('peaks-in-group', ['all',['within',geom],['!=',['get','name'],hoch]]);
   map.setFilter('peaks-highest',  ['all',['within',geom],['==',['get','name'],hoch]]);
-  // immer zeigen — unabhängig vom "Gipfel"-Toggle (der Steckbrief nennt den höchsten Berg)
-  map.setLayoutProperty('peaks-in-group','visibility','visible');
-  map.setLayoutProperty('peaks-highest','visibility','visible');
+  // Punkt 3: Gruppen-Gipfel (inkl. Gold-Gipfel) folgen dem Gipfel-Toggle, nicht mehr „immer an".
+  _applyGroupPeaksVis();
+}
+// Sichtbarkeit der Gruppen-Gipfel = Gipfel-Toggle AN und eine Gruppe ist ausgewaehlt.
+function _applyGroupPeaksVis(){
+  const on = _peaksOn && !!_selSts;
+  map.setLayoutProperty('peaks-in-group','visibility', on?'visible':'none');
+  map.setLayoutProperty('peaks-highest', 'visibility', on?'visible':'none');
 }
 function resetGroupPeaks(){
   map.setFilter('peaks-in-group', ['==',['get','name'],'__none__']);
@@ -1680,6 +1699,7 @@ function togglePeaks(){
   _peaksOn=!_peaksOn; const v=_peaksOn?'visible':'none';
   ['osm-peaks','osm-landmark-glow','osm-landmarks']
     .forEach(l=>map.setLayoutProperty(l,'visibility',v));
+  _applyGroupPeaksVis();   // Punkt 3: Gruppen-Gipfel (inkl. Gold) mitschalten, wenn Gruppe gewaehlt
   document.getElementById('tglPeaks').classList.toggle('on',_peaksOn);
 }
 let _hutsOn=false;
@@ -2075,7 +2095,7 @@ function chronoPulse(){
   const t0=performance.now(), peak=0.95, dur=680;
   (function step(now){
     const k=Math.min(1,(now-t0)/dur);
-    if(k<1){ map.setPaintProperty('chrono-cur','fill-opacity', peak*Math.sin(k*Math.PI));  // kurzer Flash
+    if(k<1){ map.setPaintProperty('chrono-cur','fill-opacity', Math.max(0, peak*Math.sin(k*Math.PI)));  // kurzer Flash, >=0
       _pulseRAF=requestAnimationFrame(step); }
     else { map.setPaintProperty('chrono-cur','fill-opacity',CHRONO_CUR_OP); _pulseRAF=null; }  // zurueck zur Zoom-Kurve
   })(performance.now());
