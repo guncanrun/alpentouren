@@ -91,6 +91,10 @@ checks = [
     ("pop-based place class",         "['coalesce',['get','pop'],0]"),
     # Nachtjob W2 — Orte Atlas-Rot (beide Builds)
     ("orte atlas-red",                "#cc3322"),
+    # Nachtjob W4 — Seilbahn-Linien + SDF-Gondel (beide Builds)
+    ("cable line layer",              "id:'cable-line'"),
+    ("cable lines source",            "./soiusa_osm_cableways_lines.geojson"),
+    ("gondola SDF logo",              "gondolaIcon(), {sdf:true"),
     # Nachtjob W1 — Interaktions-Fixes
     ("compass pitch reset",           "visualizePitch:true"),
     ("attrib init fill",              "setAttrib(false)"),

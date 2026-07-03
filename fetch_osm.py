@@ -43,6 +43,9 @@ PLACES_Q = (f'[out:json][timeout:300];'
 CABLE_Q = (f'[out:json][timeout:300];'
            f'way["aerialway"~"^(cable_car|gondola)$"]({BBOX})->.lines;'
            f'(.lines; node(w.lines)["aerialway"="station"];);out;')
+# W4: Seilbahn-LINIEN (voller Verlauf Tal->Berg) — NUR cable_car + gondola (keine Sessellifte).
+CABLE_LINES_Q = (f'[out:json][timeout:300];'
+                 f'(way["aerialway"~"^(cable_car|gondola)$"]({BBOX}););out geom;')
 # Wanderparkplaetze: hiking=yes ODER Name enthaelt Wanderparkplatz/Wanderer. v1 = nur Zaehlen.
 PARK_Q = (f'[out:json][timeout:300];'
           f'(nwr["amenity"="parking"]["hiking"="yes"]({BBOX});'
@@ -340,6 +343,48 @@ def cableways_geojson(elements):
     return feats
 
 
+def cableway_lines_geojson(elements):
+    """LineString je cable_car/gondola-Way (voller Verlauf via 'out geom'). Name + Endhöhen falls da."""
+    feats = []
+    for el in elements:
+        if el.get("type") != "way":
+            continue
+        geom = el.get("geometry") or []
+        if len(geom) < 2:
+            continue
+        coords = [[round(p["lon"], 5), round(p["lat"], 5)] for p in geom if "lon" in p and "lat" in p]
+        if len(coords) < 2:
+            continue
+        tags = el.get("tags") or {}
+        props = {}
+        if tags.get("name"):
+            props["name"] = tags["name"]
+        if tags.get("aerialway"):
+            props["kind"] = tags["aerialway"]
+        feats.append({"type": "Feature",
+                      "geometry": {"type": "LineString", "coordinates": coords},
+                      "properties": props})
+    return feats
+
+
+def line_mask_filter(feats, buffer_deg):
+    """Keep a line if ANY vertex lies inside the SOIUSA mask expanded by buffer_deg."""
+    try:
+        from shapely.geometry import Point, shape
+        from shapely.ops import unary_union
+        from shapely.prepared import prep
+    except ImportError:
+        print("  (shapely fehlt -> kein Maske-Clip fuer Linien)")
+        return feats
+    fc = json.loads((HERE / "soiusa_sts_colored.geojson").read_text(encoding="utf-8"))
+    u = unary_union([shape(f["geometry"]) for f in fc["features"]])
+    if buffer_deg:
+        u = u.buffer(buffer_deg)
+    m = prep(u)
+    return [f for f in feats
+            if any(m.contains(Point(xy)) for xy in f["geometry"]["coordinates"])]
+
+
 def parking_points(elements):
     pts = []
     for el in elements:
@@ -418,6 +463,16 @@ def save(name, feats, label):
 
 # --anreise: nur die neue Anreise-Datenschicht ziehen (Gipfel/Huetten/Paesse unangetastet).
 _ARGS = sys.argv[1:]
+
+# W4: --cable-lines zieht NUR die Seilbahn-Linien (aerialway-Ways) und beendet danach.
+if "--cable-lines" in _ARGS:
+    print("Overpass: Seilbahn-LINIEN (cable_car/gondola, out geom)...")
+    lf = cableway_lines_geojson(query(CABLE_LINES_Q).get("elements", []))
+    before = len(lf)
+    lf = line_mask_filter(lf, 0.02)   # Linie behalten, wenn ein Vertex in SOIUSA-Maske (+~2 km)
+    save("soiusa_osm_cableways_lines.geojson", lf, f"Seilbahn-Linien (von {before} nach Maske-Clip)")
+    sys.exit(0)
+
 RUN_CORE = "--anreise" not in _ARGS
 RUN_ANREISE = True
 

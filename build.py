@@ -741,6 +741,7 @@ const OSM_HUTS   = __OSM_HUTS__;
 const OSM_PASSES = __OSM_PASSES__;
 const OSM_PLACES = __OSM_PLACES__;
 const OSM_CABLE  = __OSM_CABLE__;
+const OSM_CABLE_LINES = __OSM_CABLE_LINES__;   // W4: Seilbahn-Linien (voller Verlauf)
 const BORDERS_GJ = __BORDERS__;
 const PRIV = __PRIV__;
 const TOUR_LAYERS = PRIV ? ['t-hit'] : [];   // tour markers only exist in the private build (Hit-Kreis)
@@ -1109,6 +1110,7 @@ map.on('load',()=>{
   map.addSource('osm-passes',{type:'geojson', data:OSM_PASSES || './soiusa_osm_passes.geojson'});
   map.addSource('osm-places',{type:'geojson', data:OSM_PLACES || './soiusa_osm_places_v1.geojson'});     // Anreise: Orte (v1: nur city/town)
   map.addSource('osm-cable', {type:'geojson', data:OSM_CABLE  || './soiusa_osm_cableways.geojson'});   // Anreise: Seilbahn-Talstationen
+  map.addSource('osm-cable-lines', {type:'geojson', data:OSM_CABLE_LINES || './soiusa_osm_cableways_lines.geojson'});  // W4: Seilbahn-Linien
 
   // ── Non-Alpine mask — always on ───────────────────────────────────────────
   map.addLayer({id:'mask-fill', type:'fill', source:'mask',
@@ -1236,7 +1238,7 @@ map.on('load',()=>{
   map.addImage('hut-club',  houseIcon('#e2574c'), {pixelRatio:2});   // Verbandshütte (Tier 1)
   map.addImage('hut-other', houseIcon('#9fb0c0'), {pixelRatio:2});   // sonstige bewirtschaftet
   map.addImage('hut-wild',  houseOutline('#a8bccc'), {pixelRatio:2}); // unbewirtschaftet/Refugio (Tier 2)
-  map.addImage('gondola',   gondolaIcon('#8fd0dd'), {pixelRatio:2});  // Seilbahn-Talstation
+  map.addImage('gondola',   gondolaIcon(), {sdf:true, pixelRatio:2});  // Seilbahn-Logo (SDF, recolorbar)
   map.addImage('citysq',    citySquare(), {pixelRatio:2});            // Orte v2: K1 Großstadt-Quadrat
   if(PRIV) map.addImage('hiker', hikerIcon(), {sdf:true, pixelRatio:2});  // Tour-Marker v2 (SDF, recolorbar)
 
@@ -1288,13 +1290,23 @@ map.on('load',()=>{
       'text-variable-anchor':['left','right','top','bottom'],'text-radial-offset':0.85,
       'text-optional':true,'text-allow-overlap':false,'symbol-sort-key':['*',-1,_POP]},   // große Städte zuerst
     paint:{'text-color':'#f2e3c0','text-halo-color':'#1a1206','text-halo-width':1.4}});
+  // W4: Seilbahn-LINIEN (voller Verlauf Tal->Berg) — dunkle Linie mit hellem Halo,
+  // dünn/dezent, Zoom-Gate z≥10; am bestehenden Seilbahnen-Toggle. Vor dem Logo.
+  map.addLayer({id:'cable-line-halo', type:'line', source:'osm-cable-lines', minzoom:10,
+    layout:{visibility:'none','line-join':'round','line-cap':'round'},
+    paint:{'line-color':'#eaf1f5','line-width':3.0,'line-opacity':0.45}});
+  map.addLayer({id:'cable-line', type:'line', source:'osm-cable-lines', minzoom:10,
+    layout:{visibility:'none','line-join':'round','line-cap':'round'},
+    paint:{'line-color':'#161b22','line-width':1.5,'line-opacity':0.9,
+      'line-dasharray':[2,1.6]}});   // Kabelsignatur (Dash-Näherung)
   map.addLayer({id:'cable-icon', type:'symbol', source:'osm-cable', minzoom:10,
-    layout:{visibility:'none','icon-image':'gondola','icon-size':0.95,'icon-allow-overlap':false,
+    layout:{visibility:'none','icon-image':'gondola','icon-size':1.1,'icon-allow-overlap':false,
       'text-field':['step',['zoom'], '', 12, ['get','name']],
       'text-font':['Noto Sans Bold'],'text-size':9.5,
       'text-variable-anchor':['top','bottom','left','right'],'text-radial-offset':0.6,
       'text-optional':true,'text-allow-overlap':false},
-    paint:{'text-color':'#bfe6ee','text-halo-color':'#06141a','text-halo-width':1.3}});
+    paint:{'icon-color':'#e2f2f7','icon-halo-color':'#06141a','icon-halo-width':1.4,
+      'text-color':'#bfe6ee','text-halo-color':'#06141a','text-halo-width':1.3}});
 
   map.addLayer({id:'osm-peaks', type:'symbol', source:'osm-peaks', minzoom:5,
     filter:['!=',['get','landmark'],1],
@@ -1646,13 +1658,14 @@ function makeStar(color){
   });
 }
 // Seilbahn-Talstation: Gondel-Piktogramm (Seil + Kabine).
-function gondolaIcon(color){
-  return makeIcon(20,(x,s)=>{
-    x.strokeStyle=color; x.lineWidth=1.5; x.lineJoin='round'; x.lineCap='round';
-    x.beginPath(); x.moveTo(s*0.13,s*0.2); x.lineTo(s*0.87,s*0.36); x.stroke();   // Seil
-    x.beginPath(); x.moveTo(s*0.5,s*0.28); x.lineTo(s*0.5,s*0.44); x.stroke();     // Aufhaenger
-    x.fillStyle=color; x.strokeStyle='#06101a'; x.lineWidth=1.3;
-    x.beginPath(); x.rect(s*0.33,s*0.44,s*0.34,s*0.32); x.fill(); x.stroke();      // Kabine
+// W4: Seilbahn-Logo als SDF (weiße Silhouette -> icon-color + heller/dunkler Halo).
+function gondolaIcon(){
+  return makeIcon(22,(x,s)=>{
+    x.fillStyle='#fff'; x.strokeStyle='#fff'; x.lineWidth=s*0.09; x.lineJoin='round'; x.lineCap='round';
+    x.beginPath(); x.moveTo(s*0.1,s*0.22); x.lineTo(s*0.9,s*0.34); x.stroke();     // Seil
+    x.beginPath(); x.moveTo(s*0.5,s*0.28); x.lineTo(s*0.5,s*0.45); x.stroke();     // Aufhaenger
+    x.beginPath(); x.moveTo(s*0.33,s*0.47); x.lineTo(s*0.67,s*0.47);
+      x.lineTo(s*0.62,s*0.78); x.lineTo(s*0.38,s*0.78); x.closePath(); x.fill();   // Kabine (Trapez)
   });
 }
 // Unbewirtschaftet / Refugio / Biwak: hollow house (outline only), muted.
@@ -2082,7 +2095,7 @@ function _syncPointToggles(){
   _setVis(['osm-huts-club','osm-huts-other','osm-huts-wild'], _hutsOn?'visible':'none');
   _setVis(['osm-passes','osm-passes-famous'], _passesOn?'visible':'none');
   _setVis(['places-sq','places-dot','places-label'], _placesOn?'visible':'none');
-  _setVis(['cable-icon'], _cableOn?'visible':'none');
+  _setVis(['cable-line-halo','cable-line','cable-icon'], _cableOn?'visible':'none');
 }
 let _peaksOn=false;
 function togglePeaks(){
@@ -2117,7 +2130,7 @@ function togglePlaces(){
 let _cableOn=false;
 function toggleCable(){
   _cableOn=!_cableOn; const v=_cableOn?'visible':'none';
-  _setVis(['cable-icon'], v);
+  _setVis(['cable-line-halo','cable-line','cable-icon'], v);
   document.getElementById('tglCable').classList.toggle('on',_cableOn);
   persistToggles();
 }
@@ -2702,6 +2715,7 @@ if STANDALONE:
     osm_passes = load_compact("soiusa_osm_passes.geojson")
     osm_places = load_compact("soiusa_osm_places_v1.geojson")   # v1: nur city/town (schlank)
     osm_cable  = load_compact("soiusa_osm_cableways.geojson")
+    osm_cable_lines = load_compact("soiusa_osm_cableways_lines.geojson")
     borders_gj = load_compact("soiusa_borders.geojson")
 else:
     head_libs = ('<link href="./vendor/maplibre-gl-4.7.1.min.css" rel="stylesheet" />\n'
@@ -2710,6 +2724,7 @@ else:
     glyphs = "./fonts/{fontstack}/{range}.pbf"
     glyphs_data = "null"
     osm_peaks = osm_huts = osm_passes = osm_places = osm_cable = borders_gj = "null"
+    osm_cable_lines = "null"
 html = html.replace("__GLYPHS_DATA__", glyphs_data)
 html = html.replace("__GLYPHS__", glyphs)
 html = html.replace("__OSM_PEAKS__",  osm_peaks)
@@ -2717,6 +2732,7 @@ html = html.replace("__OSM_HUTS__",   osm_huts)
 html = html.replace("__OSM_PASSES__", osm_passes)
 html = html.replace("__OSM_PLACES__", osm_places)
 html = html.replace("__OSM_CABLE__",  osm_cable)
+html = html.replace("__OSM_CABLE_LINES__", osm_cable_lines)
 html = html.replace("__BORDERS__",    borders_gj)
 html = html.replace("__HUT_VISITS__", hut_visits_json)   # §1: Besuchsjahre je OSM-Hütte (Privat)
 html = html.replace("__HEAD_LIBS__",  head_libs)   # zuletzt (Lib-Inhalt nicht rescannen)
