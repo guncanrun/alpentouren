@@ -55,8 +55,10 @@
     backdrop-filter:blur(6px);margin:0;box-shadow:0 4px 14px rgba(0,0,0,.35)}
   #coords{font-size:11px;color:var(--muted);background:var(--panel);backdrop-filter:blur(6px);
     border:1px solid var(--line);border-radius:6px;padding:2px 8px;white-space:nowrap;
-    font-variant-numeric:tabular-nums;opacity:0;transition:opacity .2s}
+    font-variant-numeric:tabular-nums;opacity:0;transition:opacity .2s;
+    pointer-events:auto;cursor:pointer}         /* UX(4): klickbar (Footer ist pointer-events:none) */
   #coords.show{opacity:1}
+  #coords.copied{color:var(--accent2);border-color:var(--accent2)}
   /* Punkt 1b: bei offener Chronik Scale+Koordinaten ueber die Jahresleiste heben (nicht ausblenden) */
   body.chrono #mapfoot{bottom:calc(var(--row-h) + 40px)}
   body.tilted .maplibregl-ctrl-scale{display:none}   /* Pitch>30°: Maßstab tiefenabh. falsch */
@@ -309,6 +311,17 @@
     #ebenen{max-width:calc(100vw - 32px)}
     #cov{display:none}
   }
+  /* UX(2): Title-Card kollabiert bei kleiner Fensterhoehe auf die Titelzeile (Tablet quer),
+     damit der Steckbrief Platz hat. */
+  @media (max-height: 620px){
+    #title p, #title .kpi{display:none}
+    #title{padding:10px 14px}
+  }
+  /* UX(3): schmale Fenster — bei offener Chronik ueberlagern sich zentrierte Scale-Bar und
+     linksbuendige Caption; Footer dort ausblenden (Jahresleiste + Caption tragen die Zeile). */
+  @media (max-width: 680px){
+    body.chrono #mapfoot{display:none}
+  }
 </style>
 </head>
 <body>
@@ -553,14 +566,31 @@ map.addControl(new maplibregl.ScaleControl({maxWidth:170, unit:'metric'}), 'bott
 // Touch (coarse): Kartenmitte bei moveend. Dezent ueber der Scale-Bar.
 (function(){
   const el=document.getElementById('coords'); if(!el) return;
-  const show=(lng,lat)=>{ el.textContent=lat.toFixed(5)+', '+lng.toFixed(5); el.classList.add('show'); };
+  let _paused=0;   // UX(4): waehrend „kopiert"-Feedback Live-Update kurz pausieren (stabiles Klick-Ziel)
+  const show=(lng,lat)=>{
+    if(Date.now()<_paused) return;
+    const txt=lat.toFixed(5)+', '+lng.toFixed(5);
+    el.dataset.coord=txt; el.textContent=txt; el.classList.add('show');
+  };
   const coarse=!!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
   if(coarse){ const upd=()=>{ const c=map.getCenter(); show(c.lng,c.lat); };
     map.on('moveend',upd); map.on('load',upd); }
   else {
     map.on('mousemove',e=>show(e.lngLat.lng,e.lngLat.lat));
-    map.getCanvas().addEventListener('mouseout',()=>el.classList.remove('show'));
+    map.getCanvas().addEventListener('mouseout',()=>{ if(Date.now()>=_paused) el.classList.remove('show'); });
   }
+  // UX(4): Klick kopiert die Koordinate in die Zwischenablage (+ kurzes Feedback), Live-Update pausiert 2 s.
+  el.addEventListener('click', e=>{
+    e.stopPropagation();
+    const txt=el.dataset.coord||el.textContent; if(!txt) return;
+    _paused=Date.now()+2000;
+    const done=()=>{ el.textContent='kopiert ✓'; el.classList.add('copied','show');
+      setTimeout(()=>{ el.classList.remove('copied'); if(el.dataset.coord) el.textContent=el.dataset.coord; }, 1400); };
+    try{ if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(done, done); }
+         else { const t=document.createElement('textarea'); t.value=txt; document.body.appendChild(t); t.select();
+                try{ document.execCommand('copy'); }catch(_){}; document.body.removeChild(t); done(); } }
+    catch(_){ done(); }
+  });
 })();
 
 // B2/Review 3b: Maßstab bei Neigung > 30° ausblenden (tiefenabhaengig falsch).
@@ -1098,6 +1128,7 @@ map.on('load',()=>{
   setBasemap(_bm);
   updateTopoGate();
   map.on('zoom', updateTopoGate);
+  restoreToggles();   // UX(1): gespeicherte Ebenen-Zustaende wiederherstellen (nach Layer+Basemap)
 
   // ── Build the search index (groups now; OSM points fetched async) ──────────
   buildSearchIndex();
@@ -1346,6 +1377,29 @@ function openSts(feat, camMode){   // camMode: undef=Gate(§6a), 'force'=immer f
 
 // ── Toggle: group labels (fills always on) ────────────────────────────────────
 // sts-fill / sts-line always visible; button toggles only the text labels.
+// UX(1): Ebenen-Zustaende via localStorage persistieren (ueberleben Reload; auch Standalone).
+let _restoring=false;
+function persistToggles(){
+  if(_restoring) return;
+  try{ localStorage.setItem('alpen_toggles', JSON.stringify(
+    {f:_farbungOn,n:_layersOn,b:_bordersOn,p:_peaksOn,h:_hutsOn,s:_passesOn,o:_placesOn,c:_cableOn})); }catch(_){}
+}
+function restoreToggles(){
+  let st; try{ st=JSON.parse(localStorage.getItem('alpen_toggles')||'null'); }catch(_){ st=null; }
+  if(!st || _basemap==='topo') return;   // Topo hat eigene Sperren/Regeln -> nicht ueberschreiben
+  _restoring=true;
+  try{
+    if(st.f===false && _farbungOn) toggleFarbung();
+    if(st.n===true  && !_layersOn) toggleLayers();
+    if(st.b===true  && !_bordersOn) toggleBorders();
+    if(st.p===true  && !_peaksOn)  togglePeaks();
+    if(st.h===true  && !_hutsOn)   toggleHuts();
+    if(st.s===true  && !_passesOn) togglePasses();
+    if(st.o===true  && !_placesOn) togglePlaces();
+    if(st.c===true  && !_cableOn)  toggleCable();
+  } finally { _restoring=false; }
+}
+
 let _layersOn=false;
 function toggleLayers(){
   _layersOn=!_layersOn;
@@ -1353,6 +1407,7 @@ function toggleLayers(){
   map.setLayoutProperty('sts-label',   'visibility',v);
   map.setLayoutProperty('sts-label-hl','visibility',v);
   document.getElementById('tglNamen').classList.toggle('on',_layersOn);
+  persistToggles();
 }
 
 // ── Settore-Färbung an/aus (Fill; Fade bleibt beim Reinzoomen) ────────────────
@@ -1363,6 +1418,7 @@ function toggleFarbung(){
   map.setLayoutProperty('sts-fill','visibility',v);
   
   document.getElementById('tglFarbung').classList.toggle('on',_farbungOn);
+  persistToggles();
 }
 // ── Landesgrenzen an/aus ──────────────────────────────────────────────────────
 let _bordersOn=false;
@@ -1370,6 +1426,7 @@ function toggleBorders(){
   _bordersOn=!_bordersOn;
   ['borders','country-labels'].forEach(l=>map.setLayoutProperty(l,'visibility',_bordersOn?'visible':'none'));
   document.getElementById('tglBorders').classList.toggle('on',_bordersOn);
+  persistToggles();
 }
 
 // ── OSM overlays (zuschaltbar, zoom-gated) ────────────────────────────────────
@@ -1380,18 +1437,21 @@ function togglePeaks(){
     .forEach(l=>map.setLayoutProperty(l,'visibility',v));
   _applyGroupPeaksVis();   // Punkt 3: Gruppen-Gipfel (inkl. Gold) mitschalten, wenn Gruppe gewaehlt
   document.getElementById('tglPeaks').classList.toggle('on',_peaksOn);
+  persistToggles();
 }
 let _hutsOn=false;
 function toggleHuts(){
   _hutsOn=!_hutsOn; const v=_hutsOn?'visible':'none';
   ['osm-huts-club','osm-huts-other','osm-huts-wild'].forEach(l=>map.setLayoutProperty(l,'visibility',v));
   document.getElementById('tglHuts').classList.toggle('on',_hutsOn);
+  persistToggles();
 }
 let _passesOn=false;
 function togglePasses(){
   _passesOn=!_passesOn; const v=_passesOn?'visible':'none';
   ['osm-passes','osm-passes-famous'].forEach(l=>map.setLayoutProperty(l,'visibility',v));
   document.getElementById('tglPasses').classList.toggle('on',_passesOn);
+  persistToggles();
 }
 // Anreise-Toggles (Orte, Seilbahnen) — default aus, wie die anderen Punkte.
 let _placesOn=false;
@@ -1399,12 +1459,14 @@ function togglePlaces(){
   _placesOn=!_placesOn; const v=_placesOn?'visible':'none';
   ['places-dot','places-label'].forEach(l=>map.setLayoutProperty(l,'visibility',v));
   document.getElementById('tglPlaces').classList.toggle('on',_placesOn);
+  persistToggles();
 }
 let _cableOn=false;
 function toggleCable(){
   _cableOn=!_cableOn; const v=_cableOn?'visible':'none';
   map.setLayoutProperty('cable-icon','visibility',v);
   document.getElementById('tglCable').classList.toggle('on',_cableOn);
+  persistToggles();
 }
 
 // ── kurzlebiger Hinweis (Toast, kein Modal) ───────────────────────────────────
