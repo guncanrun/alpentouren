@@ -3,7 +3,7 @@
     "quelle": "de.wikipedia — AVE-Gebirgsgruppenlisten + Gruppen-/Gipfelartikel",
     "lizenz": "Texte CC BY-SA (Wikipedia); Bilder Wikimedia Commons CC BY-SA",
     "status": "Entwurf — 12 besuchte + 48 unbesuchte Cowork/Wikidata-verifiziert; restliche Voralpen/obskure Gruppen offen (Cowork-Verifikation).",
-    "stand": "2026-07-01",
+    "stand": "2026-07-03",
     "hinweis": "Steckbriefe der besuchten SOIUSA-Gruppen. Key = exakter STS-Name."
   },
   "gruppen": {
@@ -1299,7 +1299,7 @@
       ],
       "region_kanton": [],
       "hoechster_berg": "Monte Tamaro",
-      "hoehe_m": null,
+      "hoehe_m": 1962,
       "wiki_url": "https://de.wikipedia.org/wiki/Vareser_Voralpen",
       "bild_url": "",
       "bild_attr": ""
@@ -1407,7 +1407,7 @@
       ],
       "region_kanton": [],
       "hoechster_berg": "Hoher Nock",
-      "hoehe_m": null,
+      "hoehe_m": 1963,
       "wiki_url": "https://de.wikipedia.org/wiki/Ober%C3%B6sterreichische_Voralpen",
       "bild_url": "",
       "bild_attr": ""
@@ -1466,8 +1466,8 @@
         "FR"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Les Monges",
+      "hoehe_m": 2115,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -1526,8 +1526,8 @@
         "AT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Ameringkogel",
+      "hoehe_m": 2187,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
