@@ -1163,6 +1163,20 @@ map.on('load',()=>{
     filter:['in',['get','STS'],['literal',[]]],
     layout:{'visibility':'none'},
     paint:{'fill-color':'#ffb24d','fill-opacity':CHRONO_CUR_OP}});
+  // W3 (§11): Mindestdarstellung — UNABHÄNGIG von Färbung/Namen zeigt die Chronik
+  // immer (a) den orangefarbenen „besucht"-Außenrahmen der aktiven Gruppe und
+  // (b) den fest verankerten Gebietsnamen. Filter je Jahr = aktuelle Gruppe(n).
+  map.addLayer({id:'chrono-cur-line', type:'line', source:'sts',
+    filter:['in',['get','STS'],['literal',[]]],
+    layout:{'visibility':'none','line-join':'round','line-cap':'round'},
+    paint:{'line-color':'#ffb24d','line-width':2.6,'line-opacity':0.95}});
+  map.addLayer({id:'chrono-cur-name', type:'symbol', source:'sts-lp',
+    filter:['in',['get','STS'],['literal',[]]],
+    layout:{'visibility':'none',
+      'text-field':['case',['!=',['coalesce',['get','name_de'],''],''],['get','name_de'],['get','STS']],
+      'text-font':['Noto Sans Bold'],'text-size':['interpolate',['linear'],['zoom'], 6,13, 10,16],
+      'text-allow-overlap':true,'text-ignore-placement':true},   // fest verankert (kein Kollisions-Drop)
+    paint:{'text-color':'#ffd47a','text-halo-color':'#06101a','text-halo-width':2.0}});
   /* PRIV:END */
 
   // ── STS borders — toggle-controlled, only for non-visited (visited use hl-line) ──
@@ -2523,6 +2537,9 @@ function chronoSetYear(idx, opts){
   });
   map.setFilter('chrono-past',['in',['get','STS'],['literal',past]]);
   map.setFilter('chrono-cur', ['in',['get','STS'],['literal',cur]]);
+  // W3: Mindestdarstellung folgt der aktiven Gruppe (Rahmen + verankerter Name).
+  map.setFilter('chrono-cur-line',['in',['get','STS'],['literal',cur]]);
+  map.setFilter('chrono-cur-name',['in',['get','STS'],['literal',cur]]);
   const chips=document.querySelectorAll('#chronoChips .chip');
   chips.forEach((c,i)=>c.classList.toggle('on',i===idx));
   if(chips[idx]) chips[idx].scrollIntoView({inline:'center',block:'nearest'});
@@ -2569,6 +2586,7 @@ function chronoFinale(){
   const all=Object.keys(CHRONO.stsYears);
   map.setFilter('chrono-cur', ['in',['get','STS'],['literal',[]]]);   // alle besuchten Gruppen
   map.setFilter('chrono-past',['in',['get','STS'],['literal',all]]);  //   einheitlich im Bild
+  ['chrono-cur-line','chrono-cur-name'].forEach(l=>map.setFilter(l,['in',['get','STS'],['literal',[]]]));  // W3: kein Einzel-Rahmen im Abspann
   overview();                                            // zurück zur Gesamt-Übersicht (Home-Ausdehnung)
   const yrs=CHRONO.years, minY=yrs[0], maxY=yrs[yrs.length-1];
   const spanY=Math.max(0, maxY-minY);
@@ -2590,6 +2608,8 @@ function chronoEnter(){
   // Fix1: Chrono-Fuellungen folgen dem Faerbung-Toggle (aus -> ausgeblendet).
   const _cv=_farbungOn?'visible':'none';
   ['chrono-past','chrono-cur'].forEach(l=>map.setLayoutProperty(l,'visibility',_cv));
+  // W3: Mindestdarstellung (Rahmen + Name) IMMER an — unabhängig von Färbung/Namen.
+  ['chrono-cur-line','chrono-cur-name'].forEach(l=>map.setLayoutProperty(l,'visibility','visible'));
   map.setPaintProperty('chrono-cur','fill-opacity',CHRONO_CUR_OP);
   map.setPaintProperty('chrono-past','fill-opacity',CHRONO_PAST_OP);
   document.getElementById('cov').style.display='none';
@@ -2605,7 +2625,7 @@ function chronoExit(){
   chronoPause();
   if(_pulseRAF){ cancelAnimationFrame(_pulseRAF); _pulseRAF=null; }
   map.setPaintProperty('chrono-cur','fill-opacity',CHRONO_CUR_OP);
-  ['chrono-past','chrono-cur'].forEach(l=>map.setLayoutProperty(l,'visibility','none'));
+  ['chrono-past','chrono-cur','chrono-cur-line','chrono-cur-name'].forEach(l=>map.setLayoutProperty(l,'visibility','none'));  // W3 mit aus
   map.setLayoutProperty('hl-line','visibility','visible');
   map.setLayoutProperty('sts-label-hl','visibility', _layersOn?'visible':'none');   // Zustand restaurieren
   if(_chronoSaved){
