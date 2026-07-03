@@ -91,6 +91,9 @@ checks = [
     ("pop-based place class",         "['coalesce',['get','pop'],0]"),
     # Nachtjob W2 — Orte Atlas-Rot (beide Builds)
     ("orte atlas-red",                "#cc3322"),
+    # Nachtjob W5 — Vollbild-Button
+    ("fullscreen button",             'id="btnFull"'),
+    ("fullscreen fn",                 "function toggleFullscreen"),
     # Nachtjob W4 — Seilbahn-Linien + SDF-Gondel (beide Builds)
     ("cable line layer",              "id:'cable-line'"),
     ("cable lines source",            "./soiusa_osm_cableways_lines.geojson"),

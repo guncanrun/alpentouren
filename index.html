@@ -267,6 +267,11 @@
     border-radius:9px;background:rgba(255,255,255,.95);border:1px solid rgba(0,0,0,.18);color:#2a2f36;
     font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.3);touch-action:manipulation}
   #btn2d3d:hover{background:#fff;color:#000}
+  /* W5: Vollbild-Button (rund/weiß wie Home/2D3D), oben im Stack; per JS versteckt wo API fehlt. */
+  #btnFull{position:absolute;bottom:276px;right:var(--ctl-right);z-index:6;width:var(--ctl-round);height:var(--ctl-round);
+    border-radius:9px;background:rgba(255,255,255,.95);border:1px solid rgba(0,0,0,.18);color:#2a2f36;
+    font-size:18px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.3);touch-action:manipulation;display:none}
+  #btnFull:hover{background:#fff;color:#000}
   /* ── Suche ── */
   #search{position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:9;
     display:flex;align-items:center;background:var(--panel);backdrop-filter:blur(8px);
@@ -366,6 +371,7 @@
 <div id="attribPop" role="dialog" aria-label="Kartenquellen"></div>
 <button id="home" onclick="overview()" title="Standardansicht">&#8962;</button>
 <button id="btn2d3d" onclick="toggle2D3D()" title="2D / 3D umschalten">3D</button>
+<button id="btnFull" onclick="toggleFullscreen()" title="Vollbild">&#9974;</button>
 
 <div id="search">
   <button id="sToggle" onclick="toggleSearch()" title="Suche" aria-label="Suche">&#128269;</button>
@@ -704,6 +710,28 @@ function _update2D3DLabel(){
 }
 map.on('pitchend', _update2D3DLabel);
 map.on('load', _update2D3DLabel);
+
+// W5: Vollbild-Toggle (Fullscreen API). Button nur sichtbar, wo die API existiert
+// (iOS Safari fehlt sie -> versteckt). Motivation: Browser-UI frisst Tablet-Platz.
+function toggleFullscreen(){
+  const el=document.documentElement;
+  if(document.fullscreenElement||document.webkitFullscreenElement){
+    (document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document);
+  } else {
+    (el.requestFullscreen||el.webkitRequestFullscreen||function(){}).call(el);
+  }
+}
+(function(){
+  const b=document.getElementById('btnFull'); if(!b) return;
+  const el=document.documentElement;
+  if(el.requestFullscreen || el.webkitRequestFullscreen){
+    b.style.display='block';
+    const upd=()=>{ const on=!!(document.fullscreenElement||document.webkitFullscreenElement);
+      b.title = on?'Vollbild beenden':'Vollbild'; };
+    document.addEventListener('fullscreenchange',upd);
+    document.addEventListener('webkitfullscreenchange',upd);
+  }
+})();
 
 // A1 (Review §1): dauerhaftes Fehler-Logging. Fehlende Sources, Worker-Probleme und
 // Style-Fehler landen sonst nirgends sichtbar (v.a. im Standalone ohne Netzwerk-Panel).
