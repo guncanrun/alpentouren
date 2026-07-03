@@ -1095,11 +1095,13 @@ function showTab(name){
   if(ta) ta.classList.toggle('active', name==='about');
   if(tt) tt.classList.toggle('active', name==='tour');
 }
-function setTourTab(html){
+function setTourTab(html, label){
   const el=document.getElementById('pTour');
   const tabs=document.getElementById('pTabs');
+  const tt=document.getElementById('tabTour');
   const show = PRIV && !!html;
   if(el) el.innerHTML = show ? html : '';
+  if(tt && label) tt.textContent = label;      // §5: dynamischer Tab-Titel (Kategorie)
   if(tabs) tabs.style.display = show ? 'flex' : 'none';
   showTab(show ? 'tour' : 'about');
 }
@@ -1197,7 +1199,7 @@ function openSts(feat, camMode){   // camMode: undef=Gate(§6a), 'force'=immer f
   
 
   document.getElementById('pAbout').innerHTML = steckbriefHtml(stsName, props);
-  setTourTab(visited ? groupTourHtml(props) : '');
+  setTourTab(visited ? groupTourHtml(props) : '', visited ? katLabel(_toursOf(props)) : '');  // §5: Kategorie
   showGroupPeaks(stsName);
 
   

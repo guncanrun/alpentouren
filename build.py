@@ -451,6 +451,10 @@ __HEAD_LIBS__
   .cc-d{font-size:12px;color:var(--muted)}
   .cc-t{font-size:13px;color:var(--txt);line-height:1.45;margin-top:3px}
   .cc-who{font-style:italic;color:var(--muted)}
+  /* §5: Kategorie-Badge in der Chronik-Caption */
+  .cc-kat{display:inline-block;font-size:10.5px;font-weight:600;color:var(--accent2);
+    background:rgba(95,208,197,.14);border:1px solid rgba(95,208,197,.35);border-radius:5px;
+    padding:0 6px;margin-right:6px;vertical-align:1px;white-space:nowrap}
   .cc-memo{font-size:11.5px;color:var(--muted);line-height:1.4;margin-top:1px;cursor:pointer;
     border-left:2px solid rgba(255,178,77,.5);padding-left:7px}
   .cc-more{color:var(--accent2);font-weight:600;white-space:nowrap}
@@ -1385,11 +1389,13 @@ function showTab(name){
   if(ta) ta.classList.toggle('active', name==='about');
   if(tt) tt.classList.toggle('active', name==='tour');
 }
-function setTourTab(html){
+function setTourTab(html, label){
   const el=document.getElementById('pTour');
   const tabs=document.getElementById('pTabs');
+  const tt=document.getElementById('tabTour');
   const show = PRIV && !!html;
   if(el) el.innerHTML = show ? html : '';
+  if(tt && label) tt.textContent = label;      // §5: dynamischer Tab-Titel (Kategorie)
   if(tabs) tabs.style.display = show ? 'flex' : 'none';
   showTab(show ? 'tour' : 'about');
 }
@@ -1419,7 +1425,7 @@ function openTour(id){
   let tour='';
   if(t.huetten) tour+='<div class="sec"><h3>Hütten / Stationen</h3>'+t.huetten+'</div>';
   if(t.bemerkung) tour+='<div class="sec"><h3>Notiz</h3>'+t.bemerkung+'</div>';
-  setTourTab(tour);
+  setTourTab(tour, katOf(t));   // §5: Tab-Titel = Kategorie
   document.getElementById('panel').classList.add('open');
   map.flyTo({center:[t.lon,t.lat],zoom:9.5,pitch:20,bearing:0,duration:1200,essential:true});
 }
@@ -1480,10 +1486,18 @@ function hutPopupHtml(p){
 
 // ── Tour markup for a visited group (private build only) ──────────────────────
 /* PRIV:START */
+// §5 (Paket C): Tour-Kategorie (explizites Feld `kategorie` in touren.json; Fallback
+// „Tour", falls fehlt). Keine Namens-Heuristik. Daten pflegt Cowork ein.
+function _toursOf(props){
+  const ids = typeof props.tour_ids==='string'
+    ? JSON.parse(props.tour_ids||'[]') : (Array.isArray(props.tour_ids)?props.tour_ids:[]);
+  return ids.map(id=>TOUREN.find(t=>t.id==id)).filter(Boolean);
+}
+function katOf(t){ return (t && t.kategorie && String(t.kategorie).trim()) || 'Tour'; }
+function katLabel(tours){ const s=[...new Set((tours||[]).map(katOf))]; return s.length===1 ? s[0] : 'Touren'; }
+
 function groupTourHtml(props){
-  const tourIds = typeof props.tour_ids==='string'
-    ? JSON.parse(props.tour_ids) : (Array.isArray(props.tour_ids)?props.tour_ids:[]);
-  const tours = tourIds.map(id=>TOUREN.find(t=>t.id==id)).filter(Boolean);
+  const tours = _toursOf(props);
   if(!tours.length) return '';
   let html='';
   const gebs=[...new Set(tours.map(t=>t.gebirge))];
@@ -1583,7 +1597,7 @@ function openSts(feat, camMode){   // camMode: undef=Gate(§6a), 'force'=immer f
   /* PRIV:END */
 
   document.getElementById('pAbout').innerHTML = steckbriefHtml(stsName, props);
-  setTourTab(visited ? groupTourHtml(props) : '');
+  setTourTab(visited ? groupTourHtml(props) : '', visited ? katLabel(_toursOf(props)) : '');  // §5: Kategorie
   showGroupPeaks(stsName);
 
   /* PRIV:START */
@@ -2009,7 +2023,8 @@ function chronoCaption(Y){
     const fs=Array.isArray(t.fotos)?t.fotos:[];
     const thumb = fs.length ? '<img class="cc-thumb" src="'+fs[0].src+'" loading="lazy" alt="" onclick="openLightbox('+t.id+',0)">' : '';
     const media = (thumb||mp) ? '<div class="cc-media">'+thumb+mp+'</div>' : '';
-    return '<div class="cc-t">'+(parts.join(' &mdash; ')||'&nbsp;')+who+'</div>'+media;
+    const kat = '<span class="cc-kat">'+_esc(katOf(t))+'</span>';   // §5: Kategorie-Badge
+    return '<div class="cc-t">'+kat+(parts.join(' &mdash; ')||'&nbsp;')+who+'</div>'+media;
   }).join('');
   cap.innerHTML=h;
 }
