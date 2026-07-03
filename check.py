@@ -170,7 +170,9 @@ for bad, label in [("Tour mit Papa", "private tab label"),
                    ("chrono-past", "chronology fill layer (privat-only)"),
                    ("function chronoSetYear", "chronology fn (privat-only)"),
                    ("const CHRONO", "chronology data (privat-only)"),
-                   ("jahr_unsicher", "year-uncertainty field (privat-only)")]:
+                   ("jahr_unsicher", "year-uncertainty field (privat-only)"),
+                   ("privat_assets", "private photo asset path (privat-only)"),
+                   ("openLightbox", "photo lightbox fn (privat-only)")]:
     if bad in html:
         print(f"FAIL public leak: '{bad}' ({label}) present in index.html")
         errors.append(f"public leak: {bad}")
@@ -183,6 +185,31 @@ if "besucht" in html.lower():
     errors.append("public leak: besucht")
 else:
     print("OK   public free of 'besucht' (E8)")
+
+# ── Fotos (Paket A): Privat-Build referenziert privat_assets/web/… ─────────────
+# Warnungen (kein Fehler): fehlende Dateien / >400 KB. touren.json ist gitignored
+# und nur lokal vorhanden -> saubere Skip, wenn nicht da.
+import json as _jf
+_tj = pathlib.Path(__file__).parent / "touren.json"
+if _tj.exists():
+    _root = pathlib.Path(__file__).parent
+    _miss, _big = [], []
+    for _t in _jf.loads(_tj.read_text(encoding="utf-8")).get("touren", []):
+        for _f in (_t.get("fotos") or []):
+            _src = _f.get("src", "")
+            if not _src:
+                continue
+            _p = _root / _src
+            if not _p.exists():
+                _miss.append(_src)
+            elif _p.stat().st_size > 400 * 1024:
+                _big.append((_src, _p.stat().st_size // 1024))
+    if _miss:
+        print(f"WARN {len(_miss)} fotos[].src fehlen auf Platte: {_miss[:3]}")
+    else:
+        print("OK   alle fotos[].src existieren")
+    for _src, _kb in _big:
+        print(f"WARN Foto > 400 KB: {_src} ({_kb} KB) -> Qualitaet senken")
 
 # Whitelist guard: touren_public.json may only contain gruppe/besucht.
 import json as _json

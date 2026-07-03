@@ -415,6 +415,26 @@ TEMPLATE = r"""<!DOCTYPE html>
   .cc-who{font-style:italic;color:var(--muted)}
   .cc-memo{font-size:11.5px;color:var(--muted);line-height:1.4;margin-top:1px;
     border-left:2px solid rgba(255,178,77,.5);padding-left:7px}
+  /* ── Fotos: Caption-Thumb, Panel-Scrollband, Lightbox (nur Privat) ── */
+  .cc-media{display:flex;gap:8px;align-items:flex-start;margin-top:4px}
+  .cc-media .cc-memo{margin-top:0;flex:1}
+  .cc-thumb{width:72px;height:54px;border-radius:6px;object-fit:cover;cursor:pointer;
+    flex:0 0 auto;touch-action:manipulation}
+  .foto-band{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;
+    scrollbar-width:thin;margin:7px 0 2px;padding-bottom:2px}
+  .fb-img{height:96px;width:auto;min-width:40px;border-radius:7px;object-fit:cover;
+    cursor:pointer;flex:0 0 auto;touch-action:manipulation}
+  #lightbox{position:fixed;inset:0;z-index:20;display:none;background:rgba(0,0,0,.92);
+    align-items:center;justify-content:center;flex-direction:column;touch-action:none}
+  #lightbox.open{display:flex}
+  #lbImg{max-width:94vw;max-height:86vh;border-radius:6px;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+  #lightbox .lb-cap{color:#e8edf2;font-size:14px;margin-top:12px;max-width:90vw;text-align:center;min-height:18px;padding:0 12px}
+  #lightbox .lb-x{position:absolute;top:10px;right:14px;color:#e8edf2;font-size:34px;cursor:pointer;
+    width:44px;height:44px;display:grid;place-items:center;touch-action:manipulation}
+  #lightbox .lb-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.12);
+    border:none;color:#fff;font-size:30px;width:46px;height:64px;border-radius:10px;cursor:pointer;
+    touch-action:manipulation}
+  #lightbox .lb-prev{left:10px} #lightbox .lb-next{right:10px}
   /* PRIV:END */
 
   @media(max-width:640px){
@@ -504,6 +524,14 @@ Touren ansehen <span id="covCount"></span>
 <div id="chronoBar">
   <button id="chronoPlay" onclick="chronoPlayToggle()" title="Abspielen" aria-label="Abspielen">&#9654;</button>
   <div id="chronoChips"></div>
+</div>
+<!-- Foto-Lightbox (Fullscreen) -->
+<div id="lightbox" onclick="lbClose()">
+  <div class="lb-x" onclick="lbClose()" title="Schlie&szlig;en">&times;</div>
+  <button class="lb-nav lb-prev" id="lbPrev" onclick="lbPrev(event)" aria-label="Zur&uuml;ck">&#8249;</button>
+  <img id="lbImg" src="" alt="" onclick="event.stopPropagation()" />
+  <button class="lb-nav lb-next" id="lbNext" onclick="lbNext(event)" aria-label="Weiter">&#8250;</button>
+  <div class="lb-cap" id="lbCap"></div>
 </div>
 <!-- PRIV:END -->
 
@@ -1300,9 +1328,54 @@ function groupTourHtml(props){
     html+=gipfelUl(t.gipfel);
     if(t.huetten) html+='<div class="notiz"><b style="color:var(--muted)">Hütten:</b> '+t.huetten+'</div>';
     if(t.bemerkung) html+='<div class="notiz">'+t.bemerkung+'</div>';
+    html+=fotoBand(t);
     html+='</div>';
   });
   return html;
+}
+// Horizontales Foto-Scrollband einer Tour; Tap -> Lightbox.
+function fotoBand(t){
+  const fs=Array.isArray(t.fotos)?t.fotos:[];
+  if(!fs.length) return '';
+  return '<div class="foto-band">'+fs.map((f,i)=>
+    '<img class="fb-img" src="'+f.src+'" loading="lazy" alt="'+_esc(f.caption||'')+
+    '" onclick="openLightbox('+t.id+','+i+')">').join('')+'</div>';
+}
+
+// ── Foto-Lightbox (Vanilla): Fullscreen, Wischen/Pfeile/×, tap ausserhalb schliesst ──
+let _lbFotos=[], _lbIdx=0;
+function openLightbox(tourId, idx){
+  const t=TOUREN.find(x=>x.id==tourId); if(!t) return;
+  _lbFotos=Array.isArray(t.fotos)?t.fotos:[];
+  if(!_lbFotos.length) return;
+  _lbIdx=Math.max(0,Math.min(idx|0,_lbFotos.length-1));
+  _lbRender();
+  document.getElementById('lightbox').classList.add('open');
+}
+function _lbRender(){
+  const f=_lbFotos[_lbIdx]||{};
+  document.getElementById('lbImg').src=f.src||'';
+  document.getElementById('lbCap').textContent=f.caption||'';
+  const multi=_lbFotos.length>1, d=multi?'':'none';
+  document.getElementById('lbPrev').style.display=d;
+  document.getElementById('lbNext').style.display=d;
+}
+function lbNext(e){ if(e)e.stopPropagation(); if(_lbFotos.length){ _lbIdx=(_lbIdx+1)%_lbFotos.length; _lbRender(); } }
+function lbPrev(e){ if(e)e.stopPropagation(); if(_lbFotos.length){ _lbIdx=(_lbIdx-1+_lbFotos.length)%_lbFotos.length; _lbRender(); } }
+function lbClose(){ document.getElementById('lightbox').classList.remove('open'); }
+document.addEventListener('keydown',e=>{
+  if(!document.getElementById('lightbox').classList.contains('open')) return;
+  if(e.key==='Escape') lbClose();
+  else if(e.key==='ArrowRight') lbNext();
+  else if(e.key==='ArrowLeft') lbPrev();
+});
+{ let _lbX=0;
+  const lb=document.getElementById('lightbox');
+  if(lb){
+    lb.addEventListener('touchstart',e=>{ _lbX=e.changedTouches[0].clientX; },{passive:true});
+    lb.addEventListener('touchend',e=>{ const dx=e.changedTouches[0].clientX-_lbX;
+      if(Math.abs(dx)>45){ dx<0?lbNext():lbPrev(); } },{passive:true});
+  }
 }
 /* PRIV:END */
 
@@ -1674,7 +1747,11 @@ function chronoCaption(Y){
     // Stufe 3: Memo-Vorschau (~100 Zeichen, an Wortgrenze) wenn befüllt.
     const memo=(t.memo||'').trim();
     const mp = memo ? '<div class="cc-memo">'+_esc(memo.length>100?memo.slice(0,100).replace(/\s+\S*$/,'')+'…':memo)+'</div>' : '';
-    return '<div class="cc-t">'+(parts.join(' &mdash; ')||'&nbsp;')+who+'</div>'+mp;
+    // Foto-Thumb (erstes Foto) links neben der Memo-Vorschau; Tap -> Lightbox.
+    const fs=Array.isArray(t.fotos)?t.fotos:[];
+    const thumb = fs.length ? '<img class="cc-thumb" src="'+fs[0].src+'" loading="lazy" alt="" onclick="openLightbox('+t.id+',0)">' : '';
+    const media = (thumb||mp) ? '<div class="cc-media">'+thumb+mp+'</div>' : '';
+    return '<div class="cc-t">'+(parts.join(' &mdash; ')||'&nbsp;')+who+'</div>'+media;
   }).join('');
   cap.innerHTML=h;
 }
