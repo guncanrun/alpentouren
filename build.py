@@ -174,7 +174,6 @@ __HEAD_LIBS__
     font-family:"Inter",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
     background:var(--bg);color:var(--txt)}
   #map{position:absolute;inset:0}
-  .maplibregl-ctrl-attrib{font-size:10px}
   /* MapLibre zoom/compass buttons: gleiche Breite wie die runden Controls (W4 §2),
      gemeinsamer Rechtsabstand -> eine Flucht mit Home/2D3D. */
   .maplibregl-ctrl-group button{width:var(--ctl-round);height:var(--ctl-round);touch-action:manipulation}
@@ -361,28 +360,23 @@ __HEAD_LIBS__
     border-radius:50%;background:var(--panel);border:1px solid var(--line);color:var(--txt);
     font-size:20px;font-weight:700;cursor:pointer;backdrop-filter:blur(8px);touch-action:manipulation}
   #btnInfo:hover{border-color:var(--accent2);color:var(--accent2)}
-  /* Punkt 2/0: Attribution als runde Info-Taste oben rechts, links neben dem Hilfe-Button.
-     Eingeklappt = runder dunkler Button (helles i) wie #btnInfo; Klick klappt nach links/unten
-     aus. Initial-Zustand KOMPLETT per CSS (kein FOUC des weissen maplibre-Default-Kastens):
-     Basis-Reset greift schon vor dem compact-Klassenwechsel, Inner erst bei compact-show. */
-  .maplibregl-ctrl-top-right{top:16px;right:calc(16px + var(--ctl-round) + 8px);z-index:12}
-  .maplibregl-ctrl-top-right .maplibregl-ctrl-attrib{
-    background:none;box-shadow:none;margin:0;padding:0;min-height:var(--ctl-round)}
-  .maplibregl-ctrl-top-right .maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-inner{display:none}
-  .maplibregl-ctrl-top-right .maplibregl-ctrl-attrib.maplibregl-compact:after{display:none}
-  .maplibregl-ctrl-top-right .maplibregl-ctrl-attrib-button{
-    display:block;width:var(--ctl-round);height:var(--ctl-round);border-radius:50%;position:absolute;top:0;right:0;
+  /* Feinschliff 3: eigenes Kartenquellen-Control (Machart wie #btnInfo) — KEIN natives
+     maplibre-details mehr (Wurzel fuer Kaestchen/Doppelklick/FOUC). Rundes helles i,
+     links neben dem „?"; Popup oeffnet auf Button-Hoehe nach LINKS (Richtung Title-Card). */
+  #btnAttrib{position:absolute;top:16px;right:calc(16px + var(--ctl-round) + 8px);z-index:8;
+    width:var(--ctl-round);height:var(--ctl-round);border-radius:50%;cursor:pointer;
     background-color:var(--panel);border:1px solid var(--line);backdrop-filter:blur(8px);
-    background-size:22px;background-position:center;background-repeat:no-repeat;
+    background-repeat:no-repeat;background-position:center;background-size:22px;touch-action:manipulation;
     background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='%23e8edf2' fill-rule='evenodd' viewBox='0 0 20 20'%3E%3Cpath d='M4 10a6 6 0 1 0 12 0 6 6 0 1 0-12 0m5-3a1 1 0 1 0 2 0 1 1 0 1 0-2 0m0 3a1 1 0 1 1 2 0v3a1 1 0 1 1-2 0'/%3E%3C/svg%3E")}
-  .maplibregl-ctrl-top-right .maplibregl-ctrl-attrib-button:hover{border-color:var(--accent2)}
-  .maplibregl-ctrl-top-right .maplibregl-ctrl-attrib.maplibregl-compact-show{
-    width:auto;height:auto;min-height:var(--ctl-round);max-width:min(74vw,360px);
-    padding:7px 42px 7px 12px;background:var(--panel);border:1px solid var(--line);
-    border-radius:14px;backdrop-filter:blur(8px);box-shadow:0 8px 30px rgba(0,0,0,.45)}
-  .maplibregl-ctrl-top-right .maplibregl-ctrl-attrib.maplibregl-compact-show .maplibregl-ctrl-attrib-inner{display:block}
-  .maplibregl-ctrl-top-right .maplibregl-ctrl-attrib-inner{color:var(--muted);font-size:10.5px;line-height:1.5}
-  .maplibregl-ctrl-top-right .maplibregl-ctrl-attrib a{color:var(--accent2)}
+  #btnAttrib:hover,#btnAttrib.on{border-color:var(--accent2)}
+  #attribPop{position:absolute;top:16px;right:calc(16px + 2*var(--ctl-round) + 20px);z-index:11;
+    display:none;width:max-content;max-width:min(420px,calc(100vw - 160px));
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 13px;
+    font-size:10.5px;line-height:1.55;color:var(--muted);backdrop-filter:blur(8px);
+    box-shadow:0 8px 30px rgba(0,0,0,.5)}
+  #attribPop.open{display:block}
+  #attribPop a{color:var(--accent2);text-decoration:none}
+  #attribPop a:hover{text-decoration:underline}
   /* §2 (W4): runde Controls rechts unten in einer Flucht (right:var(--ctl-right)),
      alle WEISS wie der Zoom-Stack (Michael-Entscheid). Reihenfolge oben->unten:
      2D/3D · Home · [Zoom+/Zoom-/Kompass]. */
@@ -529,6 +523,8 @@ __HEAD_LIBS__
 </div>
 
 <button id="btnInfo" onclick="toggleAbout()" title="Info &amp; Anleitung">?</button>
+<button id="btnAttrib" onclick="toggleAttrib(event)" title="Kartenquellen" aria-label="Kartenquellen"></button>
+<div id="attribPop" role="dialog" aria-label="Kartenquellen"></div>
 <button id="home" onclick="overview()" title="Standardansicht">&#8962;</button>
 <button id="btn2d3d" onclick="toggle2D3D()" title="2D / 3D umschalten">3D</button>
 
@@ -751,14 +747,13 @@ const map = new maplibregl.Map({
   },
   center:ALPS.center, zoom:ALPS.zoom, pitch:ALPS.pitch, bearing:ALPS.bearing,
   maxPitch:70, hash:true,
-  // Punkt 3: deutsche Tooltips fuer die maplibre-Default-Controls (Zoom/Kompass/Attribution).
+  // Punkt 3: deutsche Tooltips fuer die maplibre-Default-Controls (Zoom/Kompass).
   locale:{
     'NavigationControl.ZoomIn':'Hineinzoomen',
     'NavigationControl.ZoomOut':'Herauszoomen',
-    'NavigationControl.ResetBearing':'Nach Norden ausrichten',
-    'AttributionControl.ToggleAttribution':'Kartenquellen'
+    'NavigationControl.ResetBearing':'Nach Norden ausrichten'
   },
-  attributionControl:false   // custom control, rebuilt on basemap switch (setAttrib)
+  attributionControl:false   // eigenes Kartenquellen-Control (#btnAttrib/#attribPop, setAttrib)
 });
 // ── Attribution (dynamic per basemap) ─────────────────────────────────────────
 const ATTRIB = {
@@ -768,22 +763,31 @@ const ATTRIB = {
   topo:'© OpenStreetMap-Mitwirkende, SRTM · Kartendarstellung © OpenTopoMap (CC-BY-SA) · '+
        'Höhen: Mapzen/AWS · SOIUSA © Arpa Piemonte'
 };
-let _attribCtl=null;
+// Feinschliff 3: eigenes Attribution-Control (kein natives maplibre-details-Element mehr,
+// das war die Wurzel fuer Kaestchen/Doppelklick/FOUC). setAttrib fuellt nur noch das
+// eigene Popup-Div (#attribPop); Inhalt weiter aus dem ATTRIB-Objekt.
 function setAttrib(topo){
-  const html = topo?ATTRIB.topo:ATTRIB.sat;
-  if(!_attribCtl){
-    _attribCtl=new maplibregl.AttributionControl({compact:true, customAttribution:html});
-    map.addControl(_attribCtl,'top-right');   // Punkt 2: Attribution als runde Info-Taste neben dem Hilfe-Button
-    const det=map.getContainer().querySelector('details.maplibregl-ctrl-attrib');
-    if(det) det.open=false;                                    // eingeklappt starten
-    return;
-  }
-  // M2: Control NICHT neu erzeugen (das Recreate klappte die compact-Attribution bei
-  // jedem Basemap-Switch auf). Nur den Text ersetzen -> Panel-/Overlay-Zustand stabil.
-  if(_attribCtl.options) _attribCtl.options.customAttribution = html;
-  const inner=map.getContainer().querySelector('.maplibregl-ctrl-attrib-inner');
-  if(inner) inner.innerHTML = html;
+  const el=document.getElementById('attribPop');
+  if(el) el.innerHTML = topo?ATTRIB.topo:ATTRIB.sat;
 }
+// ⓘ oeffnet/schliesst das Kartenquellen-Popup (Klick auf ⓘ, ausserhalb oder Esc).
+function toggleAttrib(e){
+  if(e) e.stopPropagation();
+  const pop=document.getElementById('attribPop'), btn=document.getElementById('btnAttrib');
+  const open=pop && pop.classList.toggle('open');
+  if(btn) btn.classList.toggle('on', !!open);
+}
+function _closeAttrib(){
+  const pop=document.getElementById('attribPop'), btn=document.getElementById('btnAttrib');
+  if(pop) pop.classList.remove('open'); if(btn) btn.classList.remove('on');
+}
+// Ausserhalb-Klick schliesst (Klick auf ⓘ selbst laeuft ueber toggleAttrib + stopPropagation;
+// Klick auf Links IM Popup nicht schliessen).
+document.addEventListener('click', e=>{
+  const pop=document.getElementById('attribPop');
+  if(pop && pop.classList.contains('open') && !pop.contains(e.target)) _closeAttrib();
+});
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') _closeAttrib(); });
 // E) Kompass-Klick = NUR norden (bearing->0, Pitch bleibt): visualizePitch:false.
 map.addControl(new maplibregl.NavigationControl({visualizePitch:false}), 'bottom-right');
 // B2: Maßstabsleiste (metrisch) — jetzt unten MITTIG + groesser, im zentrierten Footer.
