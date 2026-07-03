@@ -218,9 +218,9 @@
         "IT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
-      "wiki_url": "",
+      "hoechster_berg": "Monte Mars",
+      "hoehe_m": 2600,
+      "wiki_url": "https://it.wikipedia.org/wiki/Monte_Mars",
       "bild_url": "",
       "bild_attr": ""
     },
@@ -266,9 +266,9 @@
         "AT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
-      "wiki_url": "",
+      "hoechster_berg": "Hochschwab",
+      "hoehe_m": 2277,
+      "wiki_url": "https://de.wikipedia.org/wiki/Hochschwab",
       "bild_url": "",
       "bild_attr": ""
     },
@@ -362,9 +362,9 @@
         "FR"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
-      "wiki_url": "",
+      "hoechster_berg": "Roignais",
+      "hoehe_m": 2995,
+      "wiki_url": "https://it.wikipedia.org/wiki/Roignais",
       "bild_url": "",
       "bild_attr": ""
     },
@@ -998,9 +998,9 @@
         "FR"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
-      "wiki_url": "",
+      "hoechster_berg": "Vieux Chaillol",
+      "hoehe_m": 3163,
+      "wiki_url": "https://it.wikipedia.org/wiki/Vieux_Chaillol",
       "bild_url": "",
       "bild_attr": ""
     },
@@ -1022,9 +1022,9 @@
         "FR"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
-      "wiki_url": "",
+      "hoechster_berg": "Tête de Soulaure",
+      "hoehe_m": 3242,
+      "wiki_url": "https://it.wikipedia.org/wiki/Tête_de_Soulaure",
       "bild_url": "",
       "bild_attr": ""
     },
@@ -1106,9 +1106,9 @@
         "FR"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
-      "wiki_url": "",
+      "hoechster_berg": "Pointe de la Diablée",
+      "hoehe_m": 2928,
+      "wiki_url": "https://it.wikipedia.org/wiki/Pointe_de_la_Diablée",
       "bild_url": "",
       "bild_attr": ""
     },
@@ -1202,9 +1202,9 @@
         "IT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
-      "wiki_url": "",
+      "hoechster_berg": "Monte Plauris",
+      "hoehe_m": 1958,
+      "wiki_url": "https://it.wikipedia.org/wiki/Monte_Plauris",
       "bild_url": "",
       "bild_attr": ""
     },
@@ -1214,9 +1214,9 @@
         "IT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
-      "wiki_url": "",
+      "hoechster_berg": "Monte Armetta",
+      "hoehe_m": 1739,
+      "wiki_url": "https://it.wikipedia.org/wiki/Monte_Armetta",
       "bild_url": "",
       "bild_attr": ""
     },
@@ -1250,9 +1250,9 @@
         "SI"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
-      "wiki_url": "",
+      "hoechster_berg": "Črni vrh (Schwarzkogel)",
+      "hoehe_m": 1543,
+      "wiki_url": "https://de.wikipedia.org/wiki/Črni_Vrh",
       "bild_url": "",
       "bild_attr": ""
     },
@@ -1262,9 +1262,9 @@
         "SI"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
-      "wiki_url": "",
+      "hoechster_berg": "Porezen",
+      "hoehe_m": 1630,
+      "wiki_url": "https://it.wikipedia.org/wiki/Porezen",
       "bild_url": "",
       "bild_attr": ""
     },
@@ -1274,9 +1274,9 @@
         "SI"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
-      "wiki_url": "",
+      "hoechster_berg": "Kum",
+      "hoehe_m": 1220,
+      "wiki_url": "https://sl.wikipedia.org/wiki/Kum",
       "bild_url": "",
       "bild_attr": ""
     },
@@ -1286,9 +1286,9 @@
         "CH"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
-      "wiki_url": "",
+      "hoechster_berg": "Schächentaler Windgällen",
+      "hoehe_m": 2764,
+      "wiki_url": "https://it.wikipedia.org/wiki/Schächentaler_Windgällen",
       "bild_url": "",
       "bild_attr": ""
     },
@@ -1310,9 +1310,9 @@
         "AT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
-      "wiki_url": "https://de.wikipedia.org/wiki/Eisenwurzen",
+      "hoechster_berg": "Stuhleck",
+      "hoehe_m": 1782,
+      "wiki_url": "https://de.wikipedia.org/wiki/Stuhleck",
       "bild_url": "",
       "bild_attr": ""
     },
@@ -1358,8 +1358,8 @@
         "FR"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Montagne de Belle-Motte",
+      "hoehe_m": 1952,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -1430,8 +1430,8 @@
         "FR"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
+      "hoechster_berg": "Montagne de Chamouse",
+      "hoehe_m": 1532,
       "wiki_url": "",
       "bild_url": "",
       "bild_attr": ""
@@ -1478,9 +1478,9 @@
         "FR"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
-      "wiki_url": "",
+      "hoechster_berg": "Sommet de la Bernarde",
+      "hoehe_m": 1941,
+      "wiki_url": "https://it.wikipedia.org/wiki/Sommet_de_la_Bernarde",
       "bild_url": "",
       "bild_attr": ""
     },
@@ -1490,9 +1490,9 @@
         "FR"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
-      "wiki_url": "",
+      "hoechster_berg": "Cime de Roccasiera",
+      "hoehe_m": 1501,
+      "wiki_url": "https://it.wikipedia.org/wiki/Cime_de_Roccasiera",
       "bild_url": "",
       "bild_attr": ""
     },
@@ -1502,9 +1502,9 @@
         "FR"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
-      "wiki_url": "",
+      "hoechster_berg": "Mont Ventoux",
+      "hoehe_m": 1912,
+      "wiki_url": "https://de.wikipedia.org/wiki/Mont_Ventoux",
       "bild_url": "",
       "bild_attr": ""
     },
@@ -1538,9 +1538,9 @@
         "FR"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
-      "wiki_url": "",
+      "hoechster_berg": "Montagne de Céüse",
+      "hoehe_m": 2016,
+      "wiki_url": "https://it.wikipedia.org/wiki/Montagne_de_Céüse",
       "bild_url": "",
       "bild_attr": ""
     },
@@ -1550,9 +1550,9 @@
         "AT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
-      "wiki_url": "",
+      "hoechster_berg": "Hochwechsel",
+      "hoehe_m": 1743,
+      "wiki_url": "https://de.wikipedia.org/wiki/Wechsel_(Berg)",
       "bild_url": "",
       "bild_attr": ""
     },
@@ -1562,9 +1562,9 @@
         "AT"
       ],
       "region_kanton": [],
-      "hoechster_berg": "",
-      "hoehe_m": null,
-      "wiki_url": "",
+      "hoechster_berg": "Großer Speikkogel",
+      "hoehe_m": 2140,
+      "wiki_url": "https://de.wikipedia.org/wiki/Großer_Speikkogel",
       "bild_url": "",
       "bild_attr": ""
     },
@@ -1575,8 +1575,8 @@
       ],
       "region_kanton": [],
       "hoechster_berg": "Cima Dodici",
-      "hoehe_m": 2446,
-      "wiki_url": "https://de.wikipedia.org/wiki/Vicentiner_Voralpen",
+      "hoehe_m": 2336,
+      "wiki_url": "https://de.wikipedia.org/wiki/Cima_Dodici",
       "bild_url": "",
       "bild_attr": ""
     },
