@@ -133,7 +133,7 @@ checks = [
     ("basemap localStorage",          "alpen_basemap"),
     ("toggleAbout fn",                "function toggleAbout"),
     ("hover tooltip popup",           "const hoverPop"),
-    ("hover on sts-fill mousemove",   "map.on('mousemove','sts-fill'"),
+    ("hover on sts-hit mousemove",    "map.on('mousemove','sts-hit'"),
     # Map setup
     ("overflow hidden",               "overflow:hidden"),
     ("maxBounds",                     "maxBounds"),

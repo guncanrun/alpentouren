@@ -398,12 +398,14 @@ __HEAD_LIBS__
     box-shadow:0 8px 30px rgba(0,0,0,.5);opacity:0;transition:opacity .3s;
     pointer-events:none;max-width:calc(100vw - 32px)}
   #toast.show{opacity:1}
-  /* §6b (W4): „Letzte Ansicht"-Chip nach Kamerasprung */
-  #undoChip{position:absolute;left:50%;bottom:80px;transform:translateX(-50%);z-index:9;display:none;
-    align-items:center;gap:4px;background:var(--panel);backdrop-filter:blur(8px);border:1px solid var(--line);
-    border-radius:20px;padding:8px 16px;min-height:40px;font-size:13px;color:var(--txt);cursor:pointer;
-    box-shadow:0 6px 24px rgba(0,0,0,.45);touch-action:manipulation}
-  #undoChip.show{display:inline-flex}
+  /* §6b (W4)/Fix6: „Letzte Ansicht"-Chip; Fade statt display-Toggle, pointer-events
+     via JS erst NACH dem Fade aus -> kein Durchklicken zur Karte im Verschwinde-Moment. */
+  #undoChip{position:absolute;left:50%;bottom:80px;transform:translateX(-50%);z-index:9;
+    display:inline-flex;align-items:center;gap:4px;background:var(--panel);backdrop-filter:blur(8px);
+    border:1px solid var(--line);border-radius:20px;padding:8px 16px;min-height:40px;font-size:13px;
+    color:var(--txt);cursor:pointer;box-shadow:0 6px 24px rgba(0,0,0,.45);touch-action:manipulation;
+    opacity:0;pointer-events:none;transition:opacity .25s}
+  #undoChip.show{opacity:1}
   #undoChip:hover{border-color:var(--accent2);color:var(--accent2)}
 
   /* PRIV:START */
@@ -444,8 +446,8 @@ __HEAD_LIBS__
   .cc-memo{font-size:11.5px;color:var(--muted);line-height:1.4;margin-top:1px;cursor:pointer;
     border-left:2px solid rgba(255,178,77,.5);padding-left:7px}
   .cc-more{color:var(--accent2);font-weight:600;white-space:nowrap}
-  #panel .tour-memo{font-size:13px;line-height:1.55;color:var(--txt);margin:6px 0 3px;
-    padding-left:9px;border-left:2px solid rgba(255,178,77,.5)}
+  #panel .tour-memo{font-size:11.5px;line-height:1.5;color:var(--muted);font-style:italic;
+    margin:6px 0 3px;padding-left:9px;border-left:2px solid rgba(255,178,77,.35)}
   /* ── Fotos: Caption-Thumb, Panel-Scrollband, Lightbox (nur Privat) ── */
   .cc-media{display:flex;gap:8px;align-items:flex-start;margin-top:4px}
   .cc-media .cc-memo{margin-top:0;flex:1}
@@ -466,8 +468,12 @@ __HEAD_LIBS__
     border:none;color:#fff;font-size:30px;width:46px;height:64px;border-radius:10px;cursor:pointer;
     touch-action:manipulation}
   #lightbox .lb-prev{left:10px} #lightbox .lb-next{right:10px}
-  /* W1a: Privat-Build — Scale-Bar ueber die Chronik-Uhr heben (sonst verdeckt) */
-  .maplibregl-ctrl-scale{margin:0 0 68px 16px}
+  /* Fix4: Privat-Build — Scale-Bar horizontal NEBEN die Chronik-Uhr (rechts davon),
+     nicht darueber; im Chronik-Modus ausblenden (Jahresleiste uebernimmt die Zeile). */
+  .maplibregl-ctrl-scale{margin:0 0 15px 66px}
+  body.chrono .maplibregl-ctrl-scale{display:none}
+  /* Fix5: Attribution (bottom-left) im Privat-Build rechts von der Uhr */
+  .maplibregl-ctrl-bottom-left .maplibregl-ctrl-attrib{margin-left:66px}
   /* PRIV:END */
 
   @media(max-width:640px){
@@ -481,7 +487,7 @@ __HEAD_LIBS__
 <body>
 <div id="map"></div>
 <div id="toast"></div>
-<div id="undoChip" onclick="restoreUndo()" title="Vorherige Ansicht wiederherstellen">&#8617; Letzte Ansicht</div>
+<div id="undoChip" onclick="restoreUndo(event)" title="Vorherige Ansicht wiederherstellen">&#8617; Letzte Ansicht</div>
 
 <div id="title">
   <h1>__TITEL__</h1>
@@ -712,7 +718,7 @@ function setAttrib(topo){
   const html = topo?ATTRIB.topo:ATTRIB.sat;
   if(!_attribCtl){
     _attribCtl=new maplibregl.AttributionControl({compact:true, customAttribution:html});
-    map.addControl(_attribCtl,'bottom-right');
+    map.addControl(_attribCtl,'bottom-left');   // Fix5: weg vom Home-Button rechts unten
     const det=map.getContainer().querySelector('details.maplibregl-ctrl-attrib');
     if(det) det.open=false;                                    // eingeklappt starten
     return;
@@ -857,17 +863,22 @@ map.on('load',()=>{
     paint:{'line-color':'#ffffff','line-opacity':0.55,
       'line-width':['case',['boolean',['feature-state','hover'],false], 1.6, 0]}});
 
+  // ── Fix9: unsichtbarer Hit-Layer — Klick/Hover funktionieren unabhaengig vom
+  //    Faerbung-Toggle (sts-fill kann visibility:none sein). Immer sichtbar, ~transparent.
+  map.addLayer({id:'sts-hit', type:'fill', source:'sts',
+    paint:{'fill-color':'#000000','fill-opacity':0.001}});
+
   /* PRIV:START */
   // ── Chronologie-Füllungen (nur Privat): kumulativ gedimmt (≤ Jahr) + aktuelles
   //    Jahr kräftig. Filter werden je Jahr aus JS gesetzt; standardmäßig aus. ──
   map.addLayer({id:'chrono-past', type:'fill', source:'sts',
     filter:['in',['get','STS'],['literal',[]]],
     layout:{'visibility':'none'},
-    paint:{'fill-color':'#ffb24d','fill-opacity':0.30}});
+    paint:{'fill-color':'#ffb24d','fill-opacity':CHRONO_PAST_OP}});
   map.addLayer({id:'chrono-cur', type:'fill', source:'sts',
     filter:['in',['get','STS'],['literal',[]]],
     layout:{'visibility':'none'},
-    paint:{'fill-color':'#ffb24d','fill-opacity':0.62}});
+    paint:{'fill-color':'#ffb24d','fill-opacity':CHRONO_CUR_OP}});
   /* PRIV:END */
 
   // ── STS borders — toggle-controlled, only for non-visited (visited use hl-line) ──
@@ -1044,19 +1055,23 @@ map.on('load',()=>{
   map.addLayer({id:'peaks-in-group', type:'symbol', source:'osm-peaks', minzoom:5,
     filter:['==',['get','name'],'__none__'],
     layout:{'visibility':'none','icon-image':'peak','icon-anchor':'bottom','icon-allow-overlap':false,
-      'icon-size':['match',['get','tier'], 2,1.0, 3,0.82, 0.64],
-      // gleiche Rang-/Zoom-Staffelung wie die Basis-Gipfel: nur prominente bei mittlerem Zoom.
+      'icon-size':['match',['get','tier'], 1,1.2, 2,1.0, 3,0.82, 0.64],
+      'symbol-sort-key':['get','tier'],   // Top-Gipfel zuerst platziert
+      // Fix3: Icon UND Label konsistent gegated (keine nackten Dreiecke ohne Namen),
+      // Top-N nach Zoom wie beim Basis-Layer: z<10 tier<=1, z10 tier<=2, z12 tier<=3, z13 alle.
       'text-field':['step',['zoom'],
-        ['case',['<=',['get','tier'],2],['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],''],
-        11,['case',['<=',['get','tier'],3],['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],''],
-        12,['concat',['get','name'],'\n',['to-string',['get','ele']],' m']],
+        ['case',['<=',['get','tier'],1],['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],''],
+        10,['case',['<=',['get','tier'],2],['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],''],
+        12,['case',['<=',['get','tier'],3],['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],''],
+        13,['concat',['get','name'],'\n',['to-string',['get','ele']],' m']],
       'text-font':['Noto Sans Bold'],'text-size':9.5,'text-offset':[0,0.4],
       'text-anchor':'top','text-optional':true,'text-allow-overlap':false},
     paint:{'text-color':'#eaf1ff','text-halo-color':'#06101a','text-halo-width':1.5,
       'icon-opacity':['step',['zoom'],
-        ['case',['<=',['get','tier'],2],1,0],
-        10,['case',['<=',['get','tier'],3],1,0],
-        12,1]}});
+        ['case',['<=',['get','tier'],1],1,0],
+        10,['case',['<=',['get','tier'],2],1,0],
+        12,['case',['<=',['get','tier'],3],1,0],
+        13,1]}});
   // Highlight: the group's highest peak (bigger triangle + bold gold label)
   map.addLayer({id:'peaks-highest', type:'symbol', source:'osm-peaks',
     filter:['==',['get','name'],'__none__'],
@@ -1093,9 +1108,9 @@ map.on('load',()=>{
   /* PRIV:END */
 
   // ── STS fill click — popup always; panel only for visited groups ─────────
-  map.on('mouseenter','sts-fill',()=>map.getCanvas().style.cursor='pointer');
+  map.on('mouseenter','sts-hit',()=>map.getCanvas().style.cursor='pointer');
   // B) Hover-Box: Name + Settore (+ privat: Besuchs-Badge + Jahre) + Klick-Hinweis.
-  map.on('mousemove','sts-fill',e=>{
+  map.on('mousemove','sts-hit',e=>{
     // §4 (W4): Hover-Glow via feature-state (flackerfrei, unabhaengig vom Panel).
     const hid=e.features[0].id;
     if(_hoverId!==hid){
@@ -1126,9 +1141,9 @@ map.on('load',()=>{
         .addTo(map);
     }, 700);
   });
-  map.on('mouseleave','sts-fill',()=>{map.getCanvas().style.cursor='';clearTimeout(_hoverTimer);hoverPop.remove();
+  map.on('mouseleave','sts-hit',()=>{map.getCanvas().style.cursor='';clearTimeout(_hoverTimer);hoverPop.remove();
     if(_hoverId!=null){ map.setFeatureState({source:'sts',id:_hoverId},{hover:false}); _hoverId=null; }});
-  map.on('click','sts-fill',e=>{
+  map.on('click','sts-hit',e=>{
     if(TOUR_LAYERS.length && map.queryRenderedFeatures(e.point,{layers:TOUR_LAYERS}).length) return;
     if(map.queryRenderedFeatures(e.point,{layers:HUT_LAYERS}).length) return;  // Hütte hat Vorrang
     clearTimeout(_hoverTimer); hoverPop.remove(); stsPopup.remove(); hutPopup.remove();  // B: keine klebende Box
@@ -1140,7 +1155,7 @@ map.on('load',()=>{
   map.on('mouseenter','hl-line',()=>map.getCanvas().style.cursor='pointer');
   map.on('mouseleave','hl-line',()=>map.getCanvas().style.cursor='');
   map.on('click','hl-line',e=>{
-    if(map.queryRenderedFeatures(e.point,{layers:['sts-fill'].concat(TOUR_LAYERS)}).length) return;
+    if(map.queryRenderedFeatures(e.point,{layers:['sts-hit'].concat(TOUR_LAYERS)}).length) return;
     const hp = e.features[0].properties;
     const matchName = (hp.match_field==='STS') ? hp.soiusa_name : (hp.parent_sts||'');
     const stsFeat = SOIUSA_STS.features.find(f=>f.properties.STS===matchName);
@@ -1155,7 +1170,7 @@ map.on('load',()=>{
     if(!map.queryRenderedFeatures(e.point,{layers:HUT_LAYERS}).length) hutPopup.remove();
     // W1c: Klick ohne Gruppen-/Linien-/Punkt-Feature -> Steckbrief schliessen + Auswahl-Rand weg.
     const feats=map.queryRenderedFeatures(e.point,{layers:
-      ['sts-fill','hl-line','osm-peaks','osm-landmarks','osm-passes','osm-passes-famous']
+      ['sts-hit','hl-line','osm-peaks','osm-landmarks','osm-passes','osm-passes-famous']
         .concat(HUT_LAYERS).concat(TOUR_LAYERS)});
     if(!feats.length) closePanel();
   });
@@ -1467,7 +1482,7 @@ document.addEventListener('keydown',e=>{
 /* PRIV:END */
 
 // ── Open: STS polygon (visited or not) ───────────────────────────────────────
-function openSts(feat, force){   // force=true (z.B. Suche) erzwingt den Kamerasprung trotz §6a-Gate
+function openSts(feat, camMode){   // camMode: undef=Gate(§6a), 'force'=immer fliegen (Suche), 'nofly'=nie (Chronik)
   const props = feat.properties || {};
   const stsName = String(props.STS || '').trim();
   // Harden: use '__none__' sentinel so empty-string filter doesn't accidentally match
@@ -1494,9 +1509,10 @@ function openSts(feat, force){   // force=true (z.B. Suche) erzwingt den Kameras
   if(_tc && window.innerWidth>640) _pnl.style.top=(_tc.getBoundingClientRect().bottom+10)+'px';
   else _pnl.style.top='';
   _pnl.classList.add('open');
-  // §6a (W4): ab z>=11 KEIN Auto-flyTo bei Karten-Klick (Fehlklick nahe Gipfel wirft
-  // die Kamera sonst zurueck) — nur Steckbrief. Suche (force) springt weiterhin.
-  if(map.getZoom()>=11 && !force) return;
+  // §6a (W4)/Fix2: 'nofly' -> nie fliegen (Chronik fliegt selbst); sonst ab z>=11 kein
+  // Auto-flyTo bei Klick (Fehlklick-Schutz), 'force' (Suche) springt immer.
+  if(camMode==='nofly') return;
+  if(map.getZoom()>=11 && camMode!=='force') return;
   const bb=featBbox(feat);
   if(bb){ saveUndo(); map.fitBounds(bb,{padding:{top:80,bottom:80,left:320,right:80},
     pitch:18,bearing:0,maxZoom:10,duration:1200,essential:true}); showUndoChip(); }
@@ -1517,7 +1533,12 @@ function toggleLayers(){
 let _farbungOn=true;
 function toggleFarbung(){
   _farbungOn=!_farbungOn;
-  map.setLayoutProperty('sts-fill','visibility',_farbungOn?'visible':'none');
+  const v=_farbungOn?'visible':'none';
+  map.setLayoutProperty('sts-fill','visibility',v);
+  /* PRIV:START */
+  // Fix1: im Chronik-Modus die Chrono-Fuellungen mit ein-/ausblenden (Outlines bleiben).
+  if(_chronoOn) ['chrono-past','chrono-cur'].forEach(l=>map.setLayoutProperty(l,'visibility',v));
+  /* PRIV:END */
   document.getElementById('tglFarbung').classList.toggle('on',_farbungOn);
 }
 // ── Landesgrenzen an/aus ──────────────────────────────────────────────────────
@@ -1752,11 +1773,18 @@ function pickResult(i){
   const r=sCur[i]; if(!r) return;
   clearSearchMarker();
   if(r.cat==='group'){
-    const f=SOIUSA_STS.features.find(x=>x.properties.STS===r.sts); if(f) openSts(f, true);
+    const f=SOIUSA_STS.features.find(x=>x.properties.STS===r.sts); if(f) openSts(f, 'force');
   } else if(r.cat==='coord'){
     _searchMarker=new maplibregl.Marker({color:'#5fd0c5'}).setLngLat([r.lon,r.lat]).addTo(map);
     saveUndo(); map.flyTo({center:[r.lon,r.lat], zoom:13, duration:1200, essential:true}); showUndoChip();
   } else {
+    // Fix7: Treffer-Kontext — passenden Punkt-Toggle aktivieren (Nachbargipfel/-huetten
+    // sichtbar), NICHT im Topo-Modus (dort bleibt das Punkte-Verhalten wie es ist).
+    if(_basemap!=='topo'){
+      if(r.cat==='peak' && !_peaksOn) togglePeaks();
+      else if(r.cat==='hut'  && !_hutsOn)  toggleHuts();
+      else if(r.cat==='pass' && !_passesOn) togglePasses();
+    }
     saveUndo(); map.flyTo({center:[r.lon,r.lat], zoom:12.5, duration:1200, essential:true}); showUndoChip();
     new maplibregl.Popup({offset:12, closeButton:true})
       .setLngLat([r.lon,r.lat])
@@ -1793,14 +1821,21 @@ function overview(){
 // §6b (W4): „Letzte Ansicht"-Chip nach automatischem Kamerasprung (Gruppen-flyTo,
 // Suchtreffer). Stellt die vorherige Kamera-Pose wieder her; verschwindet nach ~8 s
 // oder bei Nutzer-Interaktion (movestart mit originalEvent).
-let _undoPose=null, _undoT=null;
+let _undoPose=null, _undoT=null, _undoFadeT=null;
 function saveUndo(){ _undoPose={center:map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch()}; }
-function _hideUndoChip(){ const el=document.getElementById('undoChip'); if(el) el.classList.remove('show'); clearTimeout(_undoT); }
+function _hideUndoChip(){
+  const el=document.getElementById('undoChip'); if(!el) return;
+  el.classList.remove('show');                       // Fade -> 0
+  clearTimeout(_undoT); clearTimeout(_undoFadeT);
+  _undoFadeT=setTimeout(()=>{ el.style.pointerEvents='none'; }, 300);  // erst NACH Fade klick-durchlaessig
+}
 function showUndoChip(){
   const el=document.getElementById('undoChip'); if(!el||!_undoPose) return;
-  el.classList.add('show'); clearTimeout(_undoT); _undoT=setTimeout(_hideUndoChip,8000);
+  clearTimeout(_undoFadeT); el.style.pointerEvents='auto';
+  el.classList.add('show'); clearTimeout(_undoT); _undoT=setTimeout(_hideUndoChip,12000);  // Fix6: 12 s
 }
-function restoreUndo(){
+function restoreUndo(e){
+  if(e) e.stopPropagation();                          // Fix6: kein Durchreichen zur Karte
   _hideUndoChip();
   if(_undoPose){ _autoPitch=false; map.easeTo({center:_undoPose.center,zoom:_undoPose.zoom,
     bearing:_undoPose.bearing,pitch:_undoPose.pitch,duration:800,essential:true}); _undoPose=null; }
@@ -1853,7 +1888,10 @@ const CHRONO = (function(){
 let _chronoOn=false, _chronoIdx=-1, _chronoSaved=null;
 let _chronoPlaying=false, _chronoTimer=null, _pulseRAF=null;
 const CHRONO_STEP=2500;        // ms pro Jahr (Play)
-const CHRONO_CUR_OP=0.62;      // Basis-Deckkraft aktuelles Jahr (= chrono-cur Layer-Paint)
+// Fix1: Chrono-Fuellungen zoom-interpoliert wie sts-fill (beim Reinzoomen freie Sicht),
+// aktuelles Jahr kraeftiger als frueher besuchte.
+const CHRONO_CUR_OP  = ['interpolate',['linear'],['zoom'], 8,0.62, 10.5,0.22, 12,0];
+const CHRONO_PAST_OP = ['interpolate',['linear'],['zoom'], 8,0.30, 10.5,0.10, 12,0];
 function _esc(s){ return String(s==null?'':s).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
 
 // Caption: Jahr groß (Original-String) + datum · je Tour ort/gegend — Gipfel · Teilnehmer (kursiv).
@@ -1906,9 +1944,9 @@ function chronoPulse(){
   const t0=performance.now(), peak=0.95, dur=680;
   (function step(now){
     const k=Math.min(1,(now-t0)/dur);
-    map.setPaintProperty('chrono-cur','fill-opacity', CHRONO_CUR_OP+(peak-CHRONO_CUR_OP)*Math.sin(k*Math.PI));
-    if(k<1) _pulseRAF=requestAnimationFrame(step);
-    else { map.setPaintProperty('chrono-cur','fill-opacity',CHRONO_CUR_OP); _pulseRAF=null; }
+    if(k<1){ map.setPaintProperty('chrono-cur','fill-opacity', peak*Math.sin(k*Math.PI));  // kurzer Flash
+      _pulseRAF=requestAnimationFrame(step); }
+    else { map.setPaintProperty('chrono-cur','fill-opacity',CHRONO_CUR_OP); _pulseRAF=null; }  // zurueck zur Zoom-Kurve
   })(performance.now());
 }
 
@@ -1931,6 +1969,9 @@ function chronoSetYear(idx, opts){
   if(chips[idx]) chips[idx].scrollIntoView({inline:'center',block:'nearest'});
   chronoCaption(Y);
   chronoPulse();
+  // Fix2: Jahr-Auswahl oeffnet zusaetzlich den Steckbrief der ersten Gruppe des Jahres
+  // (ohne eigenen Kamerasprung — die Chronik fliegt selbst).
+  if(cur.length){ const gf=SOIUSA_STS.features.find(x=>x.properties.STS===cur[0]); if(gf) openSts(gf,'nofly'); }
   if(opts.fly!==false) chronoFlyToYear(Y);
 }
 
@@ -1960,12 +2001,16 @@ function chronoEnter(){
   _chronoSaved={p:_peaksOn,h:_hutsOn,s:_passesOn};       // Punkt-Toggles merken + dezent aus
   if(_peaksOn) togglePeaks(); if(_hutsOn) toggleHuts(); if(_passesOn) togglePasses();
   ['hl-line','sts-label-hl'].forEach(l=>map.setLayoutProperty(l,'visibility','none'));  // „alle besucht" aus
-  ['chrono-past','chrono-cur'].forEach(l=>map.setLayoutProperty(l,'visibility','visible'));
+  // Fix1: Chrono-Fuellungen folgen dem Faerbung-Toggle (aus -> ausgeblendet).
+  const _cv=_farbungOn?'visible':'none';
+  ['chrono-past','chrono-cur'].forEach(l=>map.setLayoutProperty(l,'visibility',_cv));
   map.setPaintProperty('chrono-cur','fill-opacity',CHRONO_CUR_OP);
+  map.setPaintProperty('chrono-past','fill-opacity',CHRONO_PAST_OP);
   document.getElementById('cov').style.display='none';
   document.getElementById('chronoBar').classList.add('open');
   document.getElementById('chronoCap').classList.add('open');
   document.getElementById('chronoBtn').classList.add('active');
+  document.body.classList.add('chrono');                 // Fix4: Scale-Bar ausblenden
   overview();
   chronoSetYear(0,{fly:false});                          // Beginn: frühestes Jahr, Übersicht halten
 }
@@ -1987,6 +2032,7 @@ function chronoExit(){
   document.getElementById('chronoBar').classList.remove('open');
   document.getElementById('chronoCap').classList.remove('open');
   document.getElementById('chronoBtn').classList.remove('active');
+  document.body.classList.remove('chrono');              // Fix4: Scale-Bar wieder zeigen
 }
 function chronoToggle(){ _chronoOn?chronoExit():chronoEnter(); }
 
