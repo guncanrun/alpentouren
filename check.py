@@ -89,6 +89,12 @@ checks = [
     ("places-sq K1 layer",            "id:'places-sq'"),
     ("city-square icon",              "map.addImage('citysq'"),
     ("pop-based place class",         "['coalesce',['get','pop'],0]"),
+    # Mobile-Pass (Paket B) — Phone-Stufe + Touch-Gesten
+    ("phone media query",             "(max-width: 480px) and (pointer: coarse)"),
+    ("phone nav-control hidden",      ".maplibregl-ctrl-group{display:none"),
+    ("title collapse css",            "#title.collapsed"),
+    ("doubleClickZoom enabled",       "map.doubleClickZoom.enable()"),
+    ("long-press zoom-out handler",   "setTimeout(begin, HOLD)"),
     # Phase 2c — Berge nach Klick
     ("peaks-in-group layer",          "id:'peaks-in-group'"),
     ("peaks-highest layer",           "id:'peaks-highest'"),

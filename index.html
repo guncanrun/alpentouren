@@ -331,6 +331,19 @@
   @media (max-width: 680px){
     body.chrono #mapfoot{display:none}
   }
+  /* ── PHONE-Stufe: schmale Breite UND Touch (Tablet-coarse bleibt die 44-px-Stufe) ── */
+  @media (max-width: 480px) and (pointer: coarse){
+    /* c) +/− und Pitch-Reset (Nav-Control) AUS — Pinch/Zwei-Finger decken das ab.
+       Sichtbar bleiben Lupe/ⓘ/?/3D/Home (eigene Buttons), Touch-Ziele >=44px. */
+    .maplibregl-ctrl-group{display:none !important}
+    /* a) Title-Card antippbar; JS startet sie kollabiert (nur Titelzeile). */
+    #title{cursor:pointer}
+    #title.collapsed p, #title.collapsed .kpi{display:none}
+    #title.collapsed{padding:10px 14px}
+    #title.collapsed h1::after{content:' \25BE';color:var(--muted);font-size:.7em;vertical-align:middle}
+    /* d) Chronik-Caption auf max. 2 Zeilen begrenzen. */
+    #chronoCap .cc-t{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  }
 </style>
 </head>
 <body>
@@ -570,6 +583,58 @@ map.addControl(new maplibregl.ScaleControl({maxWidth:170, unit:'metric'}), 'bott
 // Scale-Element aus der maplibre-Ecke in den zentrierten Footer holen (Rechenlogik bleibt).
 (function(){ const sc=document.querySelector('.maplibregl-ctrl-scale'),
   mf=document.getElementById('mapfoot'); if(sc && mf) mf.insertBefore(sc, mf.firstChild); })();
+
+// ── PHONE-Stufe: Title-Card startet kollabiert (antippbar) · Ebenen-Panel eingeklappt ──
+// Tablet (coarse, breiter als 480) bleibt unveraendert. Reagiert auf Rotation.
+(function(){
+  const title=document.getElementById('title'), ebenen=document.getElementById('ebenen');
+  if(title) title.addEventListener('click', ()=>title.classList.toggle('collapsed'));
+  const mq = window.matchMedia && window.matchMedia('(max-width: 480px) and (pointer: coarse)');
+  function apply(on){ if(title) title.classList.toggle('collapsed', on); if(on && ebenen) ebenen.classList.remove('open'); }
+  if(mq){ apply(mq.matches); (mq.addEventListener?mq.addEventListener('change',e=>apply(e.matches)):mq.addListener(e=>apply(e.matches))); }
+})();
+
+// ── Touch-Gesten ──────────────────────────────────────────────────────────────
+// a) Doppeltipp = Hineinzoomen: maplibre-Standard, sicherstellen dass aktiv.
+map.doubleClickZoom.enable();
+// b) Long-Press = kontinuierliches sanftes Herauszoomen (~0,7 z/s), solange gehalten.
+//    Schwelle ~500 ms, 8-px-Bewegungstoleranz; nicht auf UI/Popup/Controls starten.
+(function(){
+  const HOLD=500, MOVE=8, RATE=0.7;   // ms · px · Zoomstufen pro Sekunde
+  let timer=null, start=null, raf=null, zooming=false;
+  const UI='.maplibregl-ctrl, .maplibregl-popup, #title, #ebenen, #panel, #search, #about, #cov, #legend, button';
+  // rAF-Schleife (setZoom je Frame) statt easeTo: haelt beim Loslassen sofort an
+  // (kein Nachlauf). Zoom aus ABSOLUTER Haltezeit -> konstante ~0,7 z/s, frame-rate-
+  // unabhaengig (robust gegen Jank).
+  function begin(){
+    zooming=true; const z0=map.getZoom(), t0=performance.now();
+    (function step(){
+      if(!zooming) return;
+      const z=Math.max(map.getMinZoom(), z0 - RATE*(performance.now()-t0)/1000);
+      map.setZoom(z);
+      if(z<=map.getMinZoom()){ zooming=false; raf=null; return; }
+      raf=requestAnimationFrame(step);
+    })();
+  }
+  function cancel(){ if(timer){clearTimeout(timer);timer=null;} zooming=false;
+    if(raf){cancelAnimationFrame(raf);raf=null;} start=null; }
+  const c=map.getCanvasContainer();
+  c.addEventListener('touchstart',e=>{
+    if(e.touches.length!==1){ cancel(); return; }              // nur Ein-Finger
+    if(e.target.closest && e.target.closest(UI)) return;       // Guard: nicht auf UI/Popup
+    const t=e.touches[0]; start={x:t.clientX,y:t.clientY};
+    timer=setTimeout(begin, HOLD);
+  },{passive:true});
+  // Move/Ende auf WINDOW (Capture) -> Release/Bewegung werden zuverlaessig gefangen,
+  // egal wo der Finger endet (kein Nachlauf beim Loslassen).
+  window.addEventListener('touchmove',e=>{
+    if(!start||!e.touches.length) return;
+    const t=e.touches[0];
+    if(Math.hypot(t.clientX-start.x,t.clientY-start.y)>MOVE) cancel();   // Bewegung -> Pan, Long-Press abbrechen
+  },{passive:true, capture:true});
+  window.addEventListener('touchend',cancel,{passive:true, capture:true});
+  window.addEventListener('touchcancel',cancel,{passive:true, capture:true});
+})();
 
 // B2: Koordinaten-Anzeige (WGS84 Grad-Dezimal, 5 Stellen). Desktop: bei mousemove;
 // Touch (coarse): Kartenmitte bei moveend. Dezent ueber der Scale-Bar.
