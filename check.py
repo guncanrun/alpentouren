@@ -53,7 +53,7 @@ checks = [
     ("toggle starts OFF",             "_layersOn=false"),
     ("labels off by default",         "'visibility':'none'"),
     ("popup fn showStsPopup",         "function showStsPopup"),
-    ("popup on sts click",            "showStsPopup(e.lngLat"),
+    ("panel on sts click",            "openSts(e.features[0])"),
     ("popup closeOnClick false",      "closeOnClick:false"),
     # Phase 2c — two-tab panel + Steckbrief
     ("wiki const",                    "const WIKI"),

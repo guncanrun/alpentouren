@@ -275,6 +275,10 @@ TEMPLATE = r"""<!DOCTYPE html>
   .sp-sub{font-size:12px;color:#aebccb;margin-top:2px}
   .hp-n{font:600 var(--fs-popup)/1.2 Inter,system-ui,sans-serif;color:#e8edf2}
   .hp-s{font-size:11.5px;color:#aebccb;margin-top:1px}
+  .hp-b{font-size:11.5px;color:#ffcf94;margin-top:3px}
+  .hp-badge{display:inline-block;padding:0 6px;border-radius:8px;background:rgba(255,178,77,.2);
+    border:1px solid rgba(255,178,77,.5);color:#ffcf94;font-size:10px;font-weight:600}
+  .hp-hint{font-size:10px;color:var(--muted);margin-top:4px;opacity:.85}
   /* ── Hütten-Popup (Enrichment aus soiusa_huts_wiki.json) ── */
   .hut-pop{max-width:230px}
   .hut-badge{display:inline-block;margin:3px 0 5px;padding:1px 8px;border-radius:10px;
@@ -993,17 +997,29 @@ map.on('load',()=>{
 
   // ── STS fill click — popup always; panel only for visited groups ─────────
   map.on('mouseenter','sts-fill',()=>map.getCanvas().style.cursor='pointer');
+  // B) Hover-Box: Name + Settore (+ privat: Besuchs-Badge + Jahre) + Klick-Hinweis.
   map.on('mousemove','sts-fill',e=>{
     if(document.getElementById('panel').classList.contains('open')) return;  // kein Doppel-Popup
     clearTimeout(_hoverTimer);                                               // Dwell: erst nach 700 ms Ruhe
-    const p=e.features[0].properties, ll=e.lngLat, nm=p.name_de||p.STS||'';
-    let sub=p.settore||'';
+    const p=e.features[0].properties, ll=e.lngLat;
+    const nm=(p.name_de||p.STS||'').replace(/</g,'&lt;');
+    const settore=(p.settore||'').replace(/</g,'&lt;');
+    let extra='';
     /* PRIV:START */
-    if(p.visited===1){ try{const n=JSON.parse(p.tour_ids||'[]').length; sub=n+(n===1?' Tour':' Touren');}catch(_){} }
+    if(p.visited===1){
+      let yrs=[];
+      try{ const ids=JSON.parse(p.tour_ids||'[]');
+        yrs=[...new Set(ids.map(id=>{const t=TOUREN.find(x=>x.id==id);return t&&t.jahr;}).filter(Boolean))]
+             .sort((a,b)=>(jahrSort(a)||0)-(jahrSort(b)||0)); }catch(_){}
+      extra='<div class="hp-b"><span class="hp-badge">besucht</span>'+
+            (yrs.length?' · '+String(yrs.join(', ')).replace(/</g,'&lt;'):'')+'</div>';
+    }
     /* PRIV:END */
     _hoverTimer=setTimeout(()=>{
       hoverPop.setLngLat(ll)
-        .setHTML('<div class="hp-n">'+nm+'</div>'+(sub?'<div class="hp-s">'+sub+'</div>':''))
+        .setHTML('<div class="hp-n">'+nm+'</div>'+
+          (settore?'<div class="hp-s">'+settore+'</div>':'')+extra+
+          '<div class="hp-hint">Klick f&uuml;r Steckbrief</div>')
         .addTo(map);
     }, 700);
   });
@@ -1011,15 +1027,8 @@ map.on('load',()=>{
   map.on('click','sts-fill',e=>{
     if(TOUR_LAYERS.length && map.queryRenderedFeatures(e.point,{layers:TOUR_LAYERS}).length) return;
     if(map.queryRenderedFeatures(e.point,{layers:HUT_LAYERS}).length) return;  // Hütte hat Vorrang
-    const feat=e.features[0];
-    const props=feat.properties||{};
-    showStsPopup(e.lngLat, props);
-    if(props.visited===1){
-      openSts(feat);
-    } else {
-      map.setFilter('sts-selected',['==',['get','STS'],props.STS||'__none__']);
-      document.getElementById('panel').classList.remove('open');
-    }
+    clearTimeout(_hoverTimer); hoverPop.remove(); stsPopup.remove(); hutPopup.remove();  // B: keine klebende Box
+    openSts(e.features[0]);                                                   // Steckbrief für JEDE Gruppe
   });
 
   // ── HL-line click — fallback when fill is toggled off ────────────────────
@@ -1032,7 +1041,7 @@ map.on('load',()=>{
     const matchName = (hp.match_field==='STS') ? hp.soiusa_name : (hp.parent_sts||'');
     const stsFeat = SOIUSA_STS.features.find(f=>f.properties.STS===matchName);
     if(stsFeat){
-      showStsPopup(e.lngLat, stsFeat.properties||{});
+      clearTimeout(_hoverTimer); hoverPop.remove();     // B: keine klebende Box
       openSts(stsFeat);
     }
   });
