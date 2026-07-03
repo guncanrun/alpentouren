@@ -628,9 +628,19 @@ const ATTRIB = {
 };
 let _attribCtl=null;
 function setAttrib(topo){
-  if(_attribCtl) map.removeControl(_attribCtl);
-  _attribCtl=new maplibregl.AttributionControl({compact:true, customAttribution:topo?ATTRIB.topo:ATTRIB.sat});
-  map.addControl(_attribCtl,'bottom-right');
+  const html = topo?ATTRIB.topo:ATTRIB.sat;
+  if(!_attribCtl){
+    _attribCtl=new maplibregl.AttributionControl({compact:true, customAttribution:html});
+    map.addControl(_attribCtl,'bottom-right');
+    const det=map.getContainer().querySelector('details.maplibregl-ctrl-attrib');
+    if(det) det.open=false;                                    // eingeklappt starten
+    return;
+  }
+  // M2: Control NICHT neu erzeugen (das Recreate klappte die compact-Attribution bei
+  // jedem Basemap-Switch auf). Nur den Text ersetzen -> Panel-/Overlay-Zustand stabil.
+  if(_attribCtl.options) _attribCtl.options.customAttribution = html;
+  const inner=map.getContainer().querySelector('.maplibregl-ctrl-attrib-inner');
+  if(inner) inner.innerHTML = html;
 }
 map.addControl(new maplibregl.NavigationControl({visualizePitch:true}), 'bottom-right');
 
