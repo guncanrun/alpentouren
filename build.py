@@ -2070,8 +2070,15 @@ if STANDALONE:
     def _vend(p): return (HERE / "vendor" / p).read_text(encoding="utf-8")
     _js1 = _vend("maplibre-gl-4.7.1.min.js").replace("</script>", "<\\/script>")
     _js2 = _vend("maplibre-contour-0.0.5.min.js").replace("</script>", "<\\/script>")
+    # Fix0 (BLOCKER): maplibre-gl inline hat WORKER_URL:"" (kein Self-Blob) -> Tile-Worker
+    # startet nicht -> schwarzer Canvas / toter Pan. Loesung: das inline maplibre-Script mit
+    # id versehen und den Worker aus seinem textContent als Blob-URL setzen (vor der Map).
+    # (maplibre-contour blobt seinen Worker selbst -> keine Aenderung noetig.)
+    _worker = ("<script>maplibregl.setWorkerUrl(URL.createObjectURL(new Blob("
+               "[document.getElementById('mlgl').textContent],{type:'text/javascript'})));</script>")
     head_libs = ("<style>" + _vend("maplibre-gl-4.7.1.min.css") + "</style>\n"
-                 "<script>" + _js1 + "</script>\n<script>" + _js2 + "</script>")
+                 "<script id=\"mlgl\">" + _js1 + "</script>\n" + _worker + "\n"
+                 "<script>" + _js2 + "</script>")
     glyphs = "https://guncanrun.github.io/alpentouren/fonts/{fontstack}/{range}.pbf"
     osm_peaks  = load_compact("soiusa_osm_peaks.geojson")
     osm_huts   = load_compact("soiusa_osm_huts.geojson")
