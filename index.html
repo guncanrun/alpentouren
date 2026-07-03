@@ -47,6 +47,10 @@
   /* MapLibre zoom/compass buttons: kompakt am Desktop, >=44px auf Touch (var) */
   .maplibregl-ctrl-group button{width:var(--ctl);height:var(--ctl);touch-action:manipulation}
   .maplibregl-ctrl-group button .maplibregl-ctrl-icon{transform:scale(1.15)}
+  /* Maßstabsleiste (ScaleControl) — dezent, passend zum UI; rechts vom Chronik-Button */
+  .maplibregl-ctrl-scale{background:rgba(14,20,28,.72);border:2px solid rgba(232,237,242,.7);
+    border-top:none;color:var(--txt);font-size:10.5px;line-height:1.3;padding:1px 5px;
+    backdrop-filter:blur(6px);margin:0 0 10px 68px;box-shadow:0 4px 14px rgba(0,0,0,.35)}
 
   /* ── Title card ── */
   #title{position:absolute;top:16px;left:16px;z-index:5;max-width:310px;
@@ -443,6 +447,8 @@ function setAttrib(topo){
   if(inner) inner.innerHTML = html;
 }
 map.addControl(new maplibregl.NavigationControl({visualizePitch:true}), 'bottom-right');
+// A) Maßstabsleiste (metrisch, dynamisch mit Zoom/Breite) — unten links, kein Mess-Werkzeug.
+map.addControl(new maplibregl.ScaleControl({maxWidth:110, unit:'metric'}), 'bottom-left');
 
 // ── Auto-pitch: tilt up as you zoom in. Only on user zoom (wheel/pinch), never
 // on flyTo/fitBounds (no originalEvent); manual pitch disables it until Alpenüberblick.
