@@ -231,6 +231,18 @@ if _sa.exists():
         errors.append("standalone: inline data missing")
     else:
         print("OK   standalone: 4 Daten-Konstanten + 'Piz Linard' inline")
+    # Fix0 v2: echtes CSP-Worker-Bundle via Blob + setWorkerUrl (sonst kein GeoJSON).
+    if 'id="mlworker"' in _sah and "setWorkerUrl(URL.createObjectURL" in _sah:
+        print("OK   standalone: CSP-Worker-Bundle inline + setWorkerUrl")
+    else:
+        print("FAIL standalone: Worker-Setup (mlworker/setWorkerUrl) fehlt -> GeoJSON bleibt leer")
+        errors.append("standalone: worker setup missing")
+    # A4: Glyphs base64 inline (glyphs://-Protokoll), keine Font-Requests ans Netz.
+    if "glyphs://" in _sah and "const GLYPHS_DATA = {" in _sah and "github.io/alpentouren/fonts" not in _sah:
+        print("OK   standalone: Glyphs base64 inline (glyphs://), keine externe Font-URL")
+    else:
+        print("FAIL standalone: Glyphs nicht inline (glyphs://-Protokoll/GLYPHS_DATA fehlt)")
+        errors.append("standalone: glyphs not inlined")
     if _samb > 20:
         print(f"FAIL standalone {_samb:.1f} MB > 20 MB")
         errors.append("standalone >20MB")

@@ -674,10 +674,28 @@ const ALPS = {center:[10.2,46.1], zoom:5.3, pitch:0, bearing:0};
 // Popup-Breiten und einen leichten Karten-Label-Boost (initialer Viewport-Check).
 const _bigScr = !!(window.matchMedia && window.matchMedia('(min-width: 2200px) and (pointer: fine)').matches);
 const LB = _bigScr ? 1.5 : 0;   // Label-Zuschlag (px) für Gipfel/Hütten/Pässe
+// A3 (Review §1): Rauchtest-Schalter ?smoke=1 (aktiviert u.a. preserveDrawingBuffer
+// fuer den Pixel-Check nach idle). Sonst kein Perf-Einfluss.
+const _SMOKE = (function(){ try{ return new URLSearchParams(location.search).get('smoke')==='1'; }catch(_){ return false; } })();
+
+// A4: Standalone inlint die Glyphs (Noto Sans Bold, 4 Ranges) als base64 und liefert sie
+// ueber ein glyphs://-Protokoll -> keine Font-Requests ans Netz (nur Tiles bleiben online).
+// Muss VOR der Map-Erstellung stehen (Style referenziert glyphs). Sonst GLYPHS_DATA=null.
+const GLYPHS_DATA = __GLYPHS_DATA__;
+if(GLYPHS_DATA){
+  maplibregl.addProtocol('glyphs', (params)=>new Promise((resolve,reject)=>{
+    const m=params.url.match(/\/(\d+-\d+)\.pbf$/), b64=m&&GLYPHS_DATA[m[1]];
+    if(!b64){ reject(new Error('glyph range not inlined: '+params.url)); return; }
+    const bin=atob(b64), arr=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+    resolve({data:arr.buffer});
+  }));
+}
 
 const map = new maplibregl.Map({
   container:'map',
   pixelRatio: window.devicePixelRatio || 2,
+  preserveDrawingBuffer: _SMOKE,
   minZoom: 5.0,
   maxBounds: [[3.5,42.5],[18.5,49.5]],
   style:{
@@ -762,6 +780,32 @@ function _update2D3DLabel(){
 }
 map.on('pitchend', _update2D3DLabel);
 map.on('load', _update2D3DLabel);
+
+// A1 (Review §1): dauerhaftes Fehler-Logging. Fehlende Sources, Worker-Probleme und
+// Style-Fehler landen sonst nirgends sichtbar (v.a. im Standalone ohne Netzwerk-Panel).
+map.on('error', e=>{ try{ console.error('[MAP-ERROR]', (e && e.error && (e.error.message||e.error)) || e); }catch(_){} });
+
+// A3 (Review §1): Rauchtest ?smoke=1 — nach dem ersten idle pruefen, ob die GeoJSON-
+// Sources (laufen komplett durch den Worker/geojson-vt) Features liefern UND der Canvas
+// nicht schwarz ist. Deutliches Konsolen-Badge — belegt den Standalone-Worker ohne
+// Netzwerk-Inspektor. preserveDrawingBuffer ist unter ?smoke=1 aktiv (Pixel-Read).
+if(_SMOKE){
+  map.once('idle', ()=>{
+    let sts=0, pts=0, nonblack=false, err='';
+    try{ sts=map.querySourceFeatures('sts').length; }catch(e){ err+=' sts:'+e.message; }
+    try{ pts=map.querySourceFeatures('osm-peaks').length; }catch(e){ err+=' peaks:'+e.message; }
+    try{
+      const cv=map.getCanvas(), gl=cv.getContext('webgl2')||cv.getContext('webgl');
+      if(gl){ const w=cv.width, h=cv.height, px=new Uint8Array(4*400);
+        gl.readPixels((w>>1)-10,(h>>1)-10,20,20,gl.RGBA,gl.UNSIGNED_BYTE,px);
+        for(let i=0;i<px.length;i+=4){ if(px[i]|px[i+1]|px[i+2]){ nonblack=true; break; } } }
+    }catch(e){ err+=' px:'+e.message; }
+    const ok = sts>0 && nonblack;
+    console.log('%c[SMOKE '+(ok?'OK':'FAIL')+']',
+      'background:'+(ok?'#0a0':'#a00')+';color:#fff;padding:2px 8px;font-weight:bold',
+      'sts-Features='+sts, 'peaks='+pts, 'Canvas='+(nonblack?'gezeichnet':'SCHWARZ'), err||'');
+  });
+}
 
 // §3 (W4): Atmosphaerischer Himmel/Horizont-Dunst nur in 3D (Pitch>0), Satellit,
 // und NICHT auf Touch-Geraeten (Performance-Schutz, altes Tablet). Sonst effektiv aus.
@@ -2068,18 +2112,27 @@ html = html.replace("__KPI_HUETTEN__",  str(kpi_huetten))
 # ── Modusabhaengig: Vendor-Libs, Glyphs, Inline-GeoJSONs (Standalone) ─────────
 if STANDALONE:
     def _vend(p): return (HERE / "vendor" / p).read_text(encoding="utf-8")
-    _js1 = _vend("maplibre-gl-4.7.1.min.js").replace("</script>", "<\\/script>")
-    _js2 = _vend("maplibre-contour-0.0.5.min.js").replace("</script>", "<\\/script>")
-    # Fix0 (BLOCKER): maplibre-gl inline hat WORKER_URL:"" (kein Self-Blob) -> Tile-Worker
-    # startet nicht -> schwarzer Canvas / toter Pan. Loesung: das inline maplibre-Script mit
-    # id versehen und den Worker aus seinem textContent als Blob-URL setzen (vor der Map).
-    # (maplibre-contour blobt seinen Worker selbst -> keine Aenderung noetig.)
-    _worker = ("<script>maplibregl.setWorkerUrl(URL.createObjectURL(new Blob("
-               "[document.getElementById('mlgl').textContent],{type:'text/javascript'})));</script>")
+    def _escs(s): return s.replace("</script>", "<\\/script>")
+    # Fix0 v2: Standalone nutzt den CSP-Build. maplibre-gl-csp.js (Main) inline + das
+    # SEPARATE, echte Worker-Bundle (maplibre-gl-csp-worker.js, inkl. geojson-vt) als
+    # nicht-ausgefuehrtes text/plain-Script, daraus Blob-URL -> setWorkerUrl vor der Map.
+    # (Frueher wurde faelschlich das Haupt-Bundle in den Worker gegeben -> Zugriff auf
+    #  window/document -> Worker-Crash bei GeoJSON. contour blobt seinen Worker selbst.)
+    csp_main   = _escs(_vend("maplibre-gl-csp-4.7.1.min.js"))
+    csp_worker = _escs(_vend("maplibre-gl-csp-worker-4.7.1.min.js"))
+    contour    = _escs(_vend("maplibre-contour-0.0.5.min.js"))
+    _worker_setup = ("<script>maplibregl.setWorkerUrl(URL.createObjectURL(new Blob("
+                     "[document.getElementById('mlworker').textContent],{type:'text/javascript'})));</script>")
     head_libs = ("<style>" + _vend("maplibre-gl-4.7.1.min.css") + "</style>\n"
-                 "<script id=\"mlgl\">" + _js1 + "</script>\n" + _worker + "\n"
-                 "<script>" + _js2 + "</script>")
-    glyphs = "https://guncanrun.github.io/alpentouren/fonts/{fontstack}/{range}.pbf"
+                 "<script>" + csp_main + "</script>\n"
+                 "<script id=\"mlworker\" type=\"text/plain\">" + csp_worker + "</script>\n"
+                 + _worker_setup + "\n<script>" + contour + "</script>")
+    # A4: Glyphs (nur „Noto Sans Bold", 4 Ranges) base64 inline -> glyphs://-Protokoll.
+    import base64 as _b64g
+    _gdir = HERE / "fonts" / "Noto Sans Bold"
+    glyphs = "glyphs://fonts/{fontstack}/{range}.pbf"
+    glyphs_data = json.dumps({p.stem: _b64g.b64encode(p.read_bytes()).decode("ascii")
+                              for p in sorted(_gdir.glob("*.pbf"))}, separators=(",", ":"))
     osm_peaks  = load_compact("soiusa_osm_peaks.geojson")
     osm_huts   = load_compact("soiusa_osm_huts.geojson")
     osm_passes = load_compact("soiusa_osm_passes.geojson")
@@ -2089,7 +2142,9 @@ else:
                  '<script src="./vendor/maplibre-gl-4.7.1.min.js"></script>\n'
                  '<script src="./vendor/maplibre-contour-0.0.5.min.js"></script>')
     glyphs = "./fonts/{fontstack}/{range}.pbf"
+    glyphs_data = "null"
     osm_peaks = osm_huts = osm_passes = borders_gj = "null"
+html = html.replace("__GLYPHS_DATA__", glyphs_data)
 html = html.replace("__GLYPHS__", glyphs)
 html = html.replace("__OSM_PEAKS__",  osm_peaks)
 html = html.replace("__OSM_HUTS__",   osm_huts)

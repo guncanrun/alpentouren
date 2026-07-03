@@ -420,10 +420,28 @@ const ALPS = {center:[10.2,46.1], zoom:5.3, pitch:0, bearing:0};
 // Popup-Breiten und einen leichten Karten-Label-Boost (initialer Viewport-Check).
 const _bigScr = !!(window.matchMedia && window.matchMedia('(min-width: 2200px) and (pointer: fine)').matches);
 const LB = _bigScr ? 1.5 : 0;   // Label-Zuschlag (px) für Gipfel/Hütten/Pässe
+// A3 (Review §1): Rauchtest-Schalter ?smoke=1 (aktiviert u.a. preserveDrawingBuffer
+// fuer den Pixel-Check nach idle). Sonst kein Perf-Einfluss.
+const _SMOKE = (function(){ try{ return new URLSearchParams(location.search).get('smoke')==='1'; }catch(_){ return false; } })();
+
+// A4: Standalone inlint die Glyphs (Noto Sans Bold, 4 Ranges) als base64 und liefert sie
+// ueber ein glyphs://-Protokoll -> keine Font-Requests ans Netz (nur Tiles bleiben online).
+// Muss VOR der Map-Erstellung stehen (Style referenziert glyphs). Sonst GLYPHS_DATA=null.
+const GLYPHS_DATA = null;
+if(GLYPHS_DATA){
+  maplibregl.addProtocol('glyphs', (params)=>new Promise((resolve,reject)=>{
+    const m=params.url.match(/\/(\d+-\d+)\.pbf$/), b64=m&&GLYPHS_DATA[m[1]];
+    if(!b64){ reject(new Error('glyph range not inlined: '+params.url)); return; }
+    const bin=atob(b64), arr=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+    resolve({data:arr.buffer});
+  }));
+}
 
 const map = new maplibregl.Map({
   container:'map',
   pixelRatio: window.devicePixelRatio || 2,
+  preserveDrawingBuffer: _SMOKE,
   minZoom: 5.0,
   maxBounds: [[3.5,42.5],[18.5,49.5]],
   style:{
@@ -508,6 +526,32 @@ function _update2D3DLabel(){
 }
 map.on('pitchend', _update2D3DLabel);
 map.on('load', _update2D3DLabel);
+
+// A1 (Review §1): dauerhaftes Fehler-Logging. Fehlende Sources, Worker-Probleme und
+// Style-Fehler landen sonst nirgends sichtbar (v.a. im Standalone ohne Netzwerk-Panel).
+map.on('error', e=>{ try{ console.error('[MAP-ERROR]', (e && e.error && (e.error.message||e.error)) || e); }catch(_){} });
+
+// A3 (Review §1): Rauchtest ?smoke=1 — nach dem ersten idle pruefen, ob die GeoJSON-
+// Sources (laufen komplett durch den Worker/geojson-vt) Features liefern UND der Canvas
+// nicht schwarz ist. Deutliches Konsolen-Badge — belegt den Standalone-Worker ohne
+// Netzwerk-Inspektor. preserveDrawingBuffer ist unter ?smoke=1 aktiv (Pixel-Read).
+if(_SMOKE){
+  map.once('idle', ()=>{
+    let sts=0, pts=0, nonblack=false, err='';
+    try{ sts=map.querySourceFeatures('sts').length; }catch(e){ err+=' sts:'+e.message; }
+    try{ pts=map.querySourceFeatures('osm-peaks').length; }catch(e){ err+=' peaks:'+e.message; }
+    try{
+      const cv=map.getCanvas(), gl=cv.getContext('webgl2')||cv.getContext('webgl');
+      if(gl){ const w=cv.width, h=cv.height, px=new Uint8Array(4*400);
+        gl.readPixels((w>>1)-10,(h>>1)-10,20,20,gl.RGBA,gl.UNSIGNED_BYTE,px);
+        for(let i=0;i<px.length;i+=4){ if(px[i]|px[i+1]|px[i+2]){ nonblack=true; break; } } }
+    }catch(e){ err+=' px:'+e.message; }
+    const ok = sts>0 && nonblack;
+    console.log('%c[SMOKE '+(ok?'OK':'FAIL')+']',
+      'background:'+(ok?'#0a0':'#a00')+';color:#fff;padding:2px 8px;font-weight:bold',
+      'sts-Features='+sts, 'peaks='+pts, 'Canvas='+(nonblack?'gezeichnet':'SCHWARZ'), err||'');
+  });
+}
 
 // §3 (W4): Atmosphaerischer Himmel/Horizont-Dunst nur in 3D (Pitch>0), Satellit,
 // und NICHT auf Touch-Geraeten (Performance-Schutz, altes Tablet). Sonst effektiv aus.
