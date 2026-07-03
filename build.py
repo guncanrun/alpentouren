@@ -1346,28 +1346,51 @@ function showToast(msg){
 // Namens-Konkurrenz. Punkte + Highlight-Umrisse + Suche bleiben erlaubt.
 let _basemap='sat';
 let _savedToggles=null, _savedPitch=null;
+let _bmPending=null, _bmWaiting=false, _bmLast=0;   // Race/Debounce-Zustand
 function _lockStructureToggles(lock){
   ['tglFarbung','tglNamen'].forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.toggle('locked',lock); });
 }
+// Öffentlicher Einstieg: Gate + Style-Guard + Debounce; der eigentliche Swap ist atomar.
 function setBasemap(bm){
   const topo = bm==='topo';
   // Gate: Topo erst ab z11 aktivierbar — Klick darunter ignorieren + Hinweis.
-  if(topo && _basemap!=='topo' && map.getZoom()<11){ showToast('Topo-Karte ab Detail-Zoom – hineinzoomen'); return; }
-  if(topo && _basemap!=='topo'){
-    _savedPitch=map.getPitch(); _autoPitch=false;                 // Ortho-Zwang: Pitch merken + flach
-    if(map.getPitch()>0.5) map.easeTo({pitch:0, duration:500, essential:true});
-    // Färbung+Namen aus + GESPERRT. Punkte (Gipfel/Hütten/Pässe) default aus (OTM
-    // hat eigene Signaturen), aber NICHT gesperrt -> manuell wieder einschaltbar.
-    _savedToggles={farbung:_farbungOn, namen:_layersOn, peaks:_peaksOn, huts:_hutsOn, passes:_passesOn};
-    if(_farbungOn) toggleFarbung();
-    if(_layersOn)  toggleLayers();
-    if(_peaksOn)   togglePeaks();
-    if(_hutsOn)    toggleHuts();
-    if(_passesOn)  togglePasses();
-    _lockStructureToggles(true);                                  // sperrt nur Färbung+Namen
-  } else if(!topo && _basemap==='topo'){
-    _lockStructureToggles(false);                                 // Rückwechsel: entsperren + restaurieren
-    if(_savedToggles){
+  if(topo && bm!==_basemap && map.getZoom()<11){ showToast('Topo-Karte ab Detail-Zoom – hineinzoomen'); return; }
+  // Race-Guard: Style noch nicht fertig (Klick während des Ladens) ODER Debounce
+  // (schneller Mehrfach-Wechsel) -> Ziel merken, EINMAL nach 'idle'/Cooldown nachholen.
+  // Verhindert Style-abhängige APIs (setPaintProperty/…) vor "Style is done loading".
+  if(!map.isStyleLoaded() || (Date.now()-_bmLast < 300)){
+    _bmPending=bm;
+    if(!_bmWaiting){
+      _bmWaiting=true;
+      const retry=()=>{ _bmWaiting=false; const p=_bmPending; _bmPending=null; if(p!=null) setBasemap(p); };
+      if(!map.isStyleLoaded()) map.once('idle', retry); else setTimeout(retry, 300);
+    }
+    return;
+  }
+  _bmLast=Date.now();
+  _applyBasemap(bm, topo);
+}
+// Atomarer Swap: erst die Style-Ops, dann die dauerhaften Zustände; bei Fehler Rollback.
+function _applyBasemap(bm, topo){
+  const prev=_basemap, prevSaved=_savedToggles, prevPitch=_savedPitch, prevAuto=_autoPitch;
+  try{
+    // ── 1) Swap (Style-Ops) ──
+    map.setLayoutProperty('sat','visibility',topo?'none':'visible');
+    map.setLayoutProperty('topo','visibility',topo?'visible':'none');
+    map.setPaintProperty('sts-fill','fill-opacity',
+      topo ? ['interpolate',['linear'],['zoom'], 8,0.22, 10.5,0.08, 12,0]
+           : ['interpolate',['linear'],['zoom'], 8,0.34, 10.5,0.12, 12,0]);
+    map.setPaintProperty('hill','hillshade-exaggeration', topo?0.08:0.25);
+    // Toggle-Zustände (ebenfalls Style-Ops) — nur beim echten Moduswechsel.
+    if(topo && prev!=='topo'){
+      // Färbung+Namen aus (+ gesperrt, s.u.). Punkte default aus, aber NICHT gesperrt.
+      _savedToggles={farbung:_farbungOn, namen:_layersOn, peaks:_peaksOn, huts:_hutsOn, passes:_passesOn};
+      if(_farbungOn) toggleFarbung();
+      if(_layersOn)  toggleLayers();
+      if(_peaksOn)   togglePeaks();
+      if(_hutsOn)    toggleHuts();
+      if(_passesOn)  togglePasses();
+    } else if(!topo && prev==='topo' && _savedToggles){
       if(_savedToggles.farbung && !_farbungOn) toggleFarbung();
       if(_savedToggles.namen  && !_layersOn)  toggleLayers();
       if(_savedToggles.peaks  && !_peaksOn)   togglePeaks();
@@ -1375,22 +1398,37 @@ function setBasemap(bm){
       if(_savedToggles.passes && !_passesOn)  togglePasses();
       _savedToggles=null;
     }
-    _autoPitch=true;
-    if(_savedPitch!=null){ if(_savedPitch>0.5) map.easeTo({pitch:_savedPitch, duration:500, essential:true}); _savedPitch=null; }
+    // ── 2) Erst NACH erfolgreichem Swap: dauerhafte Zustände ──
+    _basemap=bm;
+    _lockStructureToggles(topo);                                  // sperrt nur Färbung+Namen
+    if(topo && prev!=='topo'){                                    // Ortho-Zwang
+      _savedPitch=map.getPitch(); _autoPitch=false;
+      if(map.getPitch()>0.5) map.easeTo({pitch:0, duration:500, essential:true});
+    } else if(!topo && prev==='topo'){
+      _autoPitch=true;
+      if(_savedPitch!=null){ if(_savedPitch>0.5) map.easeTo({pitch:_savedPitch, duration:500, essential:true}); _savedPitch=null; }
+    }
+    setAttrib(topo);
+    const bs=document.getElementById('bmSat'), bt=document.getElementById('bmTopo');
+    if(bs) bs.classList.toggle('on',!topo);
+    if(bt) bt.classList.toggle('on',topo);
+    updateTopoGate();
+    try{localStorage.setItem('alpen_basemap',bm);}catch(_){}
+  }catch(e){
+    console.warn('Basemap-Switch fehlgeschlagen -> Rollback:', e);
+    // Best-effort Rollback der dauerhaften/sichtbaren Zustände auf prev.
+    _basemap=prev; _savedToggles=prevSaved; _savedPitch=prevPitch; _autoPitch=prevAuto;
+    try{
+      map.setLayoutProperty('sat','visibility',prev==='topo'?'none':'visible');
+      map.setLayoutProperty('topo','visibility',prev==='topo'?'visible':'none');
+    }catch(_){}
+    _lockStructureToggles(prev==='topo');
+    const bs=document.getElementById('bmSat'), bt=document.getElementById('bmTopo');
+    if(bs) bs.classList.toggle('on', prev!=='topo');
+    if(bt) bt.classList.toggle('on', prev==='topo');
+    try{ updateTopoGate(); }catch(_){}
+    showToast('Kartenwechsel gerade nicht möglich – bitte erneut versuchen');
   }
-  _basemap=bm;
-  map.setLayoutProperty('sat','visibility',topo?'none':'visible');
-  map.setLayoutProperty('topo','visibility',topo?'visible':'none');
-  map.setPaintProperty('sts-fill','fill-opacity',
-    topo ? ['interpolate',['linear'],['zoom'], 8,0.22, 10.5,0.08, 12,0]
-         : ['interpolate',['linear'],['zoom'], 8,0.34, 10.5,0.12, 12,0]);
-  map.setPaintProperty('hill','hillshade-exaggeration', topo?0.08:0.25);
-  setAttrib(topo);
-  const bs=document.getElementById('bmSat'), bt=document.getElementById('bmTopo');
-  if(bs) bs.classList.toggle('on',!topo);
-  if(bt) bt.classList.toggle('on',topo);
-  updateTopoGate();
-  try{localStorage.setItem('alpen_basemap',bm);}catch(_){}
 }
 // Live-Gate: Button unter z11 ausgegraut; im Topo-Modus unter z10 auto zurück zu Satellit.
 function updateTopoGate(){
