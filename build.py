@@ -2812,6 +2812,13 @@ print(f"{OUT} [{mode}]: {len(data['touren'])} Touren · {hl_count}/{sts_count} U
 if STANDALONE and size_kb > 15 * 1024:
     print(f"WARN Standalone {size_str} > 15 MB (E-Mail-Grenze) -- Fotos/Daten pruefen.")
 
+# W7 (§6b): Standalone zusätzlich als „Alpentouren.html" ablegen — die file://-taugliche
+# Papa-Mitgabe-Datei (gitignored). Erspart das manuelle Umbenennen vor der Mitgabe.
+if STANDALONE:
+    _mitgabe = HERE / "Alpentouren.html"
+    _mitgabe.write_text(html, encoding="utf-8")
+    print(f"  -> Kopie fuer Papa-Mitgabe: Alpentouren.html ({_mitgabe.stat().st_size//1024//1024} MB)")
+
 # ── Backup-Hook (nur Privat-Build): sichert den gitignorierten Privat-Kanon ───
 # (touren.json + _cowork_specs) nach OneDrive. Fehler brechen den Build nie ab.
 if not PUBLIC:

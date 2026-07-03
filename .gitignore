@@ -38,6 +38,8 @@ privat_assets/
 
 # Standalone-Privat-Build (file://-Versand, base64-Fotos) — nie committen
 index_privat_standalone.html
+# Papa-Mitgabe-Kopie des Standalone (W7 §6b) — gitignored wie der Standalone
+Alpentouren.html
 
 # Parkplatz-Zaehl-Report (Arbeitsartefakt, Zahlen stehen in der Spec)
 parking_report.json
