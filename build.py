@@ -334,6 +334,10 @@ TEMPLATE = r"""<!DOCTYPE html>
     border-radius:11px;background:var(--panel);border:1px solid var(--line);color:var(--txt);
     font-size:19px;cursor:pointer;backdrop-filter:blur(8px);touch-action:manipulation}
   #home:hover{border-color:var(--accent2);color:var(--accent2)}
+  #btn2d3d{position:absolute;bottom:204px;right:16px;z-index:6;width:var(--ctl-round);height:var(--ctl-round);
+    border-radius:11px;background:var(--panel);border:1px solid var(--line);color:var(--txt);
+    font-size:13px;font-weight:700;cursor:pointer;backdrop-filter:blur(8px);touch-action:manipulation}
+  #btn2d3d:hover{border-color:var(--accent2);color:var(--accent2)}
   /* ── Suche ── */
   #search{position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:9;
     display:flex;align-items:center;background:var(--panel);backdrop-filter:blur(8px);
@@ -432,6 +436,7 @@ TEMPLATE = r"""<!DOCTYPE html>
 
 <button id="btnInfo" onclick="toggleAbout()" title="Info &amp; Anleitung">?</button>
 <button id="home" onclick="overview()" title="Standardansicht">&#8962;</button>
+<button id="btn2d3d" onclick="toggle2D3D()" title="2D / 3D umschalten">3D</button>
 
 <div id="search">
   <button id="sToggle" onclick="toggleSearch()" title="Suche" aria-label="Suche">&#128269;</button>
@@ -646,7 +651,8 @@ function setAttrib(topo){
   const inner=map.getContainer().querySelector('.maplibregl-ctrl-attrib-inner');
   if(inner) inner.innerHTML = html;
 }
-map.addControl(new maplibregl.NavigationControl({visualizePitch:true}), 'bottom-right');
+// E) Kompass-Klick = NUR norden (bearing->0, Pitch bleibt): visualizePitch:false.
+map.addControl(new maplibregl.NavigationControl({visualizePitch:false}), 'bottom-right');
 // A) Maßstabsleiste (metrisch, dynamisch mit Zoom/Breite) — unten links, kein Mess-Werkzeug.
 map.addControl(new maplibregl.ScaleControl({maxWidth:110, unit:'metric'}), 'bottom-left');
 
@@ -662,6 +668,20 @@ map.on('zoomend', e=>{
   const t=pitchForZoom(map.getZoom());
   if(Math.abs(map.getPitch()-t)>3) map.easeTo({pitch:t, duration:500});
 });
+// E) 2D/3D-Umschalter: bewusster, animierter Wechsel Draufsicht (0°) <-> Schrägsicht (~45°).
+// Setzt das „Nutzer hat selbst gepitcht"-Flag (P5) -> Auto-Pitch übersteuert danach nicht mehr.
+// Topo gewinnt: dort bleibt die Draufsicht fest (Pitch 0, s. Gate-Interim).
+function toggle2D3D(){
+  if(_basemap==='topo'){ showToast('Topo: Draufsicht ist fest'); return; }
+  _autoPitch=false;
+  const flat = map.getPitch() < 5;
+  map.easeTo({pitch: flat?45:0, duration:600, essential:true});
+}
+function _update2D3DLabel(){
+  const b=document.getElementById('btn2d3d'); if(b) b.textContent = (map.getPitch()>=5)?'2D':'3D';
+}
+map.on('pitchend', _update2D3DLabel);
+map.on('load', _update2D3DLabel);
 
 // ── Group name popup — shown on every STS click ───────────────────────────────
 // closeOnClick:false — sonst schließt MapLibre den im selben Klick geöffneten Popup
