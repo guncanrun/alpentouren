@@ -180,10 +180,18 @@ __HEAD_LIBS__
   .maplibregl-ctrl-group button{width:var(--ctl-round);height:var(--ctl-round);touch-action:manipulation}
   .maplibregl-ctrl-bottom-right .maplibregl-ctrl{margin-right:var(--ctl-right)}
   .maplibregl-ctrl-group button .maplibregl-ctrl-icon{transform:scale(1.15)}
-  /* Maßstabsleiste (ScaleControl) — dezent, passend zum UI; rechts vom Chronik-Button */
-  .maplibregl-ctrl-scale{background:rgba(14,20,28,.72);border:2px solid rgba(232,237,242,.7);
-    border-top:none;color:var(--txt);font-size:10.5px;line-height:1.3;padding:1px 5px;
-    backdrop-filter:blur(6px);margin:0 0 10px 14px;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+  /* B2: Maßstabsleiste — unten MITTIG im Footer, groesser (Schrift 12px, breitere Bar). */
+  #mapfoot{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:5;
+    display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none}
+  .maplibregl-ctrl-scale{background:rgba(14,20,28,.72);border:2px solid rgba(232,237,242,.8);
+    border-top:none;color:var(--txt);font-size:12px;line-height:1.35;padding:2px 8px;
+    backdrop-filter:blur(6px);margin:0;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+  #coords{font-size:11px;color:var(--muted);background:var(--panel);backdrop-filter:blur(6px);
+    border:1px solid var(--line);border-radius:6px;padding:2px 8px;white-space:nowrap;
+    font-variant-numeric:tabular-nums;opacity:0;transition:opacity .2s}
+  #coords.show{opacity:1}
+  body.chrono #mapfoot{display:none}                 /* Chronik: Jahresleiste hat die Zeile */
+  body.tilted .maplibregl-ctrl-scale{display:none}   /* Pitch>30°: Maßstab tiefenabh. falsch */
 
   /* ── Title card ── */
   #title{position:absolute;top:16px;left:16px;z-index:5;max-width:310px;
@@ -400,7 +408,7 @@ __HEAD_LIBS__
   #toast.show{opacity:1}
   /* §6b (W4)/Fix6: „Letzte Ansicht"-Chip; Fade statt display-Toggle, pointer-events
      via JS erst NACH dem Fade aus -> kein Durchklicken zur Karte im Verschwinde-Moment. */
-  #undoChip{position:absolute;left:50%;bottom:80px;transform:translateX(-50%);z-index:9;
+  #undoChip{position:absolute;left:50%;bottom:104px;transform:translateX(-50%);z-index:9;
     display:inline-flex;align-items:center;gap:4px;background:var(--panel);backdrop-filter:blur(8px);
     border:1px solid var(--line);border-radius:20px;padding:8px 16px;min-height:40px;font-size:13px;
     color:var(--txt);cursor:pointer;box-shadow:0 6px 24px rgba(0,0,0,.45);touch-action:manipulation;
@@ -468,10 +476,6 @@ __HEAD_LIBS__
     border:none;color:#fff;font-size:30px;width:46px;height:64px;border-radius:10px;cursor:pointer;
     touch-action:manipulation}
   #lightbox .lb-prev{left:10px} #lightbox .lb-next{right:10px}
-  /* Fix4: Privat-Build — Scale-Bar horizontal NEBEN die Chronik-Uhr (rechts davon),
-     nicht darueber; im Chronik-Modus ausblenden (Jahresleiste uebernimmt die Zeile). */
-  .maplibregl-ctrl-scale{margin:0 0 15px 66px}
-  body.chrono .maplibregl-ctrl-scale{display:none}
   /* Fix5: Attribution (bottom-left) im Privat-Build rechts von der Uhr */
   .maplibregl-ctrl-bottom-left .maplibregl-ctrl-attrib{margin-left:66px}
   /* PRIV:END */
@@ -486,6 +490,7 @@ __HEAD_LIBS__
 </head>
 <body>
 <div id="map"></div>
+<div id="mapfoot"><div id="coords" title="WGS84 (Grad-Dezimal)"></div></div>
 <div id="toast"></div>
 <div id="undoChip" onclick="restoreUndo(event)" title="Vorherige Ansicht wiederherstellen">&#8617; Letzte Ansicht</div>
 
@@ -749,8 +754,29 @@ function setAttrib(topo){
 }
 // E) Kompass-Klick = NUR norden (bearing->0, Pitch bleibt): visualizePitch:false.
 map.addControl(new maplibregl.NavigationControl({visualizePitch:false}), 'bottom-right');
-// A) Maßstabsleiste (metrisch, dynamisch mit Zoom/Breite) — unten links, kein Mess-Werkzeug.
-map.addControl(new maplibregl.ScaleControl({maxWidth:110, unit:'metric'}), 'bottom-left');
+// B2: Maßstabsleiste (metrisch) — jetzt unten MITTIG + groesser, im zentrierten Footer.
+map.addControl(new maplibregl.ScaleControl({maxWidth:170, unit:'metric'}), 'bottom-left');
+// Scale-Element aus der maplibre-Ecke in den zentrierten Footer holen (Rechenlogik bleibt).
+(function(){ const sc=document.querySelector('.maplibregl-ctrl-scale'),
+  mf=document.getElementById('mapfoot'); if(sc && mf) mf.insertBefore(sc, mf.firstChild); })();
+
+// B2: Koordinaten-Anzeige (WGS84 Grad-Dezimal, 5 Stellen). Desktop: bei mousemove;
+// Touch (coarse): Kartenmitte bei moveend. Dezent ueber der Scale-Bar.
+(function(){
+  const el=document.getElementById('coords'); if(!el) return;
+  const show=(lng,lat)=>{ el.textContent=lat.toFixed(5)+', '+lng.toFixed(5); el.classList.add('show'); };
+  const coarse=!!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+  if(coarse){ const upd=()=>{ const c=map.getCenter(); show(c.lng,c.lat); };
+    map.on('moveend',upd); map.on('load',upd); }
+  else {
+    map.on('mousemove',e=>show(e.lngLat.lng,e.lngLat.lat));
+    map.getCanvas().addEventListener('mouseout',()=>el.classList.remove('show'));
+  }
+})();
+
+// B2/Review 3b: Maßstab bei Neigung > 30° ausblenden (tiefenabhaengig falsch).
+function updateTilted(){ document.body.classList.toggle('tilted', map.getPitch()>30); }
+map.on('pitch', updateTilted); map.on('load', updateTilted);
 // §5 (W4): Mausrad-Zoom weicher/feiner — Bordmittel, Default 1/450 -> 1/650.
 try{ map.scrollZoom.setWheelZoomRate(1/650); }catch(_){}
 
@@ -946,7 +972,10 @@ map.on('load',()=>{
         ['get','name_de'],['get','STS']],
       'text-font':['Noto Sans Bold'],
       'text-size':['interpolate',['linear'],['zoom'], 6.5,10, 9,13],
-      'text-allow-overlap':true,'text-optional':false,'text-anchor':'center','symbol-sort-key':0},
+      // B4: Gruppennamen nehmen an der Kollision teil (kein allow-overlap) und weichen
+      // per variable-anchor aus (statt Top-Gipfel-Labels zu ueberlagern, Repro A/B).
+      'text-allow-overlap':false,'text-optional':false,'symbol-sort-key':0,
+      'text-variable-anchor':['center','top','bottom','left','right'],'text-radial-offset':0.6},
     paint:{'text-color':'rgba(232,240,255,0.95)',
            'text-halo-color':'#06101a','text-halo-width':1.8,'text-halo-blur':0.2}});
 
@@ -957,7 +986,8 @@ map.on('load',()=>{
     filter:['==',['get','visited'],1],
     layout:{'visibility':'none',
       'text-field':['get','name_de'],'text-font':['Noto Sans Bold'],
-      'text-size':13,'text-allow-overlap':true,'text-optional':false,'text-anchor':'center','symbol-sort-key':0},
+      'text-size':13,'text-allow-overlap':false,'text-optional':false,'symbol-sort-key':0,
+      'text-variable-anchor':['center','top','bottom','left','right'],'text-radial-offset':0.6},
     paint:{'text-color':'#ffd47a',
            'text-halo-color':'#06101a','text-halo-width':2.0,'text-halo-blur':0.2}});
 
@@ -1525,12 +1555,24 @@ document.addEventListener('keydown',e=>{
 }
 /* PRIV:END */
 
+// B4: Name der AUSGEWAEHLTEN Gruppe ausblenden -> deren (nun sichtbare) Gipfel-Labels
+// gewinnen den Platz (Repro A: Hochgolling vs. „Schladminger Tauern"). Der Name steht
+// ohnehin im Steckbrief. Ohne Auswahl: alle Namen sichtbar (Kollision regelt Repro B).
+let _selSts='';
+function updateStsLabelFilter(){
+  try{
+    map.setFilter('sts-label',   ['all',['==',['get','visited'],0],['!=',['get','STS'],_selSts]]);
+    map.setFilter('sts-label-hl', ['all',['==',['get','visited'],1],['!=',['get','STS'],_selSts]]);
+  }catch(_){}
+}
+
 // ── Open: STS polygon (visited or not) ───────────────────────────────────────
 function openSts(feat, camMode){   // camMode: undef=Gate(§6a), 'force'=immer fliegen (Suche), 'nofly'=nie (Chronik)
   const props = feat.properties || {};
   const stsName = String(props.STS || '').trim();
   // Harden: use '__none__' sentinel so empty-string filter doesn't accidentally match
   map.setFilter('sts-selected',['==',['get','STS'], stsName||'__none__']);
+  _selSts = stsName; updateStsLabelFilter();   // B4: eigenen Gruppennamen ausblenden
   const visited = props.visited === 1;
 
   document.getElementById('pGroup').textContent = props.name_de || stsName;
@@ -1855,6 +1897,7 @@ function closePanel(){
   stsPopup.remove();
   document.getElementById('panel').classList.remove('open');
   map.setFilter('sts-selected',['==',['get','STS'],'']);
+  _selSts=''; updateStsLabelFilter();   // B4: Gruppennamen wieder alle einblenden
   resetGroupPeaks();
 }
 function overview(){
@@ -1930,8 +1973,11 @@ const CHRONO = (function(){
 })();
 
 let _chronoOn=false, _chronoIdx=-1, _chronoSaved=null;
-let _chronoPlaying=false, _chronoTimer=null, _pulseRAF=null;
-const CHRONO_STEP=2500;        // ms pro Jahr (Play)
+let _chronoPlaying=false, _chronoTimer=null, _chronoFallback=null, _pulseRAF=null;
+// B1b: Play-Takt = dynamischer Flug (speed-basiert) + feste Lese-Pause nach Ankunft.
+// Live mit Michael kalibrierbar (schneller: SPEED hoch / DWELL runter).
+const CHRONO_SPEED=1.5;        // flyTo-speed (Default 1.2; hoeher = zuegiger)
+const CHRONO_DWELL=1300;       // ms Lese-Pause nach Ankunft, bevor das naechste Jahr laeuft
 // Fix1: Chrono-Fuellungen zoom-interpoliert wie sts-fill (beim Reinzoomen freie Sicht),
 // aktuelles Jahr kraeftiger als frueher besuchte.
 const CHRONO_CUR_OP  = ['interpolate',['linear'],['zoom'], 8,0.62, 10.5,0.22, 12,0];
@@ -1974,11 +2020,12 @@ function chronoFlyToYear(Y){
   if(!ts.length) return;
   const pad={top:80,bottom:190,left:80,right:80};
   if(ts.length===1){
-    map.flyTo({center:[ts[0].lon,ts[0].lat], zoom:8.6, padding:pad, duration:1600, essential:true});
+    // B1b: speed-basiert statt fixe Dauer -> kurze Distanz = kurzer Flug (dynamisch).
+    map.flyTo({center:[ts[0].lon,ts[0].lat], zoom:8.6, padding:pad, speed:CHRONO_SPEED, curve:1.5, essential:true});
   } else {
     let x0=180,y0=90,x1=-180,y1=-90;
     ts.forEach(t=>{x0=Math.min(x0,t.lon);x1=Math.max(x1,t.lon);y0=Math.min(y0,t.lat);y1=Math.max(y1,t.lat);});
-    map.fitBounds([[x0,y0],[x1,y1]],{padding:pad, maxZoom:9, duration:1600, essential:true});
+    map.fitBounds([[x0,y0],[x1,y1]],{padding:pad, maxZoom:9, duration:1200, essential:true});
   }
 }
 
@@ -2013,9 +2060,9 @@ function chronoSetYear(idx, opts){
   if(chips[idx]) chips[idx].scrollIntoView({inline:'center',block:'nearest'});
   chronoCaption(Y);
   chronoPulse();
-  // Fix2: Jahr-Auswahl oeffnet zusaetzlich den Steckbrief der ersten Gruppe des Jahres
-  // (ohne eigenen Kamerasprung — die Chronik fliegt selbst).
-  if(cur.length){ const gf=SOIUSA_STS.features.find(x=>x.properties.STS===cur[0]); if(gf) openSts(gf,'nofly'); }
+  // Fix2 + B1a: NUR bei manueller Jahr-Wahl den Steckbrief oeffnen (waehrend Play zaeh +
+  // die Caption traegt die Info schon). Kein eigener Kamerasprung — die Chronik fliegt selbst.
+  if(opts.manual && cur.length){ const gf=SOIUSA_STS.features.find(x=>x.properties.STS===cur[0]); if(gf) openSts(gf,'nofly'); }
   if(opts.fly!==false) chronoFlyToYear(Y);
 }
 
@@ -2023,18 +2070,25 @@ function chronoSetYear(idx, opts){
 function chronoPlayStep(){
   if(_chronoIdx>=CHRONO.years.length-1){ chronoPause(); return; }   // kein Loop
   chronoSetYear(_chronoIdx+1);
-  _chronoTimer=setTimeout(chronoPlayStep, CHRONO_STEP);
+  // B1b: naechstes Jahr erst nach Ankunft (moveend) + Lese-Pause -> dynamischer Takt.
+  // Fallback, falls kein moveend feuert (Jahr ohne Koordinaten -> kein Flug).
+  clearTimeout(_chronoFallback); let fired=false;
+  const next=()=>{ if(fired||!_chronoPlaying) return; fired=true;
+    clearTimeout(_chronoFallback); _chronoTimer=setTimeout(chronoPlayStep, CHRONO_DWELL); };
+  map.once('moveend', next);
+  _chronoFallback=setTimeout(next, 3500);
 }
 function chronoPlay(){
   if(!_chronoOn || _chronoPlaying) return;
   if(_chronoIdx>=CHRONO.years.length-1) chronoSetYear(0,{fly:false});  // am Ende: von vorn
   _chronoPlaying=true;
   const b=document.getElementById('chronoPlay'); if(b){ b.textContent='⏸'; b.classList.add('on'); }
-  _chronoTimer=setTimeout(chronoPlayStep, CHRONO_STEP);
+  _chronoTimer=setTimeout(chronoPlayStep, 600);   // kurzer Vorlauf, dann dynamischer Takt
 }
 function chronoPause(){
   _chronoPlaying=false;
   if(_chronoTimer){ clearTimeout(_chronoTimer); _chronoTimer=null; }
+  if(_chronoFallback){ clearTimeout(_chronoFallback); _chronoFallback=null; }
   const b=document.getElementById('chronoPlay'); if(b){ b.textContent='▶'; b.classList.remove('on'); }
 }
 function chronoPlayToggle(){ _chronoPlaying?chronoPause():chronoPlay(); }
