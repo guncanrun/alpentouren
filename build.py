@@ -108,6 +108,19 @@ def _hutnorm(s):
     s = "".join(c for c in s if not _ud.combining(c))
     return re.sub(r"[^a-z0-9]", "", s)
 
+# W6: Cowork-kuratierte Alias-Tabelle (Freitext -> exakter OSM-Name). Löst die
+# Bindestrich-Kurzformen + Rifugio-Namen; die „Fallen" sind bewusst spezifisch
+# (Calvi = Pier Fortunato, NICHT Fratelli; Rotwand = Roda di Vael, NICHT Rotwandhaus).
+_HUT_ALIASES_RAW = {
+    "Kaindl-":        "Kaindlhütte",
+    "Grutten-":       "Gruttenhütte",
+    "Ackerl-":        "Ackerlhütte",
+    "Calvi-Hütte":    "Rifugio Pier Fortunato Calvi",
+    "Rotwandhütte":   "Rifugio Roda di Vael",
+    "Vajolethütte":   "Rifugio Vajolet",
+    "Antermoiahütte": "Rifugio Antermoia",
+}
+
 hut_visits, hut_nonmatch = {}, []
 if not PUBLIC:
     _osm_hn = {}
@@ -115,6 +128,7 @@ if not PUBLIC:
         _nm = _f["properties"].get("name")
         if _nm:
             _osm_hn.setdefault(_hutnorm(_nm), set()).add(_nm)
+    HUT_ALIASES = {_hutnorm(k): _hutnorm(v) for k, v in _HUT_ALIASES_RAW.items()}   # normalisiert
     for _t in data["touren"]:
         _m = re.search(r"\d{4}", str(_t.get("jahr", "")))
         _y = _m.group() if _m else None
@@ -123,8 +137,9 @@ if not PUBLIC:
             if not _e:
                 continue
             _ne = _hutnorm(_e)
-            if _ne and _ne in _osm_hn:
-                for _disp in _osm_hn[_ne]:
+            _target = HUT_ALIASES.get(_ne, _ne)   # W6: ggf. auf normalisierten OSM-Namen umbiegen
+            if _target and _target in _osm_hn:
+                for _disp in _osm_hn[_target]:
                     hut_visits.setdefault(_disp, set()).add(_y)
             else:
                 hut_nonmatch.append((_e, _y))
