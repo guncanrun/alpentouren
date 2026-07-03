@@ -574,10 +574,14 @@ function _closeAttrib(){
 document.addEventListener('click', e=>{
   const pop=document.getElementById('attribPop');
   if(pop && pop.classList.contains('open') && !pop.contains(e.target)) _closeAttrib();
+  // W1.3: Hintergrund-Klick schließt auch die „?"-Hilfe (Klick auf ? läuft über toggleAbout).
+  const ab=document.getElementById('about'), info=document.getElementById('btnInfo');
+  if(ab && ab.classList.contains('open') && !ab.contains(e.target) && e.target!==info) ab.classList.remove('open');
 });
-document.addEventListener('keydown', e=>{ if(e.key==='Escape') _closeAttrib(); });
-// E) Kompass-Klick = NUR norden (bearing->0, Pitch bleibt): visualizePitch:false.
-map.addControl(new maplibregl.NavigationControl({visualizePitch:false}), 'bottom-right');
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeAllOverlays(); });
+setAttrib(false);   // W1.5: Kartenquellen-Div beim Init befuellen (Sat-Default) — sonst leeres ⓘ-Popup
+// W1.2 (Michael-Entscheid): Kompass-Klick = Norden UND Pitch-Reset -> visualizePitch:true.
+map.addControl(new maplibregl.NavigationControl({visualizePitch:true}), 'bottom-right');
 // B2: Maßstabsleiste (metrisch) — jetzt unten MITTIG + groesser, im zentrierten Footer.
 map.addControl(new maplibregl.ScaleControl({maxWidth:170, unit:'metric'}), 'bottom-left');
 // Scale-Element aus der maplibre-Ecke in den zentrierten Footer holen (Rechenlogik bleibt).
@@ -761,6 +765,17 @@ const hoverPop = new maplibregl.Popup({closeButton:false, closeOnClick:false, of
 const hutPopup = new maplibregl.Popup({closeButton:true, closeOnClick:false, offset:12, maxWidth:_bigScr?'300px':'250px'});
 let _hoverTimer=null, _hoverId=null;
 function toggleAbout(){ document.getElementById('about').classList.toggle('open'); }
+// W1.3: Einheitliche Schließ-UX — alle schwarzen Popups (Gruppe/Hütte/Hover/Treffer/Tour).
+function closeAllPopups(){
+  try{ stsPopup.remove(); hutPopup.remove(); hoverPop.remove(); }catch(_){}
+  document.querySelectorAll('.maplibregl-popup').forEach(el=>el.remove());   // Treffer-/Tour-Popups (nicht getrackt)
+}
+// Esc / Hintergrund: schließt zusätzlich „?"-Hilfe + Kartenquellen-ⓘ.
+function closeAllOverlays(){
+  closeAllPopups();
+  const ab=document.getElementById('about'); if(ab) ab.classList.remove('open');
+  _closeAttrib();
+}
 function showStsPopup(lngLat, props){
   hoverPop.remove();
   hutPopup.remove();   // Gruppen- und Hütten-Popup schließen sich gegenseitig aus
@@ -1217,6 +1232,7 @@ map.on('load',()=>{
   updateTopoGate();
   map.on('zoom', updateTopoGate);
   restoreToggles();   // UX(1): gespeicherte Ebenen-Zustaende wiederherstellen (nach Layer+Basemap)
+  _syncPointToggles();   // W1.1: Wunsch-Zustand (auch aus Klick vor Layer-Init) auf die Layer nachziehen
 
   // ── Build the search index (groups now; OSM points fetched async) ──────────
   buildSearchIndex();
@@ -1562,11 +1578,21 @@ function toggleBorders(){
 }
 
 // ── OSM overlays (zuschaltbar, zoom-gated) ────────────────────────────────────
+// W1.1: Race-Guard — Toggle vor Layer-Init darf nicht crashen. setLayoutProperty
+// nur auf existierende Layer; der Wunsch-Zustand (State-Var) wird nach Layer-Init
+// via _syncPointToggles() nachgezogen. Betrifft alle Punkt-Layer (peaks..places/cable).
+function _setVis(ids, v){ (Array.isArray(ids)?ids:[ids]).forEach(l=>{ if(map.getLayer(l)) map.setLayoutProperty(l,'visibility',v); }); }
+function _syncPointToggles(){
+  _setVis(['osm-peaks','osm-landmark-glow','osm-landmarks'], _peaksOn?'visible':'none');
+  _setVis(['osm-huts-club','osm-huts-other','osm-huts-wild'], _hutsOn?'visible':'none');
+  _setVis(['osm-passes','osm-passes-famous'], _passesOn?'visible':'none');
+  _setVis(['places-sq','places-dot','places-label'], _placesOn?'visible':'none');
+  _setVis(['cable-icon'], _cableOn?'visible':'none');
+}
 let _peaksOn=false;
 function togglePeaks(){
   _peaksOn=!_peaksOn; const v=_peaksOn?'visible':'none';
-  ['osm-peaks','osm-landmark-glow','osm-landmarks']
-    .forEach(l=>map.setLayoutProperty(l,'visibility',v));
+  _setVis(['osm-peaks','osm-landmark-glow','osm-landmarks'], v);
   _applyGroupPeaksVis();   // Punkt 3: Gruppen-Gipfel (inkl. Gold) mitschalten, wenn Gruppe gewaehlt
   document.getElementById('tglPeaks').classList.toggle('on',_peaksOn);
   persistToggles();
@@ -1574,14 +1600,14 @@ function togglePeaks(){
 let _hutsOn=false;
 function toggleHuts(){
   _hutsOn=!_hutsOn; const v=_hutsOn?'visible':'none';
-  ['osm-huts-club','osm-huts-other','osm-huts-wild'].forEach(l=>map.setLayoutProperty(l,'visibility',v));
+  _setVis(['osm-huts-club','osm-huts-other','osm-huts-wild'], v);
   document.getElementById('tglHuts').classList.toggle('on',_hutsOn);
   persistToggles();
 }
 let _passesOn=false;
 function togglePasses(){
   _passesOn=!_passesOn; const v=_passesOn?'visible':'none';
-  ['osm-passes','osm-passes-famous'].forEach(l=>map.setLayoutProperty(l,'visibility',v));
+  _setVis(['osm-passes','osm-passes-famous'], v);
   document.getElementById('tglPasses').classList.toggle('on',_passesOn);
   persistToggles();
 }
@@ -1589,14 +1615,14 @@ function togglePasses(){
 let _placesOn=false;
 function togglePlaces(){
   _placesOn=!_placesOn; const v=_placesOn?'visible':'none';
-  ['places-sq','places-dot','places-label'].forEach(l=>map.setLayoutProperty(l,'visibility',v));
+  _setVis(['places-sq','places-dot','places-label'], v);
   document.getElementById('tglPlaces').classList.toggle('on',_placesOn);
   persistToggles();
 }
 let _cableOn=false;
 function toggleCable(){
   _cableOn=!_cableOn; const v=_cableOn?'visible':'none';
-  map.setLayoutProperty('cable-icon','visibility',v);
+  _setVis(['cable-icon'], v);
   document.getElementById('tglCable').classList.toggle('on',_cableOn);
   persistToggles();
 }
@@ -1815,12 +1841,18 @@ function pickResult(i){
   } else if(r.cat==='coord'){
     _searchMarker=new maplibregl.Marker({color:'#5fd0c5'}).setLngLat([r.lon,r.lat]).addTo(map);
     saveUndo(); map.flyTo({center:[r.lon,r.lat], zoom:13, duration:1200, essential:true}); showUndoChip();
+  } else if(r.cat==='hut'){
+    // W1.4: Hütten-Treffer öffnet direkt das enrichte Hütten-Kärtchen (HUTS_WIKI/
+    // HUT_VISITS/Seilbahn-Chip über den OSM-Namen), nicht nur flyTo.
+    if(_basemap!=='topo' && !_hutsOn) toggleHuts();
+    saveUndo(); map.flyTo({center:[r.lon,r.lat], zoom:12.5, duration:1200, essential:true}); showUndoChip();
+    closeAllPopups();
+    hutPopup.setLngLat([r.lon,r.lat]).setHTML(hutPopupHtml({name:r.name, ele:r.ele})).addTo(map);
   } else {
     // Fix7: Treffer-Kontext — passenden Punkt-Toggle aktivieren (Nachbargipfel/-huetten
     // sichtbar), NICHT im Topo-Modus (dort bleibt das Punkte-Verhalten wie es ist).
     if(_basemap!=='topo'){
       if(r.cat==='peak' && !_peaksOn) togglePeaks();
-      else if(r.cat==='hut'  && !_hutsOn)  toggleHuts();
       else if(r.cat==='pass' && !_passesOn) togglePasses();
       else if(r.cat==='place' && !_placesOn) togglePlaces();
     }
