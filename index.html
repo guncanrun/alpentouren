@@ -1114,6 +1114,7 @@ function showToast(msg){
 let _basemap='sat';
 let _savedToggles=null, _savedPitch=null;
 let _bmPending=null, _bmWaiting=false, _bmLast=0;   // Race/Debounce-Zustand
+let _topoFallbackPending=false;                    // W2: Gate-Auto-Rueckfall via once('idle')
 function _lockStructureToggles(lock){
   ['tglFarbung','tglNamen'].forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.toggle('locked',lock); });
 }
@@ -1203,7 +1204,16 @@ function updateTopoGate(){
   const z=map.getZoom(), ok=z>=11;
   bt.classList.toggle('disabled', !ok && _basemap!=='topo');
   bt.title = ok ? '' : 'Topo-Karte ab Detail-Zoom';
-  if(_basemap==='topo' && z<10){ setBasemap('sat'); showToast('Übersicht – zurück zu Satellit'); }
+  // W2 (Repro 2): Auto-Rueckfall unter z10 NICHT sofort mitten in der Zoom-Geste
+  // (Gate-Uebertritt beim schnellen Rauszoomen) -> per once('idle') absichern, dann
+  // Bedingung erneut pruefen. Verhindert „Style is not done loading"/Halbzustand.
+  if(_basemap==='topo' && z<10 && !_topoFallbackPending){
+    _topoFallbackPending=true;
+    map.once('idle', ()=>{
+      _topoFallbackPending=false;
+      if(_basemap==='topo' && map.getZoom()<10){ setBasemap('sat'); showToast('Übersicht – zurück zu Satellit'); }
+    });
+  }
 }
 
 // ══ Suche: Gipfel/Hütten/Pässe/Gruppen + Koordinaten (keyless, client-seitig) ══
