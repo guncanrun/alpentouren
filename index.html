@@ -17,6 +17,7 @@
     --row-h:32px; --fs-ui:13.5px; --fs-popup:14px;
     --ctl:32px;        /* Zeilen-Controls / Schliessen-X */
     --ctl-round:40px;  /* runde Aktions-Icons (Info/Home/Suche): Maus-freundlich */
+    --ctl-right:12px;  /* gemeinsamer Rechtsabstand der Controls unten rechts (W4 §2) */
   }
   /* Touch (Tablet/Handy): grosse, komfortable Ziele. Desktop bleibt kompakt. */
   @media (pointer: coarse){
@@ -44,8 +45,10 @@
     background:var(--bg);color:var(--txt)}
   #map{position:absolute;inset:0}
   .maplibregl-ctrl-attrib{font-size:10px}
-  /* MapLibre zoom/compass buttons: kompakt am Desktop, >=44px auf Touch (var) */
-  .maplibregl-ctrl-group button{width:var(--ctl);height:var(--ctl);touch-action:manipulation}
+  /* MapLibre zoom/compass buttons: gleiche Breite wie die runden Controls (W4 §2),
+     gemeinsamer Rechtsabstand -> eine Flucht mit Home/2D3D. */
+  .maplibregl-ctrl-group button{width:var(--ctl-round);height:var(--ctl-round);touch-action:manipulation}
+  .maplibregl-ctrl-bottom-right .maplibregl-ctrl{margin-right:var(--ctl-right)}
   .maplibregl-ctrl-group button .maplibregl-ctrl-icon{transform:scale(1.15)}
   /* Maßstabsleiste (ScaleControl) — dezent, passend zum UI; rechts vom Chronik-Button */
   .maplibregl-ctrl-scale{background:rgba(14,20,28,.72);border:2px solid rgba(232,237,242,.7);
@@ -219,14 +222,17 @@
     border-radius:50%;background:var(--panel);border:1px solid var(--line);color:var(--txt);
     font-size:20px;font-weight:700;cursor:pointer;backdrop-filter:blur(8px);touch-action:manipulation}
   #btnInfo:hover{border-color:var(--accent2);color:var(--accent2)}
-  #home{position:absolute;bottom:150px;right:16px;z-index:6;width:var(--ctl-round);height:var(--ctl-round);
-    border-radius:11px;background:var(--panel);border:1px solid var(--line);color:var(--txt);
-    font-size:19px;cursor:pointer;backdrop-filter:blur(8px);touch-action:manipulation}
-  #home:hover{border-color:var(--accent2);color:var(--accent2)}
-  #btn2d3d{position:absolute;bottom:204px;right:16px;z-index:6;width:var(--ctl-round);height:var(--ctl-round);
-    border-radius:11px;background:var(--panel);border:1px solid var(--line);color:var(--txt);
-    font-size:13px;font-weight:700;cursor:pointer;backdrop-filter:blur(8px);touch-action:manipulation}
-  #btn2d3d:hover{border-color:var(--accent2);color:var(--accent2)}
+  /* §2 (W4): runde Controls rechts unten in einer Flucht (right:var(--ctl-right)),
+     alle WEISS wie der Zoom-Stack (Michael-Entscheid). Reihenfolge oben->unten:
+     2D/3D · Home · [Zoom+/Zoom-/Kompass]. */
+  #home{position:absolute;bottom:168px;right:var(--ctl-right);z-index:6;width:var(--ctl-round);height:var(--ctl-round);
+    border-radius:9px;background:rgba(255,255,255,.95);border:1px solid rgba(0,0,0,.18);color:#2a2f36;
+    font-size:19px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.3);touch-action:manipulation}
+  #home:hover{background:#fff;color:#000}
+  #btn2d3d{position:absolute;bottom:222px;right:var(--ctl-right);z-index:6;width:var(--ctl-round);height:var(--ctl-round);
+    border-radius:9px;background:rgba(255,255,255,.95);border:1px solid rgba(0,0,0,.18);color:#2a2f36;
+    font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.3);touch-action:manipulation}
+  #btn2d3d:hover{background:#fff;color:#000}
   /* ── Suche ── */
   #search{position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:9;
     display:flex;align-items:center;background:var(--panel);backdrop-filter:blur(8px);
@@ -262,6 +268,13 @@
     box-shadow:0 8px 30px rgba(0,0,0,.5);opacity:0;transition:opacity .3s;
     pointer-events:none;max-width:calc(100vw - 32px)}
   #toast.show{opacity:1}
+  /* §6b (W4): „Letzte Ansicht"-Chip nach Kamerasprung */
+  #undoChip{position:absolute;left:50%;bottom:80px;transform:translateX(-50%);z-index:9;display:none;
+    align-items:center;gap:4px;background:var(--panel);backdrop-filter:blur(8px);border:1px solid var(--line);
+    border-radius:20px;padding:8px 16px;min-height:40px;font-size:13px;color:var(--txt);cursor:pointer;
+    box-shadow:0 6px 24px rgba(0,0,0,.45);touch-action:manipulation}
+  #undoChip.show{display:inline-flex}
+  #undoChip:hover{border-color:var(--accent2);color:var(--accent2)}
 
   
 
@@ -276,6 +289,7 @@
 <body>
 <div id="map"></div>
 <div id="toast"></div>
+<div id="undoChip" onclick="restoreUndo()" title="Vorherige Ansicht wiederherstellen">&#8617; Letzte Ansicht</div>
 
 <div id="title">
   <h1>Alpen-Atlas</h1>
@@ -460,6 +474,8 @@ function setAttrib(topo){
 map.addControl(new maplibregl.NavigationControl({visualizePitch:false}), 'bottom-right');
 // A) Maßstabsleiste (metrisch, dynamisch mit Zoom/Breite) — unten links, kein Mess-Werkzeug.
 map.addControl(new maplibregl.ScaleControl({maxWidth:110, unit:'metric'}), 'bottom-left');
+// §5 (W4): Mausrad-Zoom weicher/feiner — Bordmittel, Default 1/450 -> 1/650.
+try{ map.scrollZoom.setWheelZoomRate(1/650); }catch(_){}
 
 // ── Auto-pitch: tilt up as you zoom in. Only on user zoom (wheel/pinch), never
 // on flyTo/fitBounds (no originalEvent); manual pitch disables it until Alpenüberblick.
@@ -488,6 +504,20 @@ function _update2D3DLabel(){
 map.on('pitchend', _update2D3DLabel);
 map.on('load', _update2D3DLabel);
 
+// §3 (W4): Atmosphaerischer Himmel/Horizont-Dunst nur in 3D (Pitch>0), Satellit,
+// und NICHT auf Touch-Geraeten (Performance-Schutz, altes Tablet). Sonst effektiv aus.
+function updateSky(){
+  const coarse = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+  const on = !coarse && _basemap!=='topo' && map.getPitch()>2;
+  try{
+    map.setSky(on
+      ? {'sky-color':'#0b1f3a','horizon-color':'#7a92ad','fog-color':'#c8d6e5',
+         'sky-horizon-blend':0.6,'horizon-fog-blend':0.5,'fog-ground-blend':0.4,'atmosphere-blend':0.5}
+      : {'atmosphere-blend':0});
+  }catch(_){}
+}
+map.on('pitchend', updateSky);
+
 // D) Rotation zoom-gated: ab z>=11 drehen erlaubt (Rechtsklick-Drag / Zwei-Finger),
 // darunter genordet erzwungen. Uebersicht bleibt Atlas-stabil.
 function updateRotationGate(){
@@ -507,7 +537,7 @@ const stsPopup = new maplibregl.Popup({
   closeButton:true, closeOnClick:false, offset:10, maxWidth:_bigScr?'320px':'260px'});
 const hoverPop = new maplibregl.Popup({closeButton:false, closeOnClick:false, offset:8});
 const hutPopup = new maplibregl.Popup({closeButton:true, closeOnClick:false, offset:12, maxWidth:_bigScr?'300px':'250px'});
-let _hoverTimer=null;
+let _hoverTimer=null, _hoverId=null;
 function toggleAbout(){ document.getElementById('about').classList.toggle('open'); }
 function showStsPopup(lngLat, props){
   hoverPop.remove();
@@ -522,13 +552,11 @@ function showStsPopup(lngLat, props){
 
 map.on('load',()=>{
   map.setTerrain({source:'dem', exaggeration:1.0});
-  try{map.setSky({'sky-color':'#0b1f3a','horizon-color':'#7a92ad','fog-color':'#c8d6e5',
-    'sky-horizon-blend':0.6,'horizon-fog-blend':0.5,'fog-ground-blend':0.4,
-    'atmosphere-blend':0.4});}catch(e){}
+  updateSky();   // §3 (W4): Himmel/Dunst nur in 3D, Satellit, nicht auf Touch (Perf)
 
   // ── Sources ──────────────────────────────────────────────────────────────
   map.addSource('mask',       {type:'geojson', data:MASK});
-  map.addSource('sts',        {type:'geojson', data:SOIUSA_STS});
+  map.addSource('sts',        {type:'geojson', data:SOIUSA_STS, promoteId:'STS'});  // §4: feature-state hover
   map.addSource('highlights', {type:'geojson', data:SOIUSA_HIGHLIGHTS});
   map.addSource('sts-lp',    {type:'geojson', data:SOIUSA_LBL_PTS});
   
@@ -564,6 +592,15 @@ map.on('load',()=>{
       // ab z12 frei (freie Sicht aufs Gelände). Zoom MUSS top-level stehen.
       'fill-opacity': ['interpolate',['linear'],['zoom'], 8,0.34, 10.5,0.12, 12,0]
     }});
+
+  // ── §4 (W4): Hover-Glow (feature-state, flackerfrei) — Kontur + leichte Aufhellung ──
+  map.addLayer({id:'sts-hover-fill', type:'fill', source:'sts',
+    paint:{'fill-color':'#ffffff',
+      'fill-opacity':['case',['boolean',['feature-state','hover'],false], 0.07, 0]}});
+  map.addLayer({id:'sts-hover-line', type:'line', source:'sts',
+    layout:{'line-join':'round'},
+    paint:{'line-color':'#ffffff','line-opacity':0.55,
+      'line-width':['case',['boolean',['feature-state','hover'],false], 1.6, 0]}});
 
   
 
@@ -709,6 +746,12 @@ map.on('load',()=>{
     });
   });
 
+  // ── §7 (W4): Cursor-Pointer auf allen klickbaren Punkt-Layern (Desktop) ────
+  ['osm-peaks','osm-landmarks','osm-passes','osm-passes-famous'].forEach(l=>{
+    map.on('mouseenter',l,()=>map.getCanvas().style.cursor='pointer');
+    map.on('mouseleave',l,()=>map.getCanvas().style.cursor='');
+  });
+
   // ── Pässe (toggle): Sattel-Signatur „)(" ab z10; Name+Höhe ab ~z11 dazu ──────
   // Kein Sprite (text-Symbol). Hoher symbol-sort-key -> Pässe weichen Gipfeln/Hütten
   // (Kollision), verdrängen also nie Gipfelnamen. In der Übersicht (<z10) unsichtbar.
@@ -769,6 +812,12 @@ map.on('load',()=>{
   map.on('mouseenter','sts-fill',()=>map.getCanvas().style.cursor='pointer');
   // B) Hover-Box: Name + Settore (+ privat: Besuchs-Badge + Jahre) + Klick-Hinweis.
   map.on('mousemove','sts-fill',e=>{
+    // §4 (W4): Hover-Glow via feature-state (flackerfrei, unabhaengig vom Panel).
+    const hid=e.features[0].id;
+    if(_hoverId!==hid){
+      if(_hoverId!=null) map.setFeatureState({source:'sts',id:_hoverId},{hover:false});
+      _hoverId=hid; if(hid!=null) map.setFeatureState({source:'sts',id:hid},{hover:true});
+    }
     if(document.getElementById('panel').classList.contains('open')) return;  // kein Doppel-Popup
     clearTimeout(_hoverTimer);                                               // Dwell: erst nach 700 ms Ruhe
     const p=e.features[0].properties, ll=e.lngLat;
@@ -784,7 +833,8 @@ map.on('load',()=>{
         .addTo(map);
     }, 700);
   });
-  map.on('mouseleave','sts-fill',()=>{map.getCanvas().style.cursor='';clearTimeout(_hoverTimer);hoverPop.remove();});
+  map.on('mouseleave','sts-fill',()=>{map.getCanvas().style.cursor='';clearTimeout(_hoverTimer);hoverPop.remove();
+    if(_hoverId!=null){ map.setFeatureState({source:'sts',id:_hoverId},{hover:false}); _hoverId=null; }});
   map.on('click','sts-fill',e=>{
     if(TOUR_LAYERS.length && map.queryRenderedFeatures(e.point,{layers:TOUR_LAYERS}).length) return;
     if(map.queryRenderedFeatures(e.point,{layers:HUT_LAYERS}).length) return;  // Hütte hat Vorrang
@@ -1030,7 +1080,7 @@ function hutPopupHtml(p){
 
 
 // ── Open: STS polygon (visited or not) ───────────────────────────────────────
-function openSts(feat){
+function openSts(feat, force){   // force=true (z.B. Suche) erzwingt den Kamerasprung trotz §6a-Gate
   const props = feat.properties || {};
   const stsName = String(props.STS || '').trim();
   // Harden: use '__none__' sentinel so empty-string filter doesn't accidentally match
@@ -1047,10 +1097,18 @@ function openSts(feat){
   showGroupPeaks(stsName);
 
   
-  document.getElementById('panel').classList.add('open');
+  // §1 (W4): Steckbrief unter der Title-Card andocken (kein Overlap der KPI-Zeile).
+  // Nur Desktop; auf Mobile (<=640) uebernimmt die Bottom-Media-Query (top:auto).
+  const _tc=document.getElementById('title'), _pnl=document.getElementById('panel');
+  if(_tc && window.innerWidth>640) _pnl.style.top=(_tc.getBoundingClientRect().bottom+10)+'px';
+  else _pnl.style.top='';
+  _pnl.classList.add('open');
+  // §6a (W4): ab z>=11 KEIN Auto-flyTo bei Karten-Klick (Fehlklick nahe Gipfel wirft
+  // die Kamera sonst zurueck) — nur Steckbrief. Suche (force) springt weiterhin.
+  if(map.getZoom()>=11 && !force) return;
   const bb=featBbox(feat);
-  if(bb) map.fitBounds(bb,{padding:{top:80,bottom:80,left:320,right:80},
-    pitch:18,bearing:0,maxZoom:10,duration:1200,essential:true});
+  if(bb){ saveUndo(); map.fitBounds(bb,{padding:{top:80,bottom:80,left:320,right:80},
+    pitch:18,bearing:0,maxZoom:10,duration:1200,essential:true}); showUndoChip(); }
 }
 
 // ── Toggle: group labels (fills always on) ────────────────────────────────────
@@ -1181,6 +1239,7 @@ function _applyBasemap(bm, topo){
     if(bs) bs.classList.toggle('on',!topo);
     if(bt) bt.classList.toggle('on',topo);
     updateTopoGate();
+    updateSky();                                    // §3: Topo -> Himmel aus, Sat -> ggf. an
     try{localStorage.setItem('alpen_basemap',bm);}catch(_){}
   }catch(e){
     console.warn('Basemap-Switch fehlgeschlagen -> Rollback:', e);
@@ -1300,12 +1359,12 @@ function pickResult(i){
   const r=sCur[i]; if(!r) return;
   clearSearchMarker();
   if(r.cat==='group'){
-    const f=SOIUSA_STS.features.find(x=>x.properties.STS===r.sts); if(f) openSts(f);
+    const f=SOIUSA_STS.features.find(x=>x.properties.STS===r.sts); if(f) openSts(f, true);
   } else if(r.cat==='coord'){
     _searchMarker=new maplibregl.Marker({color:'#5fd0c5'}).setLngLat([r.lon,r.lat]).addTo(map);
-    map.flyTo({center:[r.lon,r.lat], zoom:13, duration:1200, essential:true});
+    saveUndo(); map.flyTo({center:[r.lon,r.lat], zoom:13, duration:1200, essential:true}); showUndoChip();
   } else {
-    map.flyTo({center:[r.lon,r.lat], zoom:12.5, duration:1200, essential:true});
+    saveUndo(); map.flyTo({center:[r.lon,r.lat], zoom:12.5, duration:1200, essential:true}); showUndoChip();
     new maplibregl.Popup({offset:12, closeButton:true})
       .setLngLat([r.lon,r.lat])
       .setHTML('<div class="hp-n">'+String(r.name||'').replace(/</g,'&lt;')+'</div>'+
@@ -1338,6 +1397,22 @@ function overview(){
   _autoPitch=true;
   map.flyTo({...ALPS,duration:1200,essential:true});
 }
+// §6b (W4): „Letzte Ansicht"-Chip nach automatischem Kamerasprung (Gruppen-flyTo,
+// Suchtreffer). Stellt die vorherige Kamera-Pose wieder her; verschwindet nach ~8 s
+// oder bei Nutzer-Interaktion (movestart mit originalEvent).
+let _undoPose=null, _undoT=null;
+function saveUndo(){ _undoPose={center:map.getCenter(),zoom:map.getZoom(),bearing:map.getBearing(),pitch:map.getPitch()}; }
+function _hideUndoChip(){ const el=document.getElementById('undoChip'); if(el) el.classList.remove('show'); clearTimeout(_undoT); }
+function showUndoChip(){
+  const el=document.getElementById('undoChip'); if(!el||!_undoPose) return;
+  el.classList.add('show'); clearTimeout(_undoT); _undoT=setTimeout(_hideUndoChip,8000);
+}
+function restoreUndo(){
+  _hideUndoChip();
+  if(_undoPose){ _autoPitch=false; map.easeTo({center:_undoPose.center,zoom:_undoPose.zoom,
+    bearing:_undoPose.bearing,pitch:_undoPose.pitch,duration:800,essential:true}); _undoPose=null; }
+}
+map.on('movestart', e=>{ if(e && e.originalEvent) _hideUndoChip(); });
 
 // ── Coverage list (private build only; click flies to the group) ──────────────
 
