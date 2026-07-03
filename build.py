@@ -617,6 +617,9 @@ Touren ansehen <span id="covCount"></span>
     <div id="tglPeaks" class="tgl" onclick="togglePeaks()"><span>Gipfel</span><span class="sw"></span></div>
     <div id="tglHuts" class="tgl" onclick="toggleHuts()"><span>H&uuml;tten</span><span class="sw"></span></div>
     <div id="tglPasses" class="tgl" onclick="togglePasses()"><span>P&auml;sse</span><span class="sw"></span></div>
+    <div class="grp" title="Wie komme ich hin? Talorte + Personen-Seilbahnen">Anreise</div>
+    <div id="tglPlaces" class="tgl" onclick="togglePlaces()"><span>Orte</span><span class="sw"></span></div>
+    <div id="tglCable" class="tgl" onclick="toggleCable()"><span>Seilbahnen</span><span class="sw"></span></div>
     <div class="grp" title="Settori = die f&uuml;nf Gro&szlig;sektoren der Alpen (SOIUSA)">Farben (Settori)</div>
     <div class="lrow"><span class="sw-nw"></span>Nordwestalpen</div>
     <div class="lrow"><span class="sw-sw"></span>S&uuml;dwestalpen</div>
@@ -649,6 +652,8 @@ const HUTS_WIKI = __SOIUSA_HUTS_WIKI_JSON__;   // Hütten-Steckbriefe, Key = OSM
 const OSM_PEAKS  = __OSM_PEAKS__;
 const OSM_HUTS   = __OSM_HUTS__;
 const OSM_PASSES = __OSM_PASSES__;
+const OSM_PLACES = __OSM_PLACES__;
+const OSM_CABLE  = __OSM_CABLE__;
 const BORDERS_GJ = __BORDERS__;
 const PRIV = __PRIV__;
 const TOUR_LAYERS = PRIV ? ['t-dot'] : [];   // tour markers only exist in the private build
@@ -931,6 +936,8 @@ map.on('load',()=>{
   map.addSource('osm-peaks', {type:'geojson', data:OSM_PEAKS  || './soiusa_osm_peaks.geojson'});
   map.addSource('osm-huts',  {type:'geojson', data:OSM_HUTS   || './soiusa_osm_huts.geojson'});
   map.addSource('osm-passes',{type:'geojson', data:OSM_PASSES || './soiusa_osm_passes.geojson'});
+  map.addSource('osm-places',{type:'geojson', data:OSM_PLACES || './soiusa_osm_places.geojson'});     // Anreise: Orte
+  map.addSource('osm-cable', {type:'geojson', data:OSM_CABLE  || './soiusa_osm_cableways.geojson'});   // Anreise: Seilbahn-Talstationen
 
   // ── Non-Alpine mask — always on ───────────────────────────────────────────
   map.addLayer({id:'mask-fill', type:'fill', source:'mask',
@@ -1044,6 +1051,7 @@ map.on('load',()=>{
   map.addImage('hut-club',  houseIcon('#e2574c'), {pixelRatio:2});   // Verbandshütte (Tier 1)
   map.addImage('hut-other', houseIcon('#9fb0c0'), {pixelRatio:2});   // sonstige bewirtschaftet
   map.addImage('hut-wild',  houseOutline('#a8bccc'), {pixelRatio:2}); // unbewirtschaftet/Refugio (Tier 2)
+  map.addImage('gondola',   gondolaIcon('#8fd0dd'), {pixelRatio:2});  // Seilbahn-Talstation
 
   // Peaks — black triangle, name+height label from higher zoom
   // Landmark-Glow (hinter den Gipfeln)
@@ -1052,6 +1060,36 @@ map.on('load',()=>{
     layout:{'visibility':'none'},
     paint:{'circle-radius':['interpolate',['linear'],['zoom'], 6,7, 12,16],
       'circle-color':'#ffd24d','circle-opacity':0.28,'circle-blur':0.9}});
+  // ── Anreise: Orte (Kreis nach Rang + Label) + Seilbahn-Talstationen ─────────
+  // VOR den Gipfel-/Huetten-Layern einsortiert -> in der Kollision niedrigere Prioritaet
+  // (Ortsnamen weichen Gipfeln/Huetten). Default aus (Toggle). Zoom-Gates: city/town ab
+  // z6, village ab z9, hamlet ab z11; Seilbahnen ab z10.
+  map.addLayer({id:'places-dot', type:'circle', source:'osm-places', minzoom:6,
+    layout:{visibility:'none'},
+    paint:{'circle-color':'#e6b566','circle-stroke-color':'#1a1206','circle-stroke-width':1,
+      'circle-radius':['step',['zoom'],
+        ['match',['get','place'],['city','town'],3.5, 0],
+        9, ['match',['get','place'],['city','town'],5,'village',3, 0],
+        11,['match',['get','place'],['city','town'],6.5,'village',4.5,'hamlet',3, 0],
+        14,['match',['get','place'],['city','town'],8,'village',5.5,'hamlet',4, 0]]}});
+  map.addLayer({id:'places-label', type:'symbol', source:'osm-places', minzoom:6,
+    layout:{visibility:'none',
+      'text-field':['step',['zoom'],
+        ['case',['>=',['get','rank'],2],['get','name'],''],
+        9, ['case',['>=',['get','rank'],1],['get','name'],''],
+        11,['get','name']],
+      'text-font':['Noto Sans Bold'],'text-size':['interpolate',['linear'],['zoom'], 6,10, 12,12.5],
+      'text-variable-anchor':['left','right','top','bottom'],'text-radial-offset':0.8,
+      'text-optional':true,'text-allow-overlap':false,'symbol-sort-key':['-',5,['get','rank']]},
+    paint:{'text-color':'#f2ddb6','text-halo-color':'#1a1206','text-halo-width':1.4}});
+  map.addLayer({id:'cable-icon', type:'symbol', source:'osm-cable', minzoom:10,
+    layout:{visibility:'none','icon-image':'gondola','icon-size':0.95,'icon-allow-overlap':false,
+      'text-field':['step',['zoom'], '', 12, ['get','name']],
+      'text-font':['Noto Sans Bold'],'text-size':9.5,
+      'text-variable-anchor':['top','bottom','left','right'],'text-radial-offset':0.6,
+      'text-optional':true,'text-allow-overlap':false},
+    paint:{'text-color':'#bfe6ee','text-halo-color':'#06141a','text-halo-width':1.3}});
+
   map.addLayer({id:'osm-peaks', type:'symbol', source:'osm-peaks', minzoom:5,
     filter:['!=',['get','landmark'],1],
     layout:{'visibility':'none','icon-anchor':'bottom','icon-allow-overlap':false,
@@ -1137,9 +1175,20 @@ map.on('load',()=>{
   });
 
   // ── §7 (W4): Cursor-Pointer auf allen klickbaren Punkt-Layern (Desktop) ────
-  ['osm-peaks','osm-landmarks','osm-passes','osm-passes-famous'].forEach(l=>{
+  ['osm-peaks','osm-landmarks','osm-passes','osm-passes-famous','places-dot','places-label','cable-icon'].forEach(l=>{
     map.on('mouseenter',l,()=>map.getCanvas().style.cursor='pointer');
     map.on('mouseleave',l,()=>map.getCanvas().style.cursor='');
+  });
+  // Anreise: Klick-Popups (Ort = Name/Typ/Höhe/Einwohner; Seilbahn = Name + Tal->Berg).
+  ['places-dot','places-label'].forEach(l=>map.on('click',l,e=>{
+    stsPopup.remove();
+    hutPopup.setLngLat(e.features[0].geometry.coordinates.slice())
+      .setHTML(placePopupHtml(e.features[0].properties||{})).addTo(map);
+  }));
+  map.on('click','cable-icon',e=>{
+    stsPopup.remove();
+    hutPopup.setLngLat(e.features[0].geometry.coordinates.slice())
+      .setHTML(cablePopupHtml(e.features[0].properties||{})).addTo(map);
   });
 
   // ── Pässe (toggle): Sattel-Signatur „)(" ab z10; Name+Höhe ab ~z11 dazu ──────
@@ -1267,6 +1316,7 @@ map.on('load',()=>{
   map.on('click','sts-hit',e=>{
     if(TOUR_LAYERS.length && map.queryRenderedFeatures(e.point,{layers:TOUR_LAYERS}).length) return;
     if(map.queryRenderedFeatures(e.point,{layers:HUT_LAYERS}).length) return;  // Hütte hat Vorrang
+    if(map.queryRenderedFeatures(e.point,{layers:['places-dot','places-label','cable-icon']}).length) return;  // Ort/Seilbahn hat Vorrang
     clearTimeout(_hoverTimer); hoverPop.remove(); stsPopup.remove(); hutPopup.remove();  // B: keine klebende Box
     openSts(e.features[0]);                                                   // Steckbrief für JEDE Gruppe
   });
@@ -1291,7 +1341,8 @@ map.on('load',()=>{
     if(!map.queryRenderedFeatures(e.point,{layers:HUT_LAYERS}).length) hutPopup.remove();
     // W1c: Klick ohne Gruppen-/Linien-/Punkt-Feature -> Steckbrief schliessen + Auswahl-Rand weg.
     const feats=map.queryRenderedFeatures(e.point,{layers:
-      ['sts-hit','hl-line','osm-peaks','osm-landmarks','osm-passes','osm-passes-famous']
+      ['sts-hit','hl-line','osm-peaks','osm-landmarks','osm-passes','osm-passes-famous',
+       'places-dot','places-label','cable-icon']
         .concat(HUT_LAYERS).concat(TOUR_LAYERS)});
     if(!feats.length) closePanel();
   });
@@ -1373,6 +1424,16 @@ function makeStar(color){
     for(let i=0;i<10;i++){ const a=-Math.PI/2 + i*Math.PI/5, rad=(i%2)?r:R;
       const px=cx+Math.cos(a)*rad, py=cy+Math.sin(a)*rad; i?x.lineTo(px,py):x.moveTo(px,py); }
     x.closePath(); x.fillStyle=color; x.fill(); x.lineWidth=1.6; x.strokeStyle='#06101a'; x.lineJoin='round'; x.stroke();
+  });
+}
+// Seilbahn-Talstation: Gondel-Piktogramm (Seil + Kabine).
+function gondolaIcon(color){
+  return makeIcon(20,(x,s)=>{
+    x.strokeStyle=color; x.lineWidth=1.5; x.lineJoin='round'; x.lineCap='round';
+    x.beginPath(); x.moveTo(s*0.13,s*0.2); x.lineTo(s*0.87,s*0.36); x.stroke();   // Seil
+    x.beginPath(); x.moveTo(s*0.5,s*0.28); x.lineTo(s*0.5,s*0.44); x.stroke();     // Aufhaenger
+    x.fillStyle=color; x.strokeStyle='#06101a'; x.lineWidth=1.3;
+    x.beginPath(); x.rect(s*0.33,s*0.44,s*0.34,s*0.32); x.fill(); x.stroke();      // Kabine
   });
 }
 // Unbewirtschaftet / Refugio / Biwak: hollow house (outline only), muted.
@@ -1509,6 +1570,21 @@ function steckbriefHtml(stsName, props){
 // Fehlt ein Feld -> weglassen. Ohne Eintrag / nur sb_* -> schlichtes Popup (Name+ele+kat).
 // sb_* werden NICHT gerendert (Datenfelder fuer spaeteren Familien-Filter, G2).
 const HUT_KAT = {club:'Verbandshütte', hut:'Hütte', wild:'Unbewirtschaftet'};
+// Anreise-Popups (klein, kein Enrichment in v1).
+function _escp(s){ return String(s==null?'':s).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
+function placePopupHtml(p){
+  const kind = {city:'Stadt', town:'Stadt', village:'Dorf', hamlet:'Bergdorf'}[p.place] || 'Ort';
+  const bits = [kind];
+  if(p.ele) bits.push(p.ele+' m');
+  if(p.pop) bits.push(Number(p.pop).toLocaleString('de-DE')+' Einw.');
+  return '<div class="hp-n">'+_escp(p.name)+'</div><div class="hp-s">'+bits.join(' · ')+'</div>';
+}
+function cablePopupHtml(p){
+  let s = 'Seilbahn (Talstation)';
+  if(p.ele && p.ele_top) s = 'Tal '+p.ele+' m &rarr; Berg '+p.ele_top+' m';
+  else if(p.ele) s = 'Talstation '+p.ele+' m';
+  return '<div class="hp-n">'+_escp(p.name)+'</div><div class="hp-s">'+s+'</div>';
+}
 function hutPopupHtml(p){
   const esc = s => String(s==null?'':s).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
   const w = (HUTS_WIKI.huetten||{})[p.name] || null;
@@ -1718,6 +1794,19 @@ function togglePasses(){
   ['osm-passes','osm-passes-famous'].forEach(l=>map.setLayoutProperty(l,'visibility',v));
   document.getElementById('tglPasses').classList.toggle('on',_passesOn);
 }
+// Anreise-Toggles (Orte, Seilbahnen) — default aus, wie die anderen Punkte.
+let _placesOn=false;
+function togglePlaces(){
+  _placesOn=!_placesOn; const v=_placesOn?'visible':'none';
+  ['places-dot','places-label'].forEach(l=>map.setLayoutProperty(l,'visibility',v));
+  document.getElementById('tglPlaces').classList.toggle('on',_placesOn);
+}
+let _cableOn=false;
+function toggleCable(){
+  _cableOn=!_cableOn; const v=_cableOn?'visible':'none';
+  map.setLayoutProperty('cable-icon','visibility',v);
+  document.getElementById('tglCable').classList.toggle('on',_cableOn);
+}
 
 // ── kurzlebiger Hinweis (Toast, kein Modal) ───────────────────────────────────
 let _toastT=null;
@@ -1771,18 +1860,23 @@ function _applyBasemap(bm, topo){
     // Toggle-Zustände (ebenfalls Style-Ops) — nur beim echten Moduswechsel.
     if(topo && prev!=='topo'){
       // Färbung+Namen aus (+ gesperrt, s.u.). Punkte default aus, aber NICHT gesperrt.
-      _savedToggles={farbung:_farbungOn, namen:_layersOn, peaks:_peaksOn, huts:_hutsOn, passes:_passesOn};
+      _savedToggles={farbung:_farbungOn, namen:_layersOn, peaks:_peaksOn, huts:_hutsOn, passes:_passesOn,
+                     places:_placesOn, cable:_cableOn};
       if(_farbungOn) toggleFarbung();
       if(_layersOn)  toggleLayers();
       if(_peaksOn)   togglePeaks();
       if(_hutsOn)    toggleHuts();
       if(_passesOn)  togglePasses();
+      if(_placesOn)  togglePlaces();
+      if(_cableOn)   toggleCable();
     } else if(!topo && prev==='topo' && _savedToggles){
       if(_savedToggles.farbung && !_farbungOn) toggleFarbung();
       if(_savedToggles.namen  && !_layersOn)  toggleLayers();
       if(_savedToggles.peaks  && !_peaksOn)   togglePeaks();
       if(_savedToggles.huts   && !_hutsOn)    toggleHuts();
       if(_savedToggles.passes && !_passesOn)  togglePasses();
+      if(_savedToggles.places && !_placesOn)  togglePlaces();
+      if(_savedToggles.cable  && !_cableOn)   toggleCable();
       _savedToggles=null;
     }
     // ── 2) Erst NACH erfolgreichem Swap: dauerhafte Zustände ──
@@ -1838,7 +1932,7 @@ function updateTopoGate(){
 
 // ══ Suche: Gipfel/Hütten/Pässe/Gruppen + Koordinaten (keyless, client-seitig) ══
 const SEARCH_IDX=[];
-const SCAT={group:'▦',peak:'▲',hut:'\u{1F3E0}',pass:')(',coord:'\u{1F4CD}'};
+const SCAT={group:'▦',peak:'▲',hut:'\u{1F3E0}',pass:')(',coord:'\u{1F4CD}',place:'●'};
 function sNorm(s){ return (s||'').toLowerCase()
   .replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss')
   .normalize('NFKD').replace(/[̀-ͯ]/g,''); }
@@ -1860,6 +1954,7 @@ function buildSearchIndex(){
   add(OSM_PEAKS  || './soiusa_osm_peaks.geojson','peak',1);
   add(OSM_HUTS   || './soiusa_osm_huts.geojson','hut',2);
   add(OSM_PASSES || './soiusa_osm_passes.geojson','pass',3);
+  add(OSM_PLACES || './soiusa_osm_places.geojson','place',4);   // Anreise: Ortssuche
 }
 function parseCoord(q){
   q=(q||'').trim(); if(!q) return null;
@@ -1910,7 +2005,8 @@ function renderResults(list){
   if(!list.length){ sRes.style.display='none'; sRes.innerHTML=''; return; }
   sRes.innerHTML=list.map((r,i)=>{
     const sub = r.cat==='peak'||r.cat==='hut' ? (r.ele?r.ele+' m':'')
-      : r.cat==='group' ? (r.sub||'Gruppe') : r.cat==='pass' ? 'Pass' : (r.sub||'');
+      : r.cat==='group' ? (r.sub||'Gruppe') : r.cat==='pass' ? 'Pass'
+      : r.cat==='place' ? 'Ort' : (r.sub||'');
     return '<div class="sr" data-i="'+i+'"><span class="ic">'+(SCAT[r.cat]||'')+'</span>'+
       '<span class="nm">'+String(r.name||'').replace(/</g,'&lt;')+'</span>'+
       (sub?'<span class="sb">'+sub+'</span>':'')+'</div>';
@@ -1933,6 +2029,7 @@ function pickResult(i){
       if(r.cat==='peak' && !_peaksOn) togglePeaks();
       else if(r.cat==='hut'  && !_hutsOn)  toggleHuts();
       else if(r.cat==='pass' && !_passesOn) togglePasses();
+      else if(r.cat==='place' && !_placesOn) togglePlaces();
     }
     saveUndo(); map.flyTo({center:[r.lon,r.lat], zoom:12.5, duration:1200, essential:true}); showUndoChip();
     new maplibregl.Popup({offset:12, closeButton:true})
@@ -2160,8 +2257,9 @@ function chronoPlayToggle(){ _chronoPlaying?chronoPause():chronoPlay(); }
 function chronoEnter(){
   if(_chronoOn || !CHRONO.years.length) return;
   _chronoOn=true;
-  _chronoSaved={p:_peaksOn,h:_hutsOn,s:_passesOn};       // Punkt-Toggles merken + dezent aus
+  _chronoSaved={p:_peaksOn,h:_hutsOn,s:_passesOn,o:_placesOn,c:_cableOn};  // Punkt-Toggles merken + dezent aus
   if(_peaksOn) togglePeaks(); if(_hutsOn) toggleHuts(); if(_passesOn) togglePasses();
+  if(_placesOn) togglePlaces(); if(_cableOn) toggleCable();
   ['hl-line','sts-label-hl'].forEach(l=>map.setLayoutProperty(l,'visibility','none'));  // „alle besucht" aus
   // Fix1: Chrono-Fuellungen folgen dem Faerbung-Toggle (aus -> ausgeblendet).
   const _cv=_farbungOn?'visible':'none';
@@ -2188,6 +2286,8 @@ function chronoExit(){
     if(_chronoSaved.p && !_peaksOn) togglePeaks();
     if(_chronoSaved.h && !_hutsOn) toggleHuts();
     if(_chronoSaved.s && !_passesOn) togglePasses();
+    if(_chronoSaved.o && !_placesOn) togglePlaces();
+    if(_chronoSaved.c && !_cableOn) toggleCable();
     _chronoSaved=null;
   }
   document.getElementById('cov').style.display='';
@@ -2254,6 +2354,8 @@ if STANDALONE:
     osm_peaks  = load_compact("soiusa_osm_peaks.geojson")
     osm_huts   = load_compact("soiusa_osm_huts.geojson")
     osm_passes = load_compact("soiusa_osm_passes.geojson")
+    osm_places = load_compact("soiusa_osm_places.geojson")
+    osm_cable  = load_compact("soiusa_osm_cableways.geojson")
     borders_gj = load_compact("soiusa_borders.geojson")
 else:
     head_libs = ('<link href="./vendor/maplibre-gl-4.7.1.min.css" rel="stylesheet" />\n'
@@ -2261,12 +2363,14 @@ else:
                  '<script src="./vendor/maplibre-contour-0.0.5.min.js"></script>')
     glyphs = "./fonts/{fontstack}/{range}.pbf"
     glyphs_data = "null"
-    osm_peaks = osm_huts = osm_passes = borders_gj = "null"
+    osm_peaks = osm_huts = osm_passes = osm_places = osm_cable = borders_gj = "null"
 html = html.replace("__GLYPHS_DATA__", glyphs_data)
 html = html.replace("__GLYPHS__", glyphs)
 html = html.replace("__OSM_PEAKS__",  osm_peaks)
 html = html.replace("__OSM_HUTS__",   osm_huts)
 html = html.replace("__OSM_PASSES__", osm_passes)
+html = html.replace("__OSM_PLACES__", osm_places)
+html = html.replace("__OSM_CABLE__",  osm_cable)
 html = html.replace("__BORDERS__",    borders_gj)
 html = html.replace("__HEAD_LIBS__",  head_libs)   # zuletzt (Lib-Inhalt nicht rescannen)
 

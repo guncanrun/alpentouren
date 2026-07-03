@@ -19,8 +19,8 @@ HERE = pathlib.Path(__file__).parent
 
 OVERPASS_ENDPOINTS = [
     "https://overpass-api.de/api/interpreter",
-    "https://overpass.kumi.systems/api/interpreter",
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",   # zuletzt: haengt zeitweise (Timeout)
 ]
 BBOX = "42.5,3.5,49.5,18.5"   # S,W,N,E — Alpenraum (deckt maxBounds ab)
 MIN_ELE = 2000
@@ -32,6 +32,22 @@ HUTS_Q = (f'[out:json][timeout:300];'
           f'nwr["tourism"="wilderness_hut"]["name"]({BBOX}););out center;')
 PASS_Q = (f'[out:json][timeout:300];'
           f'(nwr["mountain_pass"="yes"]["name"]({BBOX}););out center;')
+
+# ── Anreise-Datenschicht (SPEC_Orte_Seilbahnen_Parkplaetze) ──────────────────
+# Orte: city/town/village immer; hamlet nur wenn ele-getaggt (dann >1200 m Filter).
+PLACES_Q = (f'[out:json][timeout:300];'
+            f'(node["place"~"^(city|town|village)$"]["name"]({BBOX});'
+            f'node["place"="hamlet"]["name"]["ele"]({BBOX}););out qt;')
+# Seilbahnen: NUR cable_car + gondola (Michael-Entscheid). Linien + zugehoerige Stationen;
+# als Punkt spaeter die niedrigste Station (Talstation) je Linie.
+CABLE_Q = (f'[out:json][timeout:300];'
+           f'way["aerialway"~"^(cable_car|gondola)$"]({BBOX})->.lines;'
+           f'(.lines; node(w.lines)["aerialway"="station"];);out;')
+# Wanderparkplaetze: hiking=yes ODER Name enthaelt Wanderparkplatz/Wanderer. v1 = nur Zaehlen.
+PARK_Q = (f'[out:json][timeout:300];'
+          f'(nwr["amenity"="parking"]["hiking"="yes"]({BBOX});'
+          f'nwr["amenity"="parking"]["name"~"Wanderparkplatz|Wanderer",i]({BBOX}););out center;')
+PLACE_RANK = {"city": 3, "town": 2, "village": 1, "hamlet": 0}
 
 # ── Peak hierarchy tiers (0 Mont Blanc · 1 Länder-Höchste · 2/3/4 Höhenbänder) ──
 NAMED_PEAKS = {   # name substring : (tier, approx ele) — Wikidata-verified values
@@ -111,13 +127,42 @@ def query(q):
             try:
                 req = urllib.request.Request(ep, data=data,
                                              headers={"User-Agent": "Bergtouren-Map/1.0"})
-                with urllib.request.urlopen(req, timeout=320) as r:
+                with urllib.request.urlopen(req, timeout=90) as r:   # haengende Server schnell durchfallen lassen
                     return json.loads(r.read())
             except Exception as e:  # noqa: BLE001
                 last = e
-                print(f"   {ep.split('/')[2]} fehlgeschlagen ({type(e).__name__}); naechster...")
+                print(f"   {ep.split('/')[2]} fehlgeschlagen ({type(e).__name__}); naechster...", flush=True)
         time.sleep(8)
     raise last
+
+
+def query_tiled(tmpl, rows=3, cols=4):
+    """Split the Alpen-BBOX into a grid and merge elements (village-Query ist sonst zu schwer)."""
+    S, W, N, E = 42.5, 3.5, 49.5, 18.5
+    dlat, dlon = (N - S) / rows, (E - W) / cols
+    seen, out = set(), []
+    for i in range(rows):
+        for j in range(cols):
+            bb = f"{S+i*dlat:.3f},{W+j*dlon:.3f},{S+(i+1)*dlat:.3f},{W+(j+1)*dlon:.3f}"
+            els = query(tmpl(bb)).get("elements", [])
+            for e in els:
+                k = (e.get("type"), e.get("id"))
+                if k not in seen:
+                    seen.add(k); out.append(e)
+            print(f"     Kachel {i},{j}: +{len(els)} (gesamt {len(out)})")
+    return out
+
+
+def _places_q(bb):
+    return (f'[out:json][timeout:120];'
+            f'(node["place"~"^(city|town|village)$"]["name"]({bb});'
+            f'node["place"="hamlet"]["name"]["ele"]({bb}););out qt;')
+
+
+def _park_q(bb):
+    return (f'[out:json][timeout:90];'
+            f'(nwr["amenity"="parking"]["hiking"="yes"]({bb});'
+            f'nwr["amenity"="parking"]["name"~"Wanderparkplatz|Wanderer",i]({bb}););out center;')
 
 
 def lonlat(el):
@@ -216,6 +261,123 @@ def passes_geojson(elements):
     return feats
 
 
+def places_geojson(elements):
+    feats = []
+    for el in elements:
+        if el.get("type") != "node":
+            continue
+        tags = el.get("tags") or {}
+        name, place = tags.get("name"), tags.get("place")
+        lon, lat = el.get("lon"), el.get("lat")
+        if lon is None or not name or place not in PLACE_RANK:
+            continue
+        ele = None
+        raw = str(tags.get("ele", "")).replace(",", ".").split()
+        if raw:
+            try:
+                ele = round(float(raw[0]))
+            except (ValueError, IndexError):
+                ele = None
+        if place == "hamlet" and (ele is None or ele <= 1200):   # nur Bergdoerfer
+            continue
+        props = {"name": name, "place": place, "rank": PLACE_RANK[place]}
+        if ele is not None:
+            props["ele"] = ele
+        pop = tags.get("population")
+        if pop:
+            try:
+                props["pop"] = int(re.sub(r"[^\d]", "", pop))
+            except ValueError:
+                pass
+        feats.append({"type": "Feature",
+                      "geometry": {"type": "Point", "coordinates": [round(lon, 5), round(lat, 5)]},
+                      "properties": props})
+    feats.sort(key=lambda f: (-f["properties"]["rank"], -(f["properties"].get("pop") or 0)))
+    return feats
+
+
+def _ele_of(node):
+    raw = str((node.get("tags") or {}).get("ele", "")).replace(",", ".").split()
+    try:
+        return float(raw[0])
+    except (ValueError, IndexError):
+        return None
+
+
+def cableways_geojson(elements):
+    """One point per cable_car/gondola line at its VALLEY station (lowest ele station)."""
+    stations, ways = {}, []
+    for el in elements:
+        tags = el.get("tags") or {}
+        if el.get("type") == "node" and tags.get("aerialway") == "station":
+            stations[el["id"]] = el
+        elif el.get("type") == "way" and tags.get("aerialway") in ("cable_car", "gondola"):
+            ways.append(el)
+    feats, seen = [], set()
+    for w in ways:
+        tags = w.get("tags") or {}
+        st = [stations[nid] for nid in w.get("nodes", []) if nid in stations]
+        if not st:
+            continue
+        with_ele = [n for n in st if _ele_of(n) is not None]
+        valley = min(with_ele, key=_ele_of) if with_ele else st[0]
+        key = (round(valley["lon"], 4), round(valley["lat"], 4))
+        if key in seen:
+            continue
+        seen.add(key)
+        name = tags.get("name") or (valley.get("tags") or {}).get("name")
+        if not name:
+            continue
+        props = {"name": name}
+        ve = _ele_of(valley)
+        if ve is not None:
+            props["ele"] = round(ve)
+        if with_ele:
+            props["ele_top"] = round(_ele_of(max(with_ele, key=_ele_of)))   # Bergstation fuer Tal->Berg
+        feats.append({"type": "Feature",
+                      "geometry": {"type": "Point", "coordinates": [round(valley["lon"], 5), round(valley["lat"], 5)]},
+                      "properties": props})
+    return feats
+
+
+def parking_points(elements):
+    pts = []
+    for el in elements:
+        lon, lat = lonlat(el)
+        if lon is None:
+            continue
+        pts.append((lon, lat, (el.get("tags") or {}).get("name", "")))
+    return pts
+
+
+def parking_country_report(pts):
+    """Count Wander-parking per SOIUSA country (v1 = kein Layer, nur Report)."""
+    try:
+        from shapely.geometry import Point, shape
+        from shapely.ops import unary_union
+        from shapely.prepared import prep
+    except ImportError:
+        print("  (shapely fehlt -> kein Parkplatz-Report)")
+        return None
+    fc = json.loads((HERE / "soiusa_sts_colored.geojson").read_text(encoding="utf-8"))
+    byc = {}
+    for f in fc["features"]:
+        byc.setdefault(f["properties"].get("country", "??"), []).append(shape(f["geometry"]))
+    prepped = {c: prep(unary_union(g)) for c, g in byc.items()}
+    counts = {c: 0 for c in prepped}
+    outside = named = 0
+    for lon, lat, nm in pts:
+        p = Point(lon, lat)
+        hit = next((c for c, pr in prepped.items() if pr.contains(p)), None)
+        if hit:
+            counts[hit] += 1
+        else:
+            outside += 1
+        if nm:
+            named += 1
+    return {"counts": counts, "outside": outside, "total": len(pts), "named": named}
+
+
 def alps_filter(feats):
     """Keep only features whose point lies inside the SOIUSA polygons (drop non-alpine)."""
     try:
@@ -230,6 +392,23 @@ def alps_filter(feats):
     return [f for f in feats if union.contains(Point(f["geometry"]["coordinates"]))]
 
 
+def mask_filter(feats, buffer_deg):
+    """Keep points inside the SOIUSA mask expanded by buffer_deg (Orte: ~5 km Talrand)."""
+    try:
+        from shapely.geometry import Point, shape
+        from shapely.ops import unary_union
+        from shapely.prepared import prep
+    except ImportError:
+        print("  (shapely fehlt -> kein Maske+Puffer-Clip)")
+        return feats
+    fc = json.loads((HERE / "soiusa_sts_colored.geojson").read_text(encoding="utf-8"))
+    u = unary_union([shape(f["geometry"]) for f in fc["features"]])
+    if buffer_deg:
+        u = u.buffer(buffer_deg)
+    m = prep(u)
+    return [f for f in feats if m.contains(Point(f["geometry"]["coordinates"]))]
+
+
 def save(name, feats, label):
     (HERE / name).write_text(json.dumps({"type": "FeatureCollection", "features": feats},
                                         ensure_ascii=False), encoding="utf-8")
@@ -237,45 +416,74 @@ def save(name, feats, label):
     print(f"-> {name}  {len(feats)} {label}  {kb} KB")
 
 
-out_p = HERE / "soiusa_osm_peaks.geojson"
-if out_p.exists() and len(json.loads(out_p.read_text(encoding="utf-8"))["features"]) > 1000:
-    print("Gipfel vorhanden — lade + clippe auf SOIUSA...")
-    pf = json.loads(out_p.read_text(encoding="utf-8"))["features"]
-else:
-    print("Overpass: Gipfel (kann etwas dauern)...")
-    pf = peaks_geojson(query(PEAKS_Q).get("elements", []))
-before = len(pf)
-pf = alps_filter(pf)
-lm = 0
-for f in pf:                       # hierarchy tier + landmark flag
-    nm, ele = f["properties"].get("name", ""), f["properties"].get("ele", 0)
-    f["properties"]["tier"] = peak_tier(nm, ele)
-    if is_landmark(nm, ele):
-        f["properties"]["landmark"] = 1
-        lm += 1
-save("soiusa_osm_peaks.geojson", pf, f"Gipfel (von {before} nach SOIUSA-Clip, {lm} Landmarks)")
-tier01 = [f["properties"]["name"] for f in pf if f["properties"]["tier"] <= 1]
-print(f"   Tier 0/1 (Alpen-König + Länder-Höchste): {tier01}")
+# --anreise: nur die neue Anreise-Datenschicht ziehen (Gipfel/Huetten/Paesse unangetastet).
+_ARGS = sys.argv[1:]
+RUN_CORE = "--anreise" not in _ARGS
+RUN_ANREISE = True
 
-print("Overpass: Huetten...")
-hf = huts_geojson(query(HUTS_Q).get("elements", []))
-before = len(hf)
-hf = alps_filter(hf)
-save("soiusa_osm_huts.geojson", hf, f"Huetten (von {before} nach SOIUSA-Clip)")
+if RUN_CORE:
+    out_p = HERE / "soiusa_osm_peaks.geojson"
+    if out_p.exists() and len(json.loads(out_p.read_text(encoding="utf-8"))["features"]) > 1000:
+        print("Gipfel vorhanden — lade + clippe auf SOIUSA...")
+        pf = json.loads(out_p.read_text(encoding="utf-8"))["features"]
+    else:
+        print("Overpass: Gipfel (kann etwas dauern)...")
+        pf = peaks_geojson(query(PEAKS_Q).get("elements", []))
+    before = len(pf)
+    pf = alps_filter(pf)
+    lm = 0
+    for f in pf:                       # hierarchy tier + landmark flag
+        nm, ele = f["properties"].get("name", ""), f["properties"].get("ele", 0)
+        f["properties"]["tier"] = peak_tier(nm, ele)
+        if is_landmark(nm, ele):
+            f["properties"]["landmark"] = 1
+            lm += 1
+    save("soiusa_osm_peaks.geojson", pf, f"Gipfel (von {before} nach SOIUSA-Clip, {lm} Landmarks)")
+    tier01 = [f["properties"]["name"] for f in pf if f["properties"]["tier"] <= 1]
+    print(f"   Tier 0/1 (Alpen-König + Länder-Höchste): {tier01}")
 
-print("Overpass: Paesse...")
-xf = passes_geojson(query(PASS_Q).get("elements", []))
-before = len(xf)
-xf = alps_filter(xf)
-for clat, clon in FAMOUS_PASS_COORDS:      # guarantee curated famous passes via nearest match
-    best, bd = None, 9e9
-    for f in xf:
-        lo, la = f["geometry"]["coordinates"]
-        d = (la - clat) ** 2 + (lo - clon) ** 2
-        if d < bd:
-            bd, best = d, f
-    if best and bd <= 0.03 ** 2:
-        best["properties"]["famous"] = 1
-fam = sum(1 for f in xf if f["properties"]["famous"])
-save("soiusa_osm_passes.geojson", xf, f"Paesse (von {before} nach Clip, {fam} famous)")
+    print("Overpass: Huetten...")
+    hf = huts_geojson(query(HUTS_Q).get("elements", []))
+    before = len(hf)
+    hf = alps_filter(hf)
+    save("soiusa_osm_huts.geojson", hf, f"Huetten (von {before} nach SOIUSA-Clip)")
+
+    print("Overpass: Paesse...")
+    xf = passes_geojson(query(PASS_Q).get("elements", []))
+    before = len(xf)
+    xf = alps_filter(xf)
+    for clat, clon in FAMOUS_PASS_COORDS:      # guarantee curated famous passes via nearest match
+        best, bd = None, 9e9
+        for f in xf:
+            lo, la = f["geometry"]["coordinates"]
+            d = (la - clat) ** 2 + (lo - clon) ** 2
+            if d < bd:
+                bd, best = d, f
+        if best and bd <= 0.03 ** 2:
+            best["properties"]["famous"] = 1
+    fam = sum(1 for f in xf if f["properties"]["famous"])
+    save("soiusa_osm_passes.geojson", xf, f"Paesse (von {before} nach Clip, {fam} famous)")
+
+if RUN_ANREISE:
+    print("Overpass: Orte (gekachelt)...")
+    plf = places_geojson(query_tiled(_places_q, 3, 4))
+    before = len(plf)
+    plf = mask_filter(plf, 0.06)                 # SOIUSA-Maske + ~5 km Talrand-Puffer
+    ha = sum(1 for f in plf if f["properties"]["place"] == "hamlet")
+    save("soiusa_osm_places.geojson", plf, f"Orte (von {before} nach Maske+5km, {ha} Bergdoerfer)")
+
+    print("Overpass: Seilbahnen (Talstationen)...")
+    cbf = cableways_geojson(query(CABLE_Q).get("elements", []))
+    before = len(cbf)
+    cbf = alps_filter(cbf)
+    save("soiusa_osm_cableways.geojson", cbf, f"Seilbahn-Talstationen cable_car/gondola (von {before} nach Clip)")
+
+    print("Overpass: Wanderparkplaetze (v1 = nur Zaehl-Report, KEIN Layer; gekachelt)...")
+    rep = parking_country_report(parking_points(query_tiled(_park_q, 3, 4)))
+    if rep:
+        print(f"   Parkplaetze roh: {rep['total']} (davon benannt: {rep['named']})")
+        for c in sorted(rep["counts"], key=lambda k: -rep["counts"][k]):
+            print(f"     {c}: {rep['counts'][c]}")
+        print(f"     ausserhalb SOIUSA-Maske: {rep['outside']}")
+        (HERE / "parking_report.json").write_text(json.dumps(rep, ensure_ascii=False, indent=1), encoding="utf-8")
 print("Naechster Schritt: python build.py")
