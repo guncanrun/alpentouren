@@ -82,6 +82,20 @@ highlights_json = load_compact("soiusa_highlights_clean.geojson")
 lp_json         = load_compact("soiusa_sts_label_points.geojson")
 mask_json       = load_compact("soiusa_mask.geojson")
 
+# ── Anreise-Orte v1: Layer + Suche auf NUR city/town reduzieren (Cowork-QA 03.07.) ──
+# Village/hamlet fliegen aus Layer UND Suchindex: 494 statt 14 916 Features
+# (~80 statt 2450 KB, Standalone -2,2 MB). Die volle soiusa_osm_places.geojson bleibt
+# als Rohquelle liegen (nicht neu fetchen). Der spätere Village-Nachzug
+# „Top-N je Gruppe nach Einwohnern" nutzt das bereits vorhandene pop-Feld
+# (8146/12991 Villages getaggt). Erzeugt die schlanke, deployte Quelle neu.
+_places_full = json.loads((HERE / "soiusa_osm_places.geojson").read_text(encoding="utf-8"))
+_places_v1 = {"type": "FeatureCollection",
+              "features": [f for f in _places_full["features"]
+                           if f["properties"].get("place") in ("city", "town")]}
+(HERE / "soiusa_osm_places_v1.geojson").write_text(
+    json.dumps(_places_v1, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+print(f"  Orte-v1: {len(_places_v1['features'])} city/town (von {len(_places_full['features'])} roh)")
+
 # E8: strip the personal "visited" layer from the PUBLIC embedded data.
 # visited -> 0 everywhere (so the visited-only layers render nothing and every
 # group is drawn uniformly), tour_ids dropped, highlights emptied.
@@ -966,7 +980,7 @@ map.on('load',()=>{
   map.addSource('osm-peaks', {type:'geojson', data:OSM_PEAKS  || './soiusa_osm_peaks.geojson'});
   map.addSource('osm-huts',  {type:'geojson', data:OSM_HUTS   || './soiusa_osm_huts.geojson'});
   map.addSource('osm-passes',{type:'geojson', data:OSM_PASSES || './soiusa_osm_passes.geojson'});
-  map.addSource('osm-places',{type:'geojson', data:OSM_PLACES || './soiusa_osm_places.geojson'});     // Anreise: Orte
+  map.addSource('osm-places',{type:'geojson', data:OSM_PLACES || './soiusa_osm_places_v1.geojson'});     // Anreise: Orte (v1: nur city/town)
   map.addSource('osm-cable', {type:'geojson', data:OSM_CABLE  || './soiusa_osm_cableways.geojson'});   // Anreise: Seilbahn-Talstationen
 
   // ── Non-Alpine mask — always on ───────────────────────────────────────────
@@ -2016,7 +2030,7 @@ function buildSearchIndex(){
   add(OSM_PEAKS  || './soiusa_osm_peaks.geojson','peak',1);
   add(OSM_HUTS   || './soiusa_osm_huts.geojson','hut',2);
   add(OSM_PASSES || './soiusa_osm_passes.geojson','pass',3);
-  add(OSM_PLACES || './soiusa_osm_places.geojson','place',4);   // Anreise: Ortssuche
+  add(OSM_PLACES || './soiusa_osm_places_v1.geojson','place',4);   // Anreise: Ortssuche (v1: nur city/town)
 }
 function parseCoord(q){
   q=(q||'').trim(); if(!q) return null;
@@ -2416,7 +2430,7 @@ if STANDALONE:
     osm_peaks  = load_compact("soiusa_osm_peaks.geojson")
     osm_huts   = load_compact("soiusa_osm_huts.geojson")
     osm_passes = load_compact("soiusa_osm_passes.geojson")
-    osm_places = load_compact("soiusa_osm_places.geojson")
+    osm_places = load_compact("soiusa_osm_places_v1.geojson")   # v1: nur city/town (schlank)
     osm_cable  = load_compact("soiusa_osm_cableways.geojson")
     borders_gj = load_compact("soiusa_borders.geojson")
 else:
