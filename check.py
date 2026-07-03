@@ -82,6 +82,9 @@ checks = [
     ("togglePasses fn",               "function togglePasses"),
     ("passes toggle switch",          'id="tglPasses"'),
     ("hut club icon",                 "'hut-club'"),
+    # Erinnerungs-Feinschliff §3 — Seilbahn-nah-Chip (beide Builds)
+    ("hut cable chip fn",             "function hutCableChip"),
+    ("hut cable chip label",          "Seilbahn-nah"),
     # Phase 2c — Berge nach Klick
     ("peaks-in-group layer",          "id:'peaks-in-group'"),
     ("peaks-highest layer",           "id:'peaks-highest'"),
@@ -172,7 +175,9 @@ for bad, label in [("Tour mit Papa", "private tab label"),
                    ("const CHRONO", "chronology data (privat-only)"),
                    ("jahr_unsicher", "year-uncertainty field (privat-only)"),
                    ("privat_assets", "private photo asset path (privat-only)"),
-                   ("openLightbox", "photo lightbox fn (privat-only)")]:
+                   ("openLightbox", "photo lightbox fn (privat-only)"),
+                   ("Ihr wart hier", "hut visit badge (privat-only, §1)"),
+                   ("const HUT_VISITS", "hut visit map (privat-only, §1)")]:
     if bad in html:
         print(f"FAIL public leak: '{bad}' ({label}) present in index.html")
         errors.append(f"public leak: {bad}")

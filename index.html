@@ -186,6 +186,15 @@
   .hut-links{margin-top:7px;display:flex;flex-direction:column;gap:3px}
   .hut-links a{font-size:12px;color:var(--accent2);text-decoration:none}
   .hut-links a:hover{text-decoration:underline}
+  /* §1: Besuchsjahr-Zeile (nur Privat) — warmer Erinnerungs-Akzent (Orange) */
+  .hut-visit{margin:6px 0 2px;font-size:12px;color:#ffcf94;line-height:1.4}
+  .hut-visit .lbl{color:var(--muted);margin-right:4px}
+  .hut-visit b{color:var(--accent);font-variant-numeric:tabular-nums}
+  /* §3: „Seilbahn-nah"-Chip (beide Builds) — dezent, kein neues Farbsignal (muted) */
+  .hut-cable{display:inline-flex;align-items:center;gap:6px;margin:5px 0 2px;padding:1px 8px;
+    border-radius:10px;background:rgba(255,255,255,.06);border:1px solid var(--line);
+    font-size:11px;color:var(--muted);cursor:help}
+  .hut-cable b{color:#c2ccd6;font-weight:600}
 
   /* ── About / Info card ── */
   #about{position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:10;
@@ -1316,6 +1325,8 @@ function hutPopupHtml(p){
   let html = '<div class="hut-pop"><div class="sp-name">'+esc(p.name||'Hütte')+'</div>';
   if(badge) html += '<span class="hut-badge">'+esc(badge)+'</span>';
   if(meta.length) html += '<div class="hut-meta">'+meta.join(' · ')+'</div>';
+  html += hutVisitBadge(p.name);         // §1: Besuchsjahr-Badge (nur Privat)
+  html += hutCableChip(w);               // §3: „Seilbahn-nah"-Chip (beide Builds)
   if(w && w.img && w.img_attr){          // Bild NUR mit Attribution (Wikimedia CC-Pflicht)
     html += '<img class="hut-img" src="'+w.img+'" alt="" loading="lazy">'+
             '<div class="hut-attr">'+esc(w.img_attr)+'</div>';
@@ -1326,6 +1337,21 @@ function hutPopupHtml(p){
   if(links.length) html += '<div class="hut-links">'+links.join('')+'</div>';
   return html + '</div>';
 }
+
+// §3: „Seilbahn-nah"-Chip aus den G2-Feldern sb_* von HUTS_WIKI (beide Builds).
+// Nur wenn eine Personen-Seilbahn (cable_car/gondola) ≤ 1 km entfernt ist (sb_d in Metern).
+function hutCableChip(w){
+  if(!w || w.sb_d==null || w.sb_d>1000) return '';
+  const d=w.sb_d, dtxt = d>=1000 ? (d/1000).toFixed(1).replace('.',',')+' km' : d+' m';
+  const nm = w.sb_n ? ' · '+_escp(w.sb_n) : '';
+  return '<div class="hut-cable" title="Personen-Seilbahn (Talstation) in der Nähe – mögliche Aufstiegshilfe">'+
+         '🚡 <b>Seilbahn-nah</b> <span>'+dtxt+nm+'</span></div>';
+}
+
+
+
+function hutVisitBadge(){ return ''; }   // Public: kein Besuchs-Badge (E8-Hygiene)
+
 
 // ── Tour markup for a visited group (private build only) ──────────────────────
 

@@ -96,6 +96,44 @@ _places_v1 = {"type": "FeatureCollection",
     json.dumps(_places_v1, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
 print(f"  Orte-v1: {len(_places_v1['features'])} city/town (von {len(_places_full['features'])} roh)")
 
+# ── §1 „Ihr wart hier": OSM-Hütten-Name -> Besuchsjahre (nur Privat-Build) ──────
+# Build-seitiger, normalisierter Match (lowercase · Diakritika/ß · Satzzeichen+Leerraum
+# raus) — EXAKT gegen die kommaseparierten huetten-Einträge der Touren. KEIN
+# Suffix-Stripping / keine Kurzform-Expansion: Fragmente wie „Kaindl-" bleiben bewusst
+# unmatched -> Nicht-Match-Liste für Coworks Alias-Kuratierung (Befund).
+import unicodedata as _ud
+def _hutnorm(s):
+    s = str(s or "").lower().replace("ß", "ss")
+    s = _ud.normalize("NFKD", s)
+    s = "".join(c for c in s if not _ud.combining(c))
+    return re.sub(r"[^a-z0-9]", "", s)
+
+hut_visits, hut_nonmatch = {}, []
+if not PUBLIC:
+    _osm_hn = {}
+    for _f in json.loads((HERE / "soiusa_osm_huts.geojson").read_text(encoding="utf-8"))["features"]:
+        _nm = _f["properties"].get("name")
+        if _nm:
+            _osm_hn.setdefault(_hutnorm(_nm), set()).add(_nm)
+    for _t in data["touren"]:
+        _m = re.search(r"\d{4}", str(_t.get("jahr", "")))
+        _y = _m.group() if _m else None
+        for _raw in (_t.get("huetten") or "").split(","):
+            _e = _raw.strip()
+            if not _e:
+                continue
+            _ne = _hutnorm(_e)
+            if _ne and _ne in _osm_hn:
+                for _disp in _osm_hn[_ne]:
+                    hut_visits.setdefault(_disp, set()).add(_y)
+            else:
+                hut_nonmatch.append((_e, _y))
+    hut_visits = {k: sorted(v) for k, v in hut_visits.items()}   # Jahre chronologisch
+    print(f"  §1 Ihr-wart-hier: {len(hut_visits)} OSM-Hütten gematcht · {len(hut_nonmatch)} Nicht-Matches")
+    for _e, _y in hut_nonmatch:
+        print(f"     NICHT-MATCH [{_y}] {_e}")
+hut_visits_json = json.dumps(hut_visits, ensure_ascii=False, separators=(",", ":"))
+
 # E8: strip the personal "visited" layer from the PUBLIC embedded data.
 # visited -> 0 everywhere (so the visited-only layers render nothing and every
 # group is drawn uniformly), tour_ids dropped, highlights emptied.
@@ -332,6 +370,15 @@ __HEAD_LIBS__
   .hut-links{margin-top:7px;display:flex;flex-direction:column;gap:3px}
   .hut-links a{font-size:12px;color:var(--accent2);text-decoration:none}
   .hut-links a:hover{text-decoration:underline}
+  /* §1: Besuchsjahr-Zeile (nur Privat) — warmer Erinnerungs-Akzent (Orange) */
+  .hut-visit{margin:6px 0 2px;font-size:12px;color:#ffcf94;line-height:1.4}
+  .hut-visit .lbl{color:var(--muted);margin-right:4px}
+  .hut-visit b{color:var(--accent);font-variant-numeric:tabular-nums}
+  /* §3: „Seilbahn-nah"-Chip (beide Builds) — dezent, kein neues Farbsignal (muted) */
+  .hut-cable{display:inline-flex;align-items:center;gap:6px;margin:5px 0 2px;padding:1px 8px;
+    border-radius:10px;background:rgba(255,255,255,.06);border:1px solid var(--line);
+    font-size:11px;color:var(--muted);cursor:help}
+  .hut-cable b{color:#c2ccd6;font-weight:600}
 
   /* ── About / Info card ── */
   #about{position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:10;
@@ -1642,6 +1689,8 @@ function hutPopupHtml(p){
   let html = '<div class="hut-pop"><div class="sp-name">'+esc(p.name||'Hütte')+'</div>';
   if(badge) html += '<span class="hut-badge">'+esc(badge)+'</span>';
   if(meta.length) html += '<div class="hut-meta">'+meta.join(' · ')+'</div>';
+  html += hutVisitBadge(p.name);         // §1: Besuchsjahr-Badge (nur Privat)
+  html += hutCableChip(w);               // §3: „Seilbahn-nah"-Chip (beide Builds)
   if(w && w.img && w.img_attr){          // Bild NUR mit Attribution (Wikimedia CC-Pflicht)
     html += '<img class="hut-img" src="'+w.img+'" alt="" loading="lazy">'+
             '<div class="hut-attr">'+esc(w.img_attr)+'</div>';
@@ -1652,6 +1701,30 @@ function hutPopupHtml(p){
   if(links.length) html += '<div class="hut-links">'+links.join('')+'</div>';
   return html + '</div>';
 }
+
+// §3: „Seilbahn-nah"-Chip aus den G2-Feldern sb_* von HUTS_WIKI (beide Builds).
+// Nur wenn eine Personen-Seilbahn (cable_car/gondola) ≤ 1 km entfernt ist (sb_d in Metern).
+function hutCableChip(w){
+  if(!w || w.sb_d==null || w.sb_d>1000) return '';
+  const d=w.sb_d, dtxt = d>=1000 ? (d/1000).toFixed(1).replace('.',',')+' km' : d+' m';
+  const nm = w.sb_n ? ' · '+_escp(w.sb_n) : '';
+  return '<div class="hut-cable" title="Personen-Seilbahn (Talstation) in der Nähe – mögliche Aufstiegshilfe">'+
+         '🚡 <b>Seilbahn-nah</b> <span>'+dtxt+nm+'</span></div>';
+}
+
+/* PRIV:START */
+// §1: build-seitige Zuordnung OSM-Hütten-Name -> Besuchsjahre (nur Privat-Build).
+const HUT_VISITS = __HUT_VISITS__;   // {osmName:[jahr,…]} normalisiert gematcht in build.py
+function hutVisitBadge(name){
+  const ys = HUT_VISITS[name];
+  if(!ys || !ys.length) return '';
+  return '<div class="hut-visit"><span class="lbl">Ihr wart hier:</span>'+
+         ys.map(y=>'<b>'+_escp(y)+'</b>').join(' · ')+'</div>';
+}
+/* PRIV:END */
+/* PUB:START */
+function hutVisitBadge(){ return ''; }   // Public: kein Besuchs-Badge (E8-Hygiene)
+/* PUB:END */
 
 // ── Tour markup for a visited group (private build only) ──────────────────────
 /* PRIV:START */
@@ -2305,7 +2378,7 @@ function chronoSetYear(idx, opts){
 
 // ── Play/Pause (~2,5 s/Jahr, kein Loop, stoppt am letzten Jahr) ──
 function chronoPlayStep(){
-  if(_chronoIdx>=CHRONO.years.length-1){ chronoPause(); return; }   // kein Loop
+  if(_chronoIdx>=CHRONO.years.length-1){ chronoFinale(); return; }   // kein Loop -> Abspann
   chronoSetYear(_chronoIdx+1);
   // B1b: naechstes Jahr erst nach Ankunft (moveend) + Lese-Pause -> dynamischer Takt.
   // Fallback, falls kein moveend feuert (Jahr ohne Koordinaten -> kein Flug).
@@ -2329,6 +2402,24 @@ function chronoPause(){
   const b=document.getElementById('chronoPlay'); if(b){ b.textContent='▶'; b.title='Abspielen'; b.classList.remove('on'); }
 }
 function chronoPlayToggle(){ _chronoPlaying?chronoPause():chronoPlay(); }
+
+// §2: Abspann nach dem letzten Play-Schritt — Rückflug zur Übersicht + Bilanz-Caption.
+// Zahlen aus den Daten berechnet (nicht hartkodiert). Bleibt bis zur Nutzer-Interaktion.
+function chronoFinale(){
+  chronoPause();                                         // Play-Button zurück auf ▶ (Neustart möglich)
+  const all=Object.keys(CHRONO.stsYears);
+  map.setFilter('chrono-cur', ['in',['get','STS'],['literal',[]]]);   // alle besuchten Gruppen
+  map.setFilter('chrono-past',['in',['get','STS'],['literal',all]]);  //   einheitlich im Bild
+  overview();                                            // zurück zur Gesamt-Übersicht (Home-Ausdehnung)
+  const yrs=CHRONO.years, minY=yrs[0], maxY=yrs[yrs.length-1];
+  const spanY=Math.max(0, maxY-minY);
+  const cap=document.getElementById('chronoCap');
+  if(cap) cap.innerHTML =
+    '<div class="cc-h"><span class="cc-y">'+minY+'&ndash;'+maxY+'</span>'+
+    '<span class="cc-d">R&uuml;ckblick</span></div>'+
+    '<div class="cc-t">'+spanY+' Jahre &middot; '+TOUREN.length+' Touren &middot; '+
+    all.length+' Gebiete</div>';
+}
 
 function chronoEnter(){
   if(_chronoOn || !CHRONO.years.length) return;
@@ -2448,6 +2539,7 @@ html = html.replace("__OSM_PASSES__", osm_passes)
 html = html.replace("__OSM_PLACES__", osm_places)
 html = html.replace("__OSM_CABLE__",  osm_cable)
 html = html.replace("__BORDERS__",    borders_gj)
+html = html.replace("__HUT_VISITS__", hut_visits_json)   # §1: Besuchsjahre je OSM-Hütte (Privat)
 html = html.replace("__HEAD_LIBS__",  head_libs)   # zuletzt (Lib-Inhalt nicht rescannen)
 
 # ── Symmetric marker stripping (E2 + E8) ──────────────────────────────────────
