@@ -1441,6 +1441,31 @@ map.on('load',()=>{
     map.on('mouseenter',l,()=>map.getCanvas().style.cursor='pointer');
     map.on('mouseleave',l,()=>map.getCanvas().style.cursor='');
   });
+
+  // ── T3 (Michael 03.07.): Cursor-Feedback beim Drehen/Neigen/Zoomen ─────────
+  // Rechtsklick-Drag horizontal-dominant = Drehen -> 'grabbing'; vertikal-dominant =
+  // Neigen -> 'nesw-resize'. Mausrad -> kurz 'zoom-in'/'zoom-out'. Nur Desktop
+  // (pointer:fine); Touch/Stift unberührt. Setzt den Canvas-Cursor direkt (MapLibre-
+  // eigene Cursor sind hier unauffällig). Layer-Hover-'pointer' (§7) bleibt erhalten,
+  // da Rechtsklick-Drag und Hover sich nicht überschneiden.
+  if(window.matchMedia && window.matchMedia('(pointer: fine)').matches){
+    const _cv = map.getCanvas();
+    let _rbtn=false, _sx=0, _sy=0, _zt=null;
+    _cv.addEventListener('mousedown', e=>{ if(e.button===2){ _rbtn=true; _sx=e.clientX; _sy=e.clientY; _cv.style.cursor='grabbing'; } });
+    window.addEventListener('mousemove', e=>{
+      if(!_rbtn) return;
+      const dx=Math.abs(e.clientX-_sx), dy=Math.abs(e.clientY-_sy);
+      _cv.style.cursor = (dx>=dy) ? 'grabbing' : 'nesw-resize';   // Drehen bzw. Neigen
+    });
+    const _endRot = e=>{ if(_rbtn){ _rbtn=false; _cv.style.cursor=''; } };
+    window.addEventListener('mouseup', _endRot);
+    window.addEventListener('blur', _endRot);   // Sicherheitsnetz: Fenster verliert Fokus mitten im Drag
+    _cv.addEventListener('wheel', e=>{
+      if(_rbtn) return;                          // während Drehen/Neigen kein Zoom-Cursor
+      _cv.style.cursor = e.deltaY<0 ? 'zoom-in' : 'zoom-out';
+      clearTimeout(_zt); _zt=setTimeout(()=>{ if(!_rbtn) _cv.style.cursor=''; }, 260);
+    }, {passive:true});
+  }
   // Anreise: Klick-Popups (Ort = Name/Typ/Höhe/Einwohner; Seilbahn = Name + Tal->Berg).
   ['places-sq','places-dot','places-label'].forEach(l=>map.on('click',l,e=>{
     stsPopup.remove();
