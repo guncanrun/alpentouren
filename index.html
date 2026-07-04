@@ -72,20 +72,21 @@
   #title .kpi{margin-top:10px;display:flex;gap:16px}
   #title .kpi b{display:block;font-size:22px;color:var(--accent)}
   #title .kpi span{font-size:11px;color:var(--muted)}
-  /* ── Legend box (bottom-right, collapsible) ── */
-  #legend{position:absolute;bottom:150px;right:16px;z-index:5;width:186px;
-    background:var(--panel);backdrop-filter:blur(8px);border:1px solid var(--line);
-    border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.45);overflow:hidden}
-  #legend .lh{padding:9px 12px;font-size:12px;font-weight:600;cursor:pointer;
-    display:flex;justify-content:space-between;align-items:center;user-select:none}
-  #legend .lh::after{content:'▾';color:var(--muted);transition:transform .3s}
-  #legend.open .lh::after{transform:rotate(180deg)}
-  #legend .ll{max-height:0;overflow:hidden;transition:max-height .3s ease}
-  #legend.open .ll{max-height:240px}
-  #legend .lrow{display:flex;align-items:center;gap:8px;padding:4px 12px 4px;
+  /* ── T4: Legende (Sektoren) — aufklappbarer Abschnitt der Title-Card ── */
+  #legend{margin-top:11px;border-top:1px solid var(--line);overflow:hidden}
+  #legend .lh{padding:9px 0 0;font-size:12px;font-weight:600;cursor:pointer;
+    display:flex;justify-content:space-between;align-items:center;gap:10px;user-select:none}
+  #legend .lh .lt{display:flex;align-items:center;gap:6px}
+  #legend .lh .lt::after{content:'▾';color:var(--muted);transition:transform .3s;font-size:.85em}
+  #legend.open .lh .lt::after{transform:rotate(180deg)}
+  #legend .ll{max-height:0;overflow:hidden;transition:max-height .35s ease}
+  #legend.open .ll{max-height:280px}
+  #legend .lsub{font-size:10.5px;color:var(--muted);padding:6px 0 2px}
+  #legend .lrow{display:flex;align-items:center;gap:8px;padding:3px 0;
     font-size:11.5px;color:var(--txt)}
-  #legend .lrow:last-child{padding-bottom:10px}
-  #legend .lsep{height:1px;background:var(--line);margin:6px 12px}
+  #legend .lsep{height:1px;background:var(--line);margin:6px 0}
+  #legend .tgl{padding:0;gap:7px;font-size:11px;min-height:0;color:var(--muted)}
+  #legend .tgl.locked{opacity:.4;pointer-events:none}
   .sw-hl{display:inline-block;width:13px;height:13px;border:2px solid #ffb24d;border-radius:3px;flex-shrink:0}
   .sw-nw{display:inline-block;width:13px;height:13px;background:#0072B2;border-radius:3px;flex-shrink:0}
   .sw-sw{display:inline-block;width:13px;height:13px;background:#CC79A7;border-radius:3px;flex-shrink:0}
@@ -196,20 +197,28 @@
     font-size:11px;color:var(--muted);cursor:help}
   .hut-cable b{color:#c2ccd6;font-weight:600}
 
-  /* ── About / Info card ── */
-  #about{position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:10;
+  /* ── About / Info card (rechts „?" = Bedienungshilfe) + T4: „Über diese Karte" (links) ── */
+  #about,#aboutCard{position:absolute;z-index:10;
     width:min(360px,calc(100vw - 32px));background:var(--panel);backdrop-filter:blur(8px);
     border:1px solid var(--line);border-radius:14px;padding:14px 16px;
     box-shadow:0 8px 30px rgba(0,0,0,.55);display:none}
-  #about.open{display:block}
-  #about h3{margin:10px 0 6px;font-size:15px}
-  #about h3:first-of-type{margin-top:0}
-  #about p{margin:5px 0;font-size:13px;color:var(--muted);line-height:1.55}
-  #about b{color:var(--txt)}
-  #about .x{position:absolute;top:5px;right:5px;cursor:pointer;color:var(--muted);font-size:22px;
+  #about{top:16px;left:50%;transform:translateX(-50%)}
+  #aboutCard{top:16px;left:16px}   /* T4: an der Title-Card links oben */
+  #about.open,#aboutCard.open{display:block}
+  #about h3,#aboutCard h3{margin:10px 0 6px;font-size:15px}
+  #about h3:first-of-type,#aboutCard h3:first-of-type{margin-top:0}
+  #about p,#aboutCard p{margin:5px 0;font-size:13px;color:var(--muted);line-height:1.55}
+  #about b,#aboutCard b{color:var(--txt)}
+  #about .x,#aboutCard .x{position:absolute;top:5px;right:5px;cursor:pointer;color:var(--muted);font-size:22px;
     width:var(--ctl);height:var(--ctl);display:grid;place-items:center;border-radius:10px;touch-action:manipulation}
-  #about .x:hover{background:rgba(255,255,255,.08);color:#fff}
-  #about a{color:var(--accent2);text-decoration:none}
+  #about .x:hover,#aboutCard .x:hover{background:rgba(255,255,255,.08);color:#fff}
+  #about a,#aboutCard a{color:var(--accent2);text-decoration:none}
+  /* T4: kleine ⓘ-Schaltfläche in der Title-Card (Über diese Karte) */
+  #btnAbout2{margin-top:9px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+    background:none;border:none;color:var(--accent2);font-size:12px;padding:0;font-family:inherit}
+  #btnAbout2:hover{text-decoration:underline}
+  #btnAbout2 .ic{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;
+    border:1px solid var(--accent2);font-size:11px;font-style:italic;font-weight:700}
 
   /* ── Ebenen-Panel (Toggle-Switches + Legende) ── */
   #ebenen{position:absolute;top:64px;right:16px;z-index:6;width:232px;
@@ -343,7 +352,7 @@
     .maplibregl-ctrl-group{display:none !important}
     /* a) Title-Card antippbar; JS startet sie kollabiert (nur Titelzeile). */
     #title{cursor:pointer}
-    #title.collapsed p, #title.collapsed .kpi{display:none}
+    #title.collapsed p, #title.collapsed .kpi, #title.collapsed #legend, #title.collapsed #btnAbout2{display:none}
     #title.collapsed{padding:10px 14px}
     #title.collapsed h1::after{content:' \25BE';color:var(--muted);font-size:.7em;vertical-align:middle}
     /* d) Chronik-Caption auf max. 2 Zeilen begrenzen. */
@@ -361,9 +370,26 @@
   <h1>Alpen-Atlas</h1>
   <p>Die Alpen nach SOIUSA, der internationalen Alpen-Gliederung — Gruppen, Gipfel, Hütten & Pässe interaktiv. Fläche anklicken für Steckbrief.</p>
   <div class="kpi">
-    <div><b>131</b><span>Gruppen</span></div><div><b>5</b><span>Settori</span></div><div><b>909</b><span>Vereinsh&uuml;tten</span></div>
+    <div><b>131</b><span>Gruppen</span></div><div><b>5</b><span>Sektoren</span></div><div><b>909</b><span>Vereinsh&uuml;tten</span></div>
     
   </div>
+  <!-- T4: Legende „Sektoren" als aufklappbarer Abschnitt + Färbung-Master im Kopf -->
+  <div id="legend" class="open">
+    <div class="lh" onclick="event.stopPropagation();toggleLegend()">
+      <span class="lt">Sektoren</span>
+      <div id="tglFarbung" class="tgl on" onclick="event.stopPropagation();toggleFarbung()" title="F&auml;rbung an/aus"><span>F&auml;rbung</span><span class="sw"></span></div>
+    </div>
+    <div class="ll">
+      <div class="lsub">die f&uuml;nf Gro&szlig;r&auml;ume der Alpen</div>
+      <div class="lrow"><span class="sw-nw"></span>Nordwestalpen</div>
+      <div class="lrow"><span class="sw-sw"></span>S&uuml;dwestalpen</div>
+      <div class="lrow"><span class="sw-zo"></span>Zentralostalpen</div>
+      <div class="lrow"><span class="sw-no"></span>Nordostalpen</div>
+      <div class="lrow"><span class="sw-so"></span>S&uuml;dostalpen</div>
+      
+    </div>
+  </div>
+  <button id="btnAbout2" onclick="event.stopPropagation();toggleAboutCard()" title="&Uuml;ber diese Karte"><span class="ic">i</span>&Uuml;ber diese Karte</button>
 </div>
 
 <button id="btnInfo" onclick="toggleAbout()" title="Info &amp; Anleitung">?</button>
@@ -380,21 +406,34 @@
   <div id="sRes"></div>
 </div>
 
+<!-- „?" rechts oben = reine Bedienungshilfe (T4) -->
 <div id="about">
   <div class="x" onclick="toggleAbout()">&times;</div>
   <h3>So bedienst du die Karte</h3>
-  <p>Auf eine <b>farbige Fl&auml;che tippen</b> &rarr; Steckbrief der Gruppe
-     (h&ouml;chster Berg, Lage, Land). Rechts im Panel <b>„Ebenen"</b> schaltest du
-     F&auml;rbung, Namen, Landesgrenzen, Gipfel, H&uuml;tten &amp; P&auml;sse; das Haus-Icon
-     setzt die <b>Standardansicht</b> zur&uuml;ck.</p>
+  <p>Auf eine <b>farbige Fl&auml;che tippen</b> &rarr; Steckbrief der Gebirgsgruppe
+     (h&ouml;chster Berg, Lage, Land).</p>
   
+  <p><b>Ebenen</b> (Panel rechts): Namen, Landesgrenzen, Gipfel, H&uuml;tten, P&auml;sse, Orte &amp;
+     Seilbahnen zuschalten. Die <b>F&auml;rbung</b> schaltest du oben links in der Legende.</p>
+  <p><b>Drehen &amp; Neigen:</b> mit gedr&uuml;ckter <b>rechter Maustaste ziehen</b> (oder zwei
+     Finger) &ndash; waagerecht dreht, senkrecht kippt. <b>Zoom:</b> Mausrad oder <b>+/&minus;</b>.
+     Der <b>Kompass</b> stellt Norden &amp; flache Sicht wieder her.</p>
+  <p><b>Suchen</b> &#128269; (oben): Gipfel, H&uuml;tte, Pass, Gruppe oder Koordinate. Das
+     <b>Haus-Icon</b> setzt die Standardansicht zur&uuml;ck, &#9974; schaltet Vollbild.</p>
+</div>
+
+<!-- ⓘ „Über diese Karte" an der Title-Card links (T4) -->
+<div id="aboutCard">
+  <div class="x" onclick="toggleAboutCard()">&times;</div>
   <h3>&Uuml;ber diese Karte</h3>
-  <p>Ein interaktiver <b>Alpen-Atlas</b> nach <b>SOIUSA</b>, der internationalen
-     Gliederung der Alpen (italienischer Standard von 2005): alle 131 Gebirgsgruppen, geb&uuml;ndelt
-     in f&uuml;nf Gro&szlig;sektoren (<b>Grandi Settori</b>), dazu Gipfel, H&uuml;tten und P&auml;sse
-     aus OpenStreetMap.</p>
-  <p><a href="https://de.wikipedia.org/wiki/SOIUSA" target="_blank" rel="noopener">SOIUSA auf Wikipedia &rarr;</a></p>
   
+  <p>Die <b>Suddivisione Orografica Internazionale Unificata del Sistema Alpino</b> (SOIUSA)
+     ist ein geographisches Klassifizierungssystem der Alpen, entwickelt von
+     <b>Sergio Marazzi</b> (Standard 2005).</p>
+  <p>SOIUSA gliedert die Alpen in <b>2 Teile</b>, <b>5 Sektoren</b> und <b>36 Sektionen</b>
+     mit <b>132 Untersektionen</b> &ndash; die farbigen Fl&auml;chen dieser Karte sind die
+     Untersektionen, hier vereinfacht <b>„Gebirgsgruppen"</b>.</p>
+  <p><a href="https://de.wikipedia.org/wiki/SOIUSA" target="_blank" rel="noopener">Mehr auf Wikipedia &rarr;</a></p>
   <p><b>Tech:</b> Datenaufbereitung in <b>Python</b>, Rendering mit <b>MapLibre GL JS</b>,
      3D-Terrain aus offenem DEM. Komplett <b>statisch &amp; keyless</b> auf GitHub Pages
      (kein Server, kein API-Key).
@@ -429,7 +468,6 @@
       <button id="bmTopo" onclick="setBasemap('topo')">Topo</button>
     </div>
     <div class="grp">Struktur</div>
-    <div id="tglFarbung" class="tgl on" onclick="toggleFarbung()"><span>F&auml;rbung</span><span class="sw"></span></div>
     <div id="tglNamen" class="tgl" onclick="toggleLayers()"><span>Namen</span><span class="sw"></span></div>
     <div id="tglBorders" class="tgl" onclick="toggleBorders()"><span>Landesgrenzen</span><span class="sw"></span></div>
     <div class="grp">Punkte</div>
@@ -439,13 +477,6 @@
     <div class="grp" title="Wie komme ich hin? Talorte + Personen-Seilbahnen">Anreise</div>
     <div id="tglPlaces" class="tgl" onclick="togglePlaces()"><span>Orte</span><span class="sw"></span></div>
     <div id="tglCable" class="tgl" onclick="toggleCable()"><span>Seilbahnen</span><span class="sw"></span></div>
-    <div class="grp" title="Settori = die f&uuml;nf Gro&szlig;sektoren der Alpen (SOIUSA)">Farben (Settori)</div>
-    <div class="lrow"><span class="sw-nw"></span>Nordwestalpen</div>
-    <div class="lrow"><span class="sw-sw"></span>S&uuml;dwestalpen</div>
-    <div class="lrow"><span class="sw-zo"></span>Zentralostalpen</div>
-    <div class="lrow"><span class="sw-no"></span>Nordostalpen</div>
-    <div class="lrow"><span class="sw-so"></span>S&uuml;dostalpen</div>
-    
   </div></div>
 </div>
 
@@ -584,6 +615,9 @@ document.addEventListener('click', e=>{
   // W1.3: Hintergrund-Klick schließt auch die „?"-Hilfe (Klick auf ? läuft über toggleAbout).
   const ab=document.getElementById('about'), info=document.getElementById('btnInfo');
   if(ab && ab.classList.contains('open') && !ab.contains(e.target) && e.target!==info) ab.classList.remove('open');
+  // T4: dito für „Über diese Karte" (Klick auf ⓘ läuft über toggleAboutCard + stopPropagation).
+  const ac=document.getElementById('aboutCard');
+  if(ac && ac.classList.contains('open') && !ac.contains(e.target)) ac.classList.remove('open');
 });
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeAllOverlays(); });
 setAttrib(false);   // W1.5: Kartenquellen-Div beim Init befuellen (Sat-Default) — sonst leeres ⓘ-Popup
@@ -613,7 +647,7 @@ map.doubleClickZoom.enable();
 (function(){
   const HOLD=500, MOVE=8, RATE=0.7;   // ms · px · Zoomstufen pro Sekunde
   let timer=null, start=null, raf=null, zooming=false;
-  const UI='.maplibregl-ctrl, .maplibregl-popup, #title, #ebenen, #panel, #search, #about, #cov, #legend, button';
+  const UI='.maplibregl-ctrl, .maplibregl-popup, #title, #ebenen, #panel, #search, #about, #aboutCard, #cov, #legend, button';
   // rAF-Schleife (setZoom je Frame) statt easeTo: haelt beim Loslassen sofort an
   // (kein Nachlauf). Zoom aus ABSOLUTER Haltezeit -> konstante ~0,7 z/s, frame-rate-
   // unabhaengig (robust gegen Jank).
@@ -794,7 +828,13 @@ const stsPopup = new maplibregl.Popup({
 const hoverPop = new maplibregl.Popup({closeButton:false, closeOnClick:false, offset:8});
 const hutPopup = new maplibregl.Popup({closeButton:true, closeOnClick:false, offset:12, maxWidth:_bigScr?'300px':'250px'});
 let _hoverTimer=null, _hoverId=null;
-function toggleAbout(){ document.getElementById('about').classList.toggle('open'); }
+// „?" = Bedienungshilfe; ⓘ (Title-Card) = „Über diese Karte". Schließen sich gegenseitig aus.
+function toggleAbout(){ const c=document.getElementById('aboutCard'); if(c) c.classList.remove('open');
+  document.getElementById('about').classList.toggle('open'); }
+function toggleAboutCard(){ document.getElementById('about').classList.remove('open');
+  document.getElementById('aboutCard').classList.toggle('open'); }
+// T4: Legende (Sektoren) auf-/zuklappen.
+function toggleLegend(){ document.getElementById('legend').classList.toggle('open'); }
 // W1.3: Einheitliche Schließ-UX — alle schwarzen Popups (Gruppe/Hütte/Hover/Treffer/Tour).
 function closeAllPopups(){
   try{ stsPopup.remove(); hutPopup.remove(); hoverPop.remove(); }catch(_){}
@@ -804,6 +844,7 @@ function closeAllPopups(){
 function closeAllOverlays(){
   closeAllPopups();
   const ab=document.getElementById('about'); if(ab) ab.classList.remove('open');
+  const ac=document.getElementById('aboutCard'); if(ac) ac.classList.remove('open');
   _closeAttrib();
 }
 function showStsPopup(lngLat, props){

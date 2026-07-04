@@ -137,8 +137,8 @@ checks = [
     ("idle resize",                   "map.once('idle',()=>map.resize())"),
     # Public build hygiene (E8: neutral atlas)
     ("public atlas title",            "Alpen-Atlas"),
-    # KPI (public: computed atlas stats)
-    ("KPI Settori label",             "Settori"),
+    # KPI (public: computed atlas stats) — T4: „Settori" -> „Sektoren"
+    ("KPI Sektoren label",            "Sektoren"),
     ("KPI Vereinshütten label",       "Vereinsh&uuml;tten"),
     # Data integrity
     ("Silvretta / Verwall",           "Silvretta / Verwall"),
