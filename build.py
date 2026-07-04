@@ -1506,12 +1506,8 @@ map.on('load',()=>{
       'text-anchor':'top','text-allow-overlap':true},
     paint:{'text-color':'#ffd47a','text-halo-color':'#06101a','text-halo-width':2}});
 
-  // Punkt 2b: Gruppennamen in der Platzierungs-Reihenfolge UEBER die regulaeren Gipfel
-  // (osm-peaks/landmarks) heben, aber UNTER Huetten/Paesse/Gruppen-Gipfel lassen. MapLibre
-  // platziert spaeter einsortierte Layer zuerst -> Prioritaet: Gruppen-Gipfel > Huetten/
-  // Paesse > Gruppenname > reguläre Gipfel. (Ausgewaehlte Gruppe blendet ihren Namen eh aus.)
-  map.moveLayer('sts-label', 'osm-huts-other');
-  map.moveLayer('sts-label-hl', 'osm-huts-other');
+  // (Punkt 2b — Einzel-Fix der sts-label-Reihenfolge — ersetzt durch die globale
+  //  Kollisions-Prioritätsliste weiter unten, W8.3/Review-#2.)
 
   // ── Selection ring — filter-driven, initially empty ───────────────────────
   map.addLayer({id:'sts-selected', type:'line', source:'sts',
@@ -1549,6 +1545,32 @@ map.on('load',()=>{
   map.on('mouseleave','t-hit',()=>{map.getCanvas().style.cursor='';pop.remove();});
   map.on('click','t-hit',e=>openTour(e.features[0].properties.id));
   /* PRIV:END */
+
+  // ── W8.3 / Review-#2: EINE globale Kollisions-Prioritätsliste über alle Symbol-Layer ──
+  // MapLibre platziert Labels TOP-DOWN: der oberste Layer gewinnt die Kollision
+  // (hier empirisch verifiziert). Statt verstreuter Einzel-Fixes ordnen wir die
+  // Label-Layer EINMALIG von höchster zu niedrigster Priorität. Der bestehende
+  // symbol-sort-key je Layer (Tier/Einwohner) bleibt für die Feinordnung INNERHALB
+  // eines Layers erhalten (z. B. Top-Gipfel vor 2000ern, Großstadt vor Kleinstadt).
+  // Zielordnung:  Gruppenname > Gipfel-Top > Orte K1 > Hütten > Pässe > Rest.
+  // (B4-Koexistenz bleibt: Gruppenname UND Gipfel behalten variable-anchor, weichen
+  //  also weiter aus; die Priorität entscheidet nur den harten Gleichstand.)
+  (function(){
+    const PRIO = [
+      'sts-label','sts-label-hl',                        // 1 Gruppenname (höchste)
+      'peaks-highest','peaks-in-group','osm-peaks',      // 2 Gipfel (Top zuerst via layer-sort-key)
+      'places-label',                                    // 3 Orte K1 (K1>K2>K3 via sort-key)
+      'osm-huts-club','osm-huts-wild','osm-huts-other',  // 4 Hütten
+      'osm-passes-famous','osm-passes',                  // 5 Pässe
+      'osm-landmarks','cable-icon','country-labels'      // 6 Rest (niedrigste)
+    ];
+    // Tour-Marker (privat) bleiben ganz oben -> Gruppennamen dahängen sich darunter ein.
+    let anchor = map.getLayer('t-halo') ? 't-halo' : undefined;
+    for(const id of PRIO){
+      if(!map.getLayer(id)) continue;
+      try{ map.moveLayer(id, anchor); anchor = id; }catch(_){}
+    }
+  })();
 
   // ── STS fill click — popup always; panel only for visited groups ─────────
   map.on('mouseenter','sts-hit',()=>map.getCanvas().style.cursor='pointer');
