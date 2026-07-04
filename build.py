@@ -1061,6 +1061,7 @@ map.on('error', e=>{ try{ console.error('[MAP-ERROR]', (e && e.error && (e.error
 // nicht schwarz ist. Deutliches Konsolen-Badge — belegt den Standalone-Worker ohne
 // Netzwerk-Inspektor. preserveDrawingBuffer ist unter ?smoke=1 aktiv (Pixel-Read).
 if(_SMOKE){
+  window.map = map;   // nur unter ?smoke=1: Karteninstanz fuer Playwright-Verifikation exponieren
   map.once('idle', ()=>{
     let sts=0, pts=0, nonblack=false, err='';
     try{ sts=map.querySourceFeatures('sts').length; }catch(e){ err+=' sts:'+e.message; }
@@ -1343,12 +1344,12 @@ map.on('load',()=>{
     paint:{'line-color':'#161b22','line-width':1.5,'line-opacity':0.9,
       'line-dasharray':[2,1.6]}});   // Kabelsignatur (Dash-Näherung)
   map.addLayer({id:'cable-icon', type:'symbol', source:'osm-cable', minzoom:10,
-    layout:{visibility:'none','icon-image':'gondola','icon-size':1.1,'icon-allow-overlap':false,
+    layout:{visibility:'none','icon-image':'gondola','icon-size':1.4,'icon-allow-overlap':false,
       'text-field':['step',['zoom'], '', 12, ['get','name']],
       'text-font':['Noto Sans Bold'],'text-size':9.5,
       'text-variable-anchor':['top','bottom','left','right'],'text-radial-offset':0.6,
       'text-optional':true,'text-allow-overlap':false},
-    paint:{'icon-color':'#e2f2f7','icon-halo-color':'#06141a','icon-halo-width':1.4,
+    paint:{'icon-color':'#e2f2f7','icon-halo-color':'#06141a','icon-halo-width':1.8,
       'text-color':'#bfe6ee','text-halo-color':'#06141a','text-halo-width':1.3}});
 
   map.addLayer({id:'osm-peaks', type:'symbol', source:'osm-peaks', minzoom:5,
@@ -2035,6 +2036,7 @@ function updateStsLabelFilter(){
 
 // ── Open: STS polygon (visited or not) ───────────────────────────────────────
 function openSts(feat, camMode){   // camMode: undef=Gate(§6a), 'force'=immer fliegen (Suche), 'nofly'=nie (Chronik)
+  closeAllPopups();   // Review-Befund 2: Steckbrief-Öffnen räumt offene schwarze Popups (Hütte/Gipfel/Pass/Treffer)
   const props = feat.properties || {};
   const stsName = String(props.STS || '').trim();
   // Harden: use '__none__' sentinel so empty-string filter doesn't accidentally match
@@ -2305,7 +2307,10 @@ const SEARCH_IDX=[];
 const SCAT={group:'▦',peak:'▲',hut:'\u{1F3E0}',pass:')(',coord:'\u{1F4CD}',place:'●'};
 function sNorm(s){ return (s||'').toLowerCase()
   .replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss')
-  .normalize('NFKD').replace(/[̀-ͯ]/g,''); }
+  .normalize('NFKD').replace(/[̀-ͯ]/g,'')
+  // Review-Befund 1: Leerzeichen und alle Bindestrich-/Gedankenstrich-Varianten
+  // auf EIN Leerzeichen kollabieren -> "franz senn" == "franz-senn" (Query UND Index).
+  .replace(/[\s‐-―-]+/g,' ').trim(); }
 function buildSearchIndex(){
   SOIUSA_STS.features.forEach(f=>{
     const p=f.properties, nm=p.name_de||p.STS;
