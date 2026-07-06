@@ -159,6 +159,7 @@
     border-top:1px solid rgba(255,255,255,.06);touch-action:manipulation}
   #cov .row:hover{background:rgba(255,178,77,.10)}
   #cov .row .yr{color:var(--muted);font-variant-numeric:tabular-nums}
+  
 
   /* ── STS group popup ── */
   .maplibregl-popup-content{
@@ -2061,7 +2062,7 @@ function restoreUndo(e){
 }
 map.on('movestart', e=>{ if(e && e.originalEvent) _hideUndoChip(); });
 
-// ── Coverage list (private build only; click flies to the group) ──────────────
+// ── Coverage list + Tour-Filter (private build only) ──────────────────────────
 
 
 // ══ Chronologie-Modus (nur Privat) — Stufe 1: Jahresleiste + kumulative Färbung ══

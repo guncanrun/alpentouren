@@ -450,6 +450,35 @@ __HEAD_LIBS__
     border-top:1px solid rgba(255,255,255,.06);touch-action:manipulation}
   #cov .row:hover{background:rgba(255,178,77,.10)}
   #cov .row .yr{color:var(--muted);font-variant-numeric:tabular-nums}
+  /* PRIV:START */
+  /* ── Personen-/Strang-Filter (SPEC_Personenfilter) — nur Privat ── */
+  #tourFilter{padding:8px 14px 4px}
+  .tf-seg{display:flex;gap:5px;margin-bottom:8px}
+  .tf-sbtn{flex:1;min-height:var(--row-h);padding:5px 4px;border:1px solid var(--line);border-radius:9px;
+    background:rgba(255,255,255,.04);color:var(--muted);font-size:11px;cursor:pointer;
+    font-family:inherit;touch-action:manipulation;white-space:nowrap;text-align:center;line-height:1.25}
+  .tf-sbtn b{font-weight:700;font-variant-numeric:tabular-nums}
+  .tf-sbtn.on{background:rgba(95,208,197,.16);border-color:var(--accent2);color:var(--txt)}
+  .tf-chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:2px}
+  .tf-chip{display:inline-flex;align-items:center;gap:5px;min-height:30px;padding:3px 9px;border-radius:16px;
+    border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--txt);font-size:12px;
+    font-family:inherit;cursor:pointer;touch-action:manipulation}
+  .tf-chip .n{color:var(--muted);font-variant-numeric:tabular-nums;font-size:11px}
+  .tf-chip.on{background:rgba(255,178,77,.18);border-color:var(--accent);font-weight:600}
+  .tf-chip.on .n{color:var(--accent)}
+  .tf-badges{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;align-items:center;empty-cells:hide}
+  .tf-badges:empty{display:none}
+  .tf-badge{display:inline-flex;align-items:center;gap:6px;padding:2px 8px;border-radius:14px;
+    background:rgba(255,178,77,.16);border:1px solid rgba(255,178,77,.45);color:var(--txt);font-size:11.5px}
+  .tf-badge .rm{cursor:pointer;color:var(--muted);font-size:15px;line-height:1;touch-action:manipulation}
+  .tf-badge .rm:hover{color:#fff}
+  .tf-reset{cursor:pointer;color:var(--accent2);font-size:11.5px;background:none;border:none;
+    font-family:inherit;padding:2px 4px;touch-action:manipulation}
+  .tf-reset:hover{text-decoration:underline}
+  .tf-empty{padding:10px 14px 12px;font-size:12.5px;color:var(--muted);line-height:1.5}
+  .tf-empty .tf-reset{display:inline;padding:0;margin-left:4px}
+  @media (pointer: coarse){ .tf-chip{min-height:var(--row-h)} .tf-badge{min-height:32px} }
+  /* PRIV:END */
 
   /* ── STS group popup ── */
   .maplibregl-popup-content{
@@ -820,7 +849,19 @@ __HEAD_LIBS__
   <div class="ch" onclick="document.getElementById('cov').classList.toggle('open')">
 Touren ansehen <span id="covCount"></span>
   </div>
-  <div class="cl" id="covList"></div>
+  <div class="cl">
+    <div id="tourFilter">
+      <div class="tf-seg" id="strangSeg">
+        <button class="tf-sbtn on" data-strang="alle" onclick="setStrang('alle')">Alle (<b id="cntAlle">18</b>)</button>
+        <button class="tf-sbtn" data-strang="brueder" onclick="setStrang('brueder')">Brüdertouren (<b id="cntBrueder">10</b>)</button>
+        <button class="tf-sbtn" data-strang="weitere" onclick="setStrang('weitere')">Weitere (<b id="cntWeitere">8</b>)</button>
+      </div>
+      <div class="tf-badges" id="filterBadges"></div>
+      <div class="tf-chips" id="personChips"></div>
+    </div>
+    <div id="covList"></div>
+    <div id="covEmpty" class="tf-empty" style="display:none"></div>
+  </div>
 </div>
 <!-- Chronologie-Modus: runder Toggle unten links + Caption + Jahresleiste (Play) -->
 <button id="chronoBtn" onclick="chronoToggle()" title="Chronologie &ndash; Jahre durchgehen">&#128344;</button>
@@ -1695,10 +1736,12 @@ map.on('load',()=>{
   // Aktive Tour hervorheben (openTour); null = alle gleich.
   function highlightTrack(id){
     try{
+      // id==null: Basis-Deckkraft — respektiert einen aktiven Personen-/Strang-Filter
+      // (_trackBaseOpacity), sonst voll. So bleibt der Filter-Dim nach Panel-Schliessen erhalten.
       map.setPaintProperty('trk-line','line-opacity',
-        id==null ? 0.95 : ['case',['==',['get','tour_id'],id], 1.0, 0.25]);
+        id==null ? _trackBaseOpacity('line') : ['case',['==',['get','tour_id'],id], 1.0, 0.25]);
       map.setPaintProperty('trk-casing','line-opacity',
-        id==null ? 0.55 : ['case',['==',['get','tour_id'],id], 0.7, 0.15]);
+        id==null ? _trackBaseOpacity('casing') : ['case',['==',['get','tour_id'],id], 0.7, 0.15]);
     }catch(_){}
   }
   window.highlightTrack = highlightTrack;
@@ -2696,21 +2739,148 @@ function restoreUndo(e){
 }
 map.on('movestart', e=>{ if(e && e.originalEvent) _hideUndoChip(); });
 
-// ── Coverage list (private build only; click flies to the group) ──────────────
+// ── Coverage list + Tour-Filter (private build only) ──────────────────────────
 /* PRIV:START */
+// SPEC_Personenfilter: EIN Zustand FILTER + EINE Filter-Funktion schaltet
+// Liste (filtern, Jahre auf Treffer reduzieren) · Karte (Marker/Tracks dimmen) ·
+// Kopf-Bilanz · Chronik konsistent. Kein localStorage, Default Alle/leer.
+const _e = s => String(s==null?'':s).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
 function openGroup(sts){ const f=SOIUSA_STS.features.find(x=>x.properties.STS===sts); if(f) openSts(f); }
-const cl=document.getElementById('covList');
-cl.innerHTML=visitedGroups.map(g=>{
-  const nm=(g.name_de||g.STS||'').replace(/</g,'&lt;');
-  const key=String(g.STS||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-  return '<div class="row" onclick="openGroup(\''+key+'\')"><span>'+nm+'</span><span class="yr"></span></div>';
-}).join('');
-[...cl.children].forEach((row,i)=>{
-  const g=visitedGroups[i]; if(!g) return;
-  const ids = typeof g.tour_ids==='string'?JSON.parse(g.tour_ids||'[]'):(g.tour_ids||[]);
-  const yrs = ids.map(id=>{const t=TOUREN.find(x=>x.id==id);return t&&t.jahr;}).filter(Boolean);
-  const sp=row.querySelector('.yr'); if(sp) sp.textContent=yrs.join(', ');
-});
+function _groupTourIds(g){ return typeof g.tour_ids==='string'?JSON.parse(g.tour_ids||'[]'):(g.tour_ids||[]); }
+
+// Register-Lookup + Personen-Häufigkeit (alle teilnehmer_ids). Chip-Liste: nur
+// filterbar!=false und Zähler>0, Häufigkeit absteigend (Tie-Break Name). Chip-Name
+// = Register-name (also „Alan", nie „Andrea").
+const PERSON_BY_ID={}; (PERSONEN.personen||[]).forEach(p=>{ PERSON_BY_ID[p.id]=p; });
+const _personFreq={};
+TOUREN.forEach(t=>(t.teilnehmer_ids||[]).forEach(id=>{ _personFreq[id]=(_personFreq[id]||0)+1; }));
+const CHIP_PERSONS=Object.keys(_personFreq)
+  .filter(id=>{ const p=PERSON_BY_ID[id]; return p && p.filterbar!==false && _personFreq[id]>0; })
+  .map(id=>({id, name:PERSON_BY_ID[id].name, n:_personFreq[id]}))
+  .sort((a,b)=> b.n-a.n || String(a.name).localeCompare(String(b.name)));
+
+// Strang: fester Schnitt, EINMALIG abgeleitet aus kategorie.
+function serieOf(t){ return ['Brüdertour','Brüdertour Next Gen'].includes(t.kategorie)?'brueder':'weitere'; }
+const _strangCount={alle:TOUREN.length, brueder:0, weitere:0};
+TOUREN.forEach(t=>{ _strangCount[serieOf(t)]++; });
+{ const set=(id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
+  set('cntAlle',_strangCount.alle); set('cntBrueder',_strangCount.brueder); set('cntWeitere',_strangCount.weitere); }
+
+const FILTER={strang:'alle', personen:[]};
+let _filterIds=null;   // null = Filter inaktiv (Karte voll); sonst Treffer-tour_id-Liste
+function filterActive(){ return FILTER.strang!=='alle' || FILTER.personen.length>0; }
+function matchedTours(){
+  return TOUREN.filter(t=>{
+    if(FILTER.strang!=='alle' && serieOf(t)!==FILTER.strang) return false;
+    if(FILTER.personen.length){                        // Mehrfachauswahl = UND (gemeinsam unterwegs)
+      const ids=t.teilnehmer_ids||[];
+      if(!FILTER.personen.every(p=>ids.includes(p))) return false;
+    }
+    return true;
+  });
+}
+
+// ── Karten-Dimmen (Muster highlightTrack: Opacity-Case auf id-Liste, nicht ausblenden) ──
+function _dimMarkers(ids, active){
+  const inSet=['in',['get','id'],['literal',ids]];
+  try{
+    map.setPaintProperty('t-halo','circle-opacity', active?['case',inSet,0.20,0.03]:0.20);
+    map.setPaintProperty('t-badge','circle-opacity', active?['case',inSet,0.96,0.10]:0.96);
+    map.setPaintProperty('t-badge','circle-stroke-opacity', active?['case',inSet,1,0.12]:1);
+    map.setPaintProperty('t-dot','icon-opacity', active?['case',inSet,1,0.14]:1);
+  }catch(_){}
+}
+function _trackBaseOpacity(which){   // von highlightTrack(null) genutzt -> Filter-Dim bleibt erhalten
+  if(_filterIds){
+    const inSet=['in',['get','tour_id'],['literal',_filterIds]];
+    return which==='casing'?['case',inSet,0.55,0.08]:['case',inSet,0.95,0.12];
+  }
+  return which==='casing'?0.55:0.95;
+}
+function _dimTracks(){
+  try{
+    map.setPaintProperty('trk-line','line-opacity', _trackBaseOpacity('line'));
+    map.setPaintProperty('trk-casing','line-opacity', _trackBaseOpacity('casing'));
+  }catch(_){}
+}
+
+// ── UI-Render: Chips, Badges, Liste, Kopf-Bilanz ──
+function renderChips(){
+  const wrap=document.getElementById('personChips'); if(!wrap) return;
+  wrap.innerHTML=CHIP_PERSONS.map(p=>{
+    const on=FILTER.personen.includes(p.id)?' on':'';
+    return '<button class="tf-chip'+on+'" data-id="'+_e(p.id)+'" onclick="togglePerson(\''+_e(p.id)+'\')">'+
+      _e(p.name)+' <span class="n">'+p.n+'</span></button>';
+  }).join('');
+}
+function renderBadges(){
+  const el=document.getElementById('filterBadges'); if(!el) return;
+  let h=FILTER.personen.map(id=>PERSON_BY_ID[id]).filter(Boolean).map(p=>
+    '<span class="tf-badge">'+_e(p.name)+
+    '<span class="rm" onclick="togglePerson(\''+_e(p.id)+'\')" title="Entfernen">&times;</span></span>').join('');
+  if(filterActive()) h+='<button class="tf-reset" onclick="resetFilter()">&times; Zur&uuml;cksetzen</button>';
+  el.innerHTML=h;
+}
+function renderCovList(){
+  const cl=document.getElementById('covList'), empty=document.getElementById('covEmpty'); if(!cl) return;
+  const active=filterActive();
+  const idSet=new Set(active?matchedTours().map(t=>t.id):[]);
+  let rows='', shown=0;
+  visitedGroups.forEach(g=>{
+    const gids=_groupTourIds(g);
+    const hitIds=active?gids.filter(id=>idSet.has(id)):gids;
+    if(active && !hitIds.length) return;               // Gruppe ohne Treffer-Tour: ausblenden
+    shown++;
+    const nm=(g.name_de||g.STS||'').replace(/</g,'&lt;');
+    const key=String(g.STS||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const yrs=[...new Set(hitIds.map(id=>{const t=TOUREN.find(x=>x.id==id);return t&&t.jahr;}).filter(Boolean))];
+    rows+='<div class="row" onclick="openGroup(\''+key+'\')"><span>'+nm+'</span><span class="yr">'+_e(yrs.join(', '))+'</span></div>';
+  });
+  cl.innerHTML=rows;
+  if(empty){
+    if(active && shown===0){
+      empty.innerHTML='Keine gemeinsame Tour mit dieser Auswahl. '+
+        '<button class="tf-reset" onclick="resetFilter()">&times; Zur&uuml;cksetzen</button>';
+      empty.style.display='';
+    } else empty.style.display='none';
+  }
+}
+function updateCovCount(tours){
+  const el=document.getElementById('covCount'); if(!el) return;
+  if(!filterActive()){
+    el.textContent=SOIUSA_HIGHLIGHTS.features.length+' Gebiete · '+TOUREN.length+' Touren';
+    return;
+  }
+  const idSet=new Set(tours.map(t=>t.id));
+  let nGeb=0; visitedGroups.forEach(g=>{ if(_groupTourIds(g).some(id=>idSet.has(id))) nGeb++; });
+  const word={brueder:'Brüdertouren', weitere:'Weitere'}[FILTER.strang];
+  el.textContent=(word?word+' · ':'')+tours.length+' Touren · '+nGeb+' Gebiete';
+}
+
+// ── Die EINE Schaltfunktion: schaltet alle Sichten konsistent ──
+function applyTourFilter(){
+  const tours=matchedTours();
+  const ids=tours.map(t=>t.id);
+  const active=filterActive();
+  _filterIds=active?ids:null;
+  _dimMarkers(ids, active);          // Karte: Marker dimmen (Kontext bleibt)
+  _dimTracks();                      // Karte: Tracks dimmen (respektiert _filterIds)
+  document.querySelectorAll('#strangSeg .tf-sbtn')
+    .forEach(b=>b.classList.toggle('on', b.dataset.strang===FILTER.strang));
+  renderChips(); renderBadges();
+  renderCovList(); updateCovCount(tours);   // Liste = Ergebnisfläche (filtern), Kopf = Bilanz
+  _chronoRefilter();                 // Chronik-Jahresleiste/Play (P3)
+}
+function setStrang(s){ FILTER.strang=s; applyTourFilter(); }
+function togglePerson(id){
+  const i=FILTER.personen.indexOf(id);
+  if(i>=0) FILTER.personen.splice(i,1); else FILTER.personen.push(id);
+  applyTourFilter();
+}
+function resetFilter(){ FILTER.strang='alle'; FILTER.personen=[]; applyTourFilter(); }
+function _chronoRefilter(){ /* P3: Chronik bei Filterwechsel neu ableiten */ }
+
+applyTourFilter();   // Initial: Default Alle/leer -> Karte voll, Chips/Liste/Bilanz gerendert
 /* PRIV:END */
 
 // ══ Chronologie-Modus (nur Privat) — Stufe 1: Jahresleiste + kumulative Färbung ══
