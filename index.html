@@ -541,7 +541,7 @@ const OSM_CABLE  = null;
 const OSM_CABLE_LINES = null;   // W4: Seilbahn-Linien (voller Verlauf)
 const BORDERS_GJ = null;
 const PRIV = false;
-const TOUR_LAYERS = PRIV ? ['t-hit'] : [];   // tour markers only exist in the private build (Hit-Kreis)
+const TOUR_LAYERS = PRIV ? ['t-hit','t-cluster-halo'] : [];   // tour markers only exist in the private build (Hit-Kreis + Cluster)
 const CNAMES = {AT:'Österreich',CH:'Schweiz',DE:'Deutschland',
   FR:'Frankreich',IT:'Italien',SI:'Slowenien',LI:'Liechtenstein'};
 
@@ -1176,7 +1176,7 @@ map.on('load',()=>{
 
   // Landmark-Gipfel: eigener Rang — Icon nach Tier, Label immer, ab Übersicht sichtbar.
   map.addLayer({id:'osm-landmarks', type:'symbol', source:'osm-peaks', minzoom:5,
-    filter:['==',['get','landmark'],1],
+    filter:['all',['==',['get','landmark'],1],['!=',['get','land_high'],1]],   // die 6 Landeshöchsten -> osm-landhigh
     layout:{'visibility':'none','icon-anchor':'bottom','icon-allow-overlap':true,
       'icon-image':['match',['get','tier'], 0,'peak-star', 1,'peak-hi', 'peak'],
       'icon-size':['match',['get','tier'], 0,1.95, 1,1.4, 1.15],
@@ -1184,6 +1184,18 @@ map.on('load',()=>{
       'text-font':['Noto Sans Bold'],'text-size':11,'text-offset':[0,0.3],
       'text-anchor':'top','text-optional':true,'text-allow-overlap':false},
     paint:{'text-color':'#ffe6a0','text-halo-color':'#06101a','text-halo-width':1.8}});
+  // Politur P2.6: Landmark-Gipfel-Tier — die 6 Landeshöchsten (land_high), ab Übersichtszoom
+  // IMMER beschriftet (icon+text allow-overlap wie Gold-Fix), in PRIO UNTER den Gruppennamen.
+  // Immer sichtbar (Orientierungsanker, unabhängig vom Gipfel-Toggle). Beide Builds.
+  map.addLayer({id:'osm-landhigh', type:'symbol', source:'osm-peaks', minzoom:5,
+    filter:['==',['get','land_high'],1],
+    layout:{'icon-anchor':'bottom','icon-allow-overlap':true,'icon-ignore-placement':true,
+      'icon-image':['match',['get','tier'], 0,'peak-star', 'peak-hi'],
+      'icon-size':['match',['get','tier'], 0,1.95, 1.4],
+      'text-field':['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],
+      'text-font':['Noto Sans Bold'],'text-size':11.5+LB,'text-offset':[0,0.35],
+      'text-anchor':'top','text-allow-overlap':true},
+    paint:{'text-color':'#ffe6a0','text-halo-color':'#06101a','text-halo-width':2.0}});
 
   // Huts — sonstige (grau, ab höherem Zoom)
   map.addLayer({id:'osm-huts-other', type:'symbol', source:'osm-huts', minzoom:8,
@@ -1226,7 +1238,7 @@ map.on('load',()=>{
   });
 
   // ── §7 (W4): Cursor-Pointer auf allen klickbaren Punkt-Layern (Desktop) ────
-  ['osm-peaks','osm-peaks-gold','osm-landmarks','osm-passes','osm-passes-famous','places-sq','places-dot','places-label','places-village','places-village-label','cable-icon'].forEach(l=>{
+  ['osm-peaks','osm-peaks-gold','osm-landmarks','osm-landhigh','osm-passes','osm-passes-famous','places-sq','places-dot','places-label','places-village','places-village-label','cable-icon'].forEach(l=>{
     map.on('mouseenter',l,()=>map.getCanvas().style.cursor='pointer');
     map.on('mouseleave',l,()=>map.getCanvas().style.cursor='');
   });
@@ -1343,6 +1355,7 @@ map.on('load',()=>{
   (function(){
     const PRIO = [
       'sts-label','sts-label-hl',                        // 1 Gruppenname (höchste)
+      'osm-landhigh',                                    //   Landeshöchste (P2.6, immer, unter Namen)
       't-label',                                         //   Jahr-Label am Tour-Icon (P3b §8, unter Namen)
       'peaks-highest','peaks-in-group',                  // 2 Gruppen-Gipfel (Gold-Highlight)
       'osm-peaks-gold','osm-peaks',                      //   Gold-Gipfel VOR Bulk (§11-Fix)
@@ -1390,6 +1403,7 @@ map.on('load',()=>{
     if(TOUR_LAYERS.length && map.queryRenderedFeatures(e.point,{layers:TOUR_LAYERS}).length) return;
     if(map.queryRenderedFeatures(e.point,{layers:HUT_LAYERS}).length) return;  // Hütte hat Vorrang
     if(map.queryRenderedFeatures(e.point,{layers:['places-sq','places-dot','places-label','places-village','places-village-label','cable-icon']}).length) return;  // Ort/Seilbahn hat Vorrang
+    if(map.getLayer('t-cluster-halo') && map.queryRenderedFeatures(e.point,{layers:['t-cluster-halo']}).length) return;  // P2.7: Cluster hat Vorrang
     clearTimeout(_hoverTimer); hoverPop.remove(); stsPopup.remove(); hutPopup.remove();  // B: keine klebende Box
     openSts(e.features[0]);                                                   // Steckbrief für JEDE Gruppe
   });
@@ -1414,7 +1428,7 @@ map.on('load',()=>{
     if(!map.queryRenderedFeatures(e.point,{layers:HUT_LAYERS}).length) hutPopup.remove();
     // W1c: Klick ohne Gruppen-/Linien-/Punkt-Feature -> Steckbrief schliessen + Auswahl-Rand weg.
     const feats=map.queryRenderedFeatures(e.point,{layers:
-      ['sts-hit','hl-line','osm-peaks','osm-peaks-gold','osm-landmarks','osm-passes','osm-passes-famous',
+      ['sts-hit','hl-line','osm-peaks','osm-peaks-gold','osm-landmarks','osm-landhigh','osm-passes','osm-passes-famous',
        'places-sq','places-dot','places-label','places-village','places-village-label','cable-icon']
         .concat(HUT_LAYERS).concat(TOUR_LAYERS)});
     if(!feats.length) closePanel();
