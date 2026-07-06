@@ -745,8 +745,10 @@ __HEAD_LIBS__
     color:var(--accent2);font-size:15px;cursor:pointer;font-family:inherit;touch-action:manipulation}
   #chronoPlay.on{background:rgba(255,178,77,.16);border-color:var(--accent);color:var(--accent)}
   /* Caption-Karte ueber der Leiste */
-  #chronoCap{position:absolute;left:74px;bottom:76px;z-index:7;display:none;
-    max-width:min(52vw,420px);background:var(--panel);backdrop-filter:blur(8px);
+  /* §12 (P3c): Caption mittig über der Jahresleiste (Mitte-Konvention wie Scale-Bar/
+     Koordinaten) statt linksbündig -> kollidiert nicht mehr mit dem Touren-Panel. */
+  #chronoCap{position:absolute;left:50%;transform:translateX(-50%);bottom:76px;z-index:7;display:none;
+    width:max-content;max-width:min(72vw,460px);background:var(--panel);backdrop-filter:blur(8px);
     border:1px solid var(--line);border-radius:14px;padding:9px 13px;
     box-shadow:0 8px 30px rgba(0,0,0,.45)}
   #chronoCap.open{display:block}
