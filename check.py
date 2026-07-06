@@ -186,6 +186,10 @@ for name, marker in checks:
 # The public index.html must carry NO private markers, NO year fields, NO
 # private-only functions/KPIs, and (E8) NO visited/tour layer whatsoever.
 for bad, label in [("Tour mit Papa", "private tab label"),
+                   # Politur: privater Familien-Titel darf nicht in den Public. NICHT bare
+                   # "Günther" — false-positive auf die OSM-Hütte „Alois-Günther-Haus"
+                   # (neutrale Geodaten, unbeteiligte Person). Spezifisch der Titel:
+                   ("Günther-Alpenchronik", "private family title (Politur, privat-only)"),
                    ("PRIV:START", "PRIV start marker"),
                    ("PRIV:END", "PRIV end marker"),
                    ("PUB:START", "PUB start marker (must be stripped)"),

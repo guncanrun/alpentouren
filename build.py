@@ -21,7 +21,7 @@ PUBLIC     = not PRIVATE
 SRC   = "touren.json"   # only the private/standalone build reads tour data (E8)
 OUT   = ("index_privat_standalone.html" if STANDALONE
          else "index.html" if PUBLIC else "index_privat.html")
-TITEL = "Alpen-Atlas" if PUBLIC else "Alpentouren mit Papa"
+TITEL = "Alpen-Atlas" if PUBLIC else "Günther-Alpenchronik"
 UNTER = ("Die Alpen nach SOIUSA, der internationalen Alpen-Gliederung — Gruppen, Gipfel, "
          "Hütten & Pässe interaktiv. Fläche anklicken für Steckbrief."
          if PUBLIC else
@@ -361,6 +361,15 @@ __HEAD_LIBS__
     border-radius:14px;padding:13px 15px;box-shadow:0 8px 30px rgba(0,0,0,.5)}
   #title h1{margin:0;font-size:20px;letter-spacing:.2px}
   #title p{margin:6px 0 0;font-size:13px;color:var(--muted);line-height:1.45}
+  /* Politur P1.2: Mini-Zeile — Logo · Titel · Mini-KPI · ▾ (nur im mini-Zustand sichtbar) */
+  #title.mini{padding:9px 13px}
+  #title.mini > *:not(#titleMini){display:none}
+  #title:not(.mini) #titleMini{display:none}
+  #titleMini{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;max-width:calc(100vw - 60px)}
+  #titleMini .tm-logo{color:var(--accent);font-size:13px;flex:0 0 auto}
+  #titleMini .tm-name{font-weight:700;font-size:14px;white-space:nowrap;flex:0 0 auto}
+  #titleMini .tm-kpi{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1 1 auto}
+  #titleMini .tm-caret{color:var(--muted);flex:0 0 auto}
   #title .kpi{margin-top:10px;display:flex;gap:16px}
   #title .kpi b{display:block;font-size:22px;color:var(--accent)}
   #title .kpi span{font-size:11px;color:var(--muted)}
@@ -374,6 +383,11 @@ __HEAD_LIBS__
   #legend .ll{max-height:0;overflow:hidden;transition:max-height .35s ease}
   #legend.open .ll{max-height:280px}
   #legend .lsub{font-size:10.5px;color:var(--muted);padding:6px 0 2px}
+  /* Politur P1.3: 2-spaltig (Westalpen | Ostalpen) — breiter, flacher */
+  #legend .lcols{display:flex;gap:16px;padding-top:5px}
+  #legend .lcol{flex:1;min-width:0}
+  #legend .lgrp{font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;
+    letter-spacing:.6px;padding:1px 0 3px}
   #legend .lrow{display:flex;align-items:center;gap:8px;padding:3px 0;
     font-size:11.5px;color:var(--txt)}
   #legend .lsep{height:1px;background:var(--line);margin:6px 0}
@@ -480,6 +494,14 @@ __HEAD_LIBS__
   .tf-perstoggle .tf-caret{transition:transform .25s;font-size:.85em}
   #cov.pers-open .tf-perstoggle .tf-caret{transform:rotate(180deg)}
   #cov:not(.pers-open) .tf-chips{display:none}
+  /* Politur P1.4: Filter-Block als Ganzes einklappbar („Filter ▾"); Bilanzzeile bleibt sichtbar */
+  .tf-filterhead{display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:3px 2px 5px;cursor:pointer;font-size:12px;font-weight:600;color:var(--txt);
+    min-height:26px;touch-action:manipulation;user-select:none}
+  .tf-filterhead .tf-caret{transition:transform .25s;font-size:.85em;color:var(--muted)}
+  #cov.filter-open .tf-filterhead .tf-caret{transform:rotate(180deg)}
+  #cov:not(.filter-open) .tf-filterbody{display:none}
+  @media (pointer: coarse){ .tf-filterhead{min-height:var(--row-h)} }
   .tf-chips{display:flex;flex-wrap:wrap;gap:5px;margin:2px 0 4px}
   .tf-chip{display:inline-flex;align-items:center;gap:5px;min-height:30px;padding:3px 9px;border-radius:16px;
     border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--txt);font-size:12px;
@@ -616,7 +638,7 @@ __HEAD_LIBS__
     border:1px solid var(--accent2);font-size:11px;font-style:italic;font-weight:700}
 
   /* ── Ebenen-Panel (Toggle-Switches + Legende) ── */
-  #ebenen{position:absolute;top:64px;right:16px;z-index:6;width:232px;
+  #ebenen{position:absolute;top:64px;right:16px;z-index:6;width:196px;   /* Politur P1.5: schmaler (eher lang) */
     background:var(--panel);backdrop-filter:blur(8px);border:1px solid var(--line);
     border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.5);overflow:hidden}
   #ebenen .eh{padding:9px 15px;font-size:var(--fs-ui);font-weight:600;cursor:pointer;min-height:var(--row-h);
@@ -697,7 +719,7 @@ __HEAD_LIBS__
   .sr .nm{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .sr .sb{color:var(--muted);font-size:12px;flex-shrink:0;white-space:nowrap}
   /* ── Basemap segmented (Ebenen-Panel) ── */
-  .seg{display:flex;gap:6px;margin:2px 0 2px}
+  .seg{display:flex;flex-direction:column;gap:6px;margin:2px 0 2px}   /* Politur P1.5: Satellit/Topo untereinander */
   .seg button{flex:1;min-height:var(--row-h);padding:6px;border:1px solid var(--line);border-radius:9px;
     background:rgba(255,255,255,.04);color:var(--muted);font-size:var(--fs-ui);cursor:pointer;
     font-family:inherit;touch-action:manipulation}
@@ -830,25 +852,39 @@ __HEAD_LIBS__
 <div id="undoChip" onclick="restoreUndo(event)" title="Vorherige Ansicht wiederherstellen">&#8617; Letzte Ansicht</div>
 
 <div id="title">
+  <!-- Politur P1.2: Mini-Zeile (nach erster Karten-Interaktion; Klick = aufklappen) -->
+  <div id="titleMini" onclick="expandTitle()" title="Aufklappen">
+    <span class="tm-logo">&#9650;</span>
+    <span class="tm-name">__TITEL__</span>
+    <span class="tm-kpi" id="tmKpi"></span>
+    <span class="tm-caret">&#9662;</span>
+  </div>
   <h1>__TITEL__</h1>
   <p>__UNTER__</p>
   <div class="kpi">
     <!-- PUB:START --><div><b>__KPI_GRUPPEN__</b><span>Gruppen</span></div><div><b>__KPI_SETTORI__</b><span>Sektoren</span></div><div><b>__KPI_HUETTEN__</b><span>Vereinsh&uuml;tten</span></div><!-- PUB:END -->
     <!-- PRIV:START --><div><b id="kTours">–</b><span>Touren</span></div><div><b id="kGroups">–</b><span>SOIUSA-Gruppen</span></div><div><b id="kYears">–</b><span>Jahre</span></div><!-- PRIV:END -->
   </div>
-  <!-- T4: Legende „Sektoren" als aufklappbarer Abschnitt + Färbung-Master im Kopf -->
+  <!-- Legende „Sektoren" — Politur P1.3: 2-spaltig hierarchisch (Westalpen | Ostalpen) -->
   <div id="legend" class="open">
     <div class="lh" onclick="event.stopPropagation();toggleLegend()">
       <span class="lt">Sektoren</span>
       <div id="tglFarbung" class="tgl on" onclick="event.stopPropagation();toggleFarbung()" title="F&auml;rbung an/aus"><span>F&auml;rbung</span><span class="sw"></span></div>
     </div>
     <div class="ll">
-      <div class="lsub">die f&uuml;nf Gro&szlig;r&auml;ume der Alpen</div>
-      <div class="lrow"><span class="sw-nw"></span>Nordwestalpen</div>
-      <div class="lrow"><span class="sw-sw"></span>S&uuml;dwestalpen</div>
-      <div class="lrow"><span class="sw-zo"></span>Zentralostalpen</div>
-      <div class="lrow"><span class="sw-no"></span>Nordostalpen</div>
-      <div class="lrow"><span class="sw-so"></span>S&uuml;dostalpen</div>
+      <div class="lcols">
+        <div class="lcol">
+          <div class="lgrp">Westalpen</div>
+          <div class="lrow"><span class="sw-nw"></span>Nordwestalpen</div>
+          <div class="lrow"><span class="sw-sw"></span>S&uuml;dwestalpen</div>
+        </div>
+        <div class="lcol">
+          <div class="lgrp">Ostalpen</div>
+          <div class="lrow"><span class="sw-no"></span>Nordostalpen</div>
+          <div class="lrow"><span class="sw-zo"></span>Zentralostalpen</div>
+          <div class="lrow"><span class="sw-so"></span>S&uuml;dostalpen</div>
+        </div>
+      </div>
       <!-- PRIV:START --><div class="lsep"></div>
       <div class="lrow"><span class="sw-hl"></span>besucht</div><!-- PRIV:END -->
     </div>
@@ -931,22 +967,25 @@ Touren ansehen <span id="covCount"></span>
   </div>
   <div class="cl">
     <div id="tourFilter">
-      <div class="tf-seg" id="strangSeg">
-        <button class="tf-sbtn on" data-strang="alle" onclick="setStrang('alle')">Alle (<b id="cntAlle">18</b>)</button>
-        <button class="tf-sbtn" data-strang="brueder" onclick="setStrang('brueder')">Brüdertouren (<b id="cntBrueder">10</b>)</button>
-        <button class="tf-sbtn" data-strang="weitere" onclick="setStrang('weitere')">Weitere (<b id="cntWeitere">8</b>)</button>
-      </div>
-      <div class="tf-jahr" id="tfJahr">
-        <div class="tf-jahr-lbl"><span>Jahre</span><span id="tfJahrVal">1993&ndash;2023</span></div>
-        <div class="tf-jahr-slider">
-          <div class="tf-jahr-track"><div class="tf-jahr-fill" id="tfJahrFill"></div></div>
-          <input type="range" id="tfJahrVon" min="1993" max="2023" step="1" value="1993" aria-label="Jahr von">
-          <input type="range" id="tfJahrBis" min="1993" max="2023" step="1" value="2023" aria-label="Jahr bis">
+      <div class="tf-filterhead" id="tfFilterHead" onclick="toggleFilterBlock()"><span>Filter</span><span class="tf-caret">&#9662;</span></div>
+      <div class="tf-filterbody">
+        <div class="tf-seg" id="strangSeg">
+          <button class="tf-sbtn on" data-strang="alle" onclick="setStrang('alle')">Alle (<b id="cntAlle">18</b>)</button>
+          <button class="tf-sbtn" data-strang="brueder" onclick="setStrang('brueder')">Brüdertouren (<b id="cntBrueder">10</b>)</button>
+          <button class="tf-sbtn" data-strang="weitere" onclick="setStrang('weitere')">Weitere (<b id="cntWeitere">8</b>)</button>
         </div>
+        <div class="tf-jahr" id="tfJahr">
+          <div class="tf-jahr-lbl"><span>Jahre</span><span id="tfJahrVal">1993&ndash;2023</span></div>
+          <div class="tf-jahr-slider">
+            <div class="tf-jahr-track"><div class="tf-jahr-fill" id="tfJahrFill"></div></div>
+            <input type="range" id="tfJahrVon" min="1993" max="2023" step="1" value="1993" aria-label="Jahr von">
+            <input type="range" id="tfJahrBis" min="1993" max="2023" step="1" value="2023" aria-label="Jahr bis">
+          </div>
+        </div>
+        <div class="tf-perstoggle" id="tfPersToggle" onclick="togglePersGrid()"><span>Personen filtern</span><span class="tf-caret">&#9662;</span></div>
+        <div class="tf-chips" id="personChips"></div>
       </div>
-      <div class="tf-perstoggle" id="tfPersToggle" onclick="togglePersGrid()"><span>Personen filtern</span><span class="tf-caret">&#9662;</span></div>
       <div class="tf-badges" id="filterBadges"></div>
-      <div class="tf-chips" id="personChips"></div>
       <div id="tglTracks" class="tgl on tf-tracks" onclick="toggleTracks()" title="Rekonstruierte Routen aus dem Buch von Andreas"><span>Touren-Tracks</span><span class="sw"></span></div>
     </div>
     <div id="covList"></div>
@@ -1377,6 +1416,31 @@ function toggleAbout(){ const c=document.getElementById('aboutCard'); if(c) c.cl
   document.getElementById('about').classList.toggle('open'); }
 function toggleAboutCard(){ document.getElementById('about').classList.remove('open');
   document.getElementById('aboutCard').classList.toggle('open'); }
+// ── Politur P1.2: Title-Card Mini-Zeile (Auto-Einklappen bei erster Karten-Interaktion) ──
+function _fillTmKpi(){
+  const el=document.getElementById('tmKpi'); if(!el) return;
+  if(typeof PRIV!=='undefined' && PRIV){
+    const ky=document.getElementById('kYears'); const yr=(ky&&ky.textContent&&ky.textContent!=='–')?' · '+ky.textContent:'';
+    el.textContent = TOUREN.length+' Touren · '+SOIUSA_HIGHLIGHTS.features.length+' Gebiete'+yr;
+  } else {
+    el.textContent = __KPI_GRUPPEN__+' Gruppen · '+__KPI_SETTORI__+' Sektoren';
+  }
+}
+function collapseTitle(persist){
+  const t=document.getElementById('title'); if(!t) return;
+  _fillTmKpi(); t.classList.add('mini');
+  if(persist!==false){ try{ localStorage.setItem('alpen_title_mini','1'); }catch(_){} }
+  if(typeof sizeCov==='function') sizeCov();   // P1.4: eingeklappte Card -> Touren-Panel rückt hoch
+}
+function expandTitle(){
+  const t=document.getElementById('title'); if(!t) return;
+  t.classList.remove('mini'); try{ localStorage.setItem('alpen_title_mini','0'); }catch(_){}
+  if(typeof sizeCov==='function') sizeCov();
+}
+let _titleAuto=false, _titleChoice=null;
+try{ _titleChoice=localStorage.getItem('alpen_title_mini'); }catch(_){}
+function _autoCollapseTitle(){ if(_titleAuto || _titleChoice) return; _titleAuto=true; collapseTitle(true); }
+if(_titleChoice==='1'){ const _t=document.getElementById('title'); if(_t){ _fillTmKpi(); _t.classList.add('mini'); } }  // Restore ohne Re-Persist
 // T4: Legende (Sektoren) auf-/zuklappen.
 function toggleLegend(){ document.getElementById('legend').classList.toggle('open');
   if(typeof sizeCov==='function') sizeCov(); }   /* P1: Title-Höhe ändert sich -> #cov-Höhe neu messen */
@@ -2950,7 +3014,8 @@ function restoreUndo(e){
   if(_undoPose){ _autoPitch=false; map.easeTo({center:_undoPose.center,zoom:_undoPose.zoom,
     bearing:_undoPose.bearing,pitch:_undoPose.pitch,duration:800,essential:true}); _undoPose=null; }
 }
-map.on('movestart', e=>{ if(e && e.originalEvent) _hideUndoChip(); });
+map.on('movestart', e=>{ if(e && e.originalEvent){ _hideUndoChip(); _autoCollapseTitle(); } });   // P1.2: erste Interaktion klappt Title-Card ein
+map.on('click', ()=>_autoCollapseTitle());
 
 // ── Coverage list + Tour-Filter (private build only) ──────────────────────────
 /* PRIV:START */
@@ -3161,6 +3226,13 @@ function togglePersGrid(){
   try{ localStorage.setItem('alpen_pers_open', open?'1':'0'); }catch(_){}
   sizeCov();
 }
+// Politur P1.4: Filter-Block als Ganzes ein-/ausklappen (Default offen; localStorage).
+function toggleFilterBlock(){
+  const cov=document.getElementById('cov'); if(!cov) return;
+  const open=cov.classList.toggle('filter-open');
+  try{ localStorage.setItem('alpen_filter_open', open?'1':'0'); }catch(_){}
+  sizeCov();
+}
 // #cov-Kopf: auf-/zuklappen + Höhe neu messen.
 function toggleCov(){
   const cov=document.getElementById('cov'); if(!cov) return;
@@ -3192,11 +3264,13 @@ function markChronoGroupYears(props){
     const y=CHRONO.years[+c.dataset.i]; if(yrs.has(y)) c.classList.add('chsel');
   });
 }
-// Init: Chip-Grid-Zustand aus localStorage; #cov-Höhe initial messen.
+// Init: Chip-Grid + Filter-Block-Zustand aus localStorage; #cov-Höhe initial messen.
 (function(){
-  let v='0'; try{ v=localStorage.getItem('alpen_pers_open')||'0'; }catch(_){}
-  const cov=document.getElementById('cov');
-  if(cov && v==='1') cov.classList.add('pers-open');
+  const cov=document.getElementById('cov'); if(!cov) return;
+  let pv='0'; try{ pv=localStorage.getItem('alpen_pers_open')||'0'; }catch(_){}
+  if(pv==='1') cov.classList.add('pers-open');
+  let fv='1'; try{ const s=localStorage.getItem('alpen_filter_open'); if(s!==null) fv=s; }catch(_){}
+  if(fv==='1') cov.classList.add('filter-open');   // Default: Filter-Block offen
 })();
 // P2: Esc-Kaskade — Steckbrief -> Liste (backToList), Liste -> Panel zu. Lightbox/Suche haben Vorrang.
 document.addEventListener('keydown', e=>{
