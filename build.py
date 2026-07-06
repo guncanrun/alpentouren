@@ -212,6 +212,9 @@ _HUT_ALIASES_RAW = {
     "Rotwandhütte":   "Rifugio Roda di Vael",
     "Vajolethütte":   "Rifugio Vajolet",
     "Antermoiahütte": "Rifugio Antermoia",
+    # Nachtjob P4 (Michael-bestätigt): Pisciadù-Langname; Gardeccia in OSM-Hütten (nicht huts_wiki).
+    "Rifugio F. Cavazza al Pisciadù": "Utia Pisciadù - Pisciadù Hütte - Rifugio Franco Cavazza al Pisciadù",
+    "Gardecciahütte": "Rifugio Gardeccia",
 }
 
 hut_visits, hut_nonmatch = {}, []
