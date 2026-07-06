@@ -36,6 +36,9 @@ touren_public.json
 # Private Memoiren-Assets (Fotos/Abzeichen) — nie committen
 privat_assets/
 
+# Rekonstruierte GPX-Tracks (privat, Quelle: Buch von Andreas) — nie committen
+tracks/
+
 # Standalone-Privat-Build (file://-Versand, base64-Fotos) — nie committen
 index_privat_standalone.html
 # Papa-Mitgabe-Kopie des Standalone (W7 §6b) — gitignored wie der Standalone

@@ -477,6 +477,7 @@
     <div class="grp" title="Wie komme ich hin? Talorte + Personen-Seilbahnen">Anreise</div>
     <div id="tglPlaces" class="tgl" onclick="togglePlaces()"><span>Orte</span><span class="sw"></span></div>
     <div id="tglCable" class="tgl" onclick="toggleCable()"><span>Seilbahnen</span><span class="sw"></span></div>
+    
   </div></div>
 </div>
 
@@ -1668,8 +1669,9 @@ function openSts(feat, camMode){   // camMode: undef=Gate(§6a), 'force'=immer f
 let _restoring=false;
 function persistToggles(){
   if(_restoring) return;
-  try{ localStorage.setItem('alpen_toggles', JSON.stringify(
-    {f:_farbungOn,n:_layersOn,b:_bordersOn,p:_peaksOn,h:_hutsOn,s:_passesOn,o:_placesOn,c:_cableOn})); }catch(_){}
+  try{ const _st={f:_farbungOn,n:_layersOn,b:_bordersOn,p:_peaksOn,h:_hutsOn,s:_passesOn,o:_placesOn,c:_cableOn};
+    if(typeof _tracksOn!=='undefined') _st.t=_tracksOn;   // nur Privat (PRIV-Strip laesst _tracksOn im Public weg)
+    localStorage.setItem('alpen_toggles', JSON.stringify(_st)); }catch(_){}
 }
 function restoreToggles(){
   let st; try{ st=JSON.parse(localStorage.getItem('alpen_toggles')||'null'); }catch(_){ st=null; }
@@ -1684,6 +1686,7 @@ function restoreToggles(){
     if(st.s===true  && !_passesOn) togglePasses();
     if(st.o===true  && !_placesOn) togglePlaces();
     if(st.c===true  && !_cableOn)  toggleCable();
+    if(typeof _tracksOn!=='undefined' && st.t===false && _tracksOn) toggleTracks();
   } finally { _restoring=false; }
 }
 
@@ -1765,6 +1768,7 @@ function toggleCable(){
   document.getElementById('tglCable').classList.toggle('on',_cableOn);
   persistToggles();
 }
+
 
 // ── kurzlebiger Hinweis (Toast, kein Modal) ───────────────────────────────────
 let _toastT=null;
@@ -2023,6 +2027,7 @@ if(sInput){
 function closePanel(){
   stsPopup.remove();
   document.getElementById('panel').classList.remove('open');
+  if(window.highlightTrack) highlightTrack(null);   // Track-Hervorhebung zuruecksetzen
   map.setFilter('sts-selected',['==',['get','STS'],'']);
   _selSts=''; updateStsLabelFilter();   // B4: Gruppennamen wieder alle einblenden
   resetGroupPeaks();

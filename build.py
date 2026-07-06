@@ -55,6 +55,7 @@ def normalize_label(s):
 if PUBLIC:
     data = {"touren": []}
     touren_json = "[]"
+    tracks_json = "null"   # E8: keine Track-Daten im Public-Build
 else:
     _raw = (HERE / SRC).read_text(encoding="utf-8").replace("\x00", "").strip()
     data = json.loads(_raw)
@@ -75,6 +76,77 @@ else:
                     f["src"] = "data:image/jpeg;base64," + _b64.b64encode(b).decode("ascii")
         if _foto_bytes > 6 * 1024 * 1024:
             print(f"WARN Fotos gesamt {_foto_bytes//1024} KB (>6 MB) -- Qualitaet/Anzahl pruefen.")
+
+    # ── GPX-Tracks (rekonstruiert, SPEC_GPX_Tracks_Privat, 06.07.) ────────────
+    # touren.json-Feld "gpx" = Pfad unter tracks/ (gitignored). Sanitize (Zeit-
+    # stempel/Waypoints verwerfen, Duplikate raus) + Douglas-Peucker (~10 m) ->
+    # schlanke 2D-LineStrings inline. km/hm werden aus dem VOLLEN Track berechnet
+    # und in die Tour geschrieben (track_km/track_hm), Hoehen bleiben im Quell-GPX
+    # (spaeteres Hoehenprofil-Paket). Nur Privat/Standalone (E8).
+    import math as _m
+
+    def _gpx_pts(path):
+        raw = path.read_text(encoding="utf-8")
+        pts = [(float(lo), float(la), float(el)) for la, lo, el in re.findall(
+            r'<trkpt lat="(-?[0-9.]+)" lon="(-?[0-9.]+)">\s*<ele>(-?[0-9.]+)</ele>', raw)]
+        return [p for i, p in enumerate(pts) if i == 0 or p[:2] != pts[i-1][:2]]
+
+    def _hav_m(a, b):
+        la1, lo1, la2, lo2 = map(_m.radians, (a[1], a[0], b[1], b[0]))
+        return 6371000 * 2 * _m.asin(_m.sqrt(_m.sin((la2-la1)/2)**2 +
+               _m.cos(la1) * _m.cos(la2) * _m.sin((lo2-lo1)/2)**2))
+
+    def _dp(pts, tol):
+        # Douglas-Peucker auf Grad-Koordinaten; tol 1e-4 Grad = ~8-11 m in den Alpen.
+        if len(pts) < 3:
+            return pts
+        def _d(p, a, b):
+            ax, ay, bx, by, px, py = a[0], a[1], b[0], b[1], p[0], p[1]
+            dx, dy = bx - ax, by - ay
+            if dx == 0 and dy == 0:
+                return _m.hypot(px - ax, py - ay)
+            t = max(0.0, min(1.0, ((px-ax)*dx + (py-ay)*dy) / (dx*dx + dy*dy)))
+            return _m.hypot(px - (ax + t*dx), py - (ay + t*dy))
+        keep = [False] * len(pts); keep[0] = keep[-1] = True
+        stack = [(0, len(pts) - 1)]
+        while stack:
+            i0, i1 = stack.pop()
+            if i1 <= i0 + 1:
+                continue
+            dmax, imax = 0.0, None
+            for i in range(i0 + 1, i1):
+                d = _d(pts[i], pts[i0], pts[i1])
+                if d > dmax:
+                    dmax, imax = d, i
+            if imax is not None and dmax > tol:
+                keep[imax] = True
+                stack += [(i0, imax), (imax, i1)]
+        return [p for p, k in zip(pts, keep) if k]
+
+    _tfeats = []
+    for t in data["touren"]:
+        rel = t.get("gpx")
+        if not rel:
+            continue
+        p = HERE / rel
+        if not p.exists():
+            print(f"[tracks] WARN {rel} fehlt -- Tour {t['id']} ohne Linie")
+            continue
+        pts = _gpx_pts(p)
+        km = sum(_hav_m(pts[i], pts[i+1]) for i in range(len(pts)-1)) / 1000
+        hm = sum(max(0.0, pts[i+1][2] - pts[i][2]) for i in range(len(pts)-1))
+        simp = _dp(pts, 1e-4)
+        t["track_km"] = round(km, 1)
+        t["track_hm"] = int(round(hm / 10) * 10)
+        _tfeats.append({"type": "Feature",
+            "geometry": {"type": "LineString",
+                         "coordinates": [[round(x, 5), round(y, 5)] for x, y, _e in simp]},
+            "properties": {"tour_id": t["id"],
+                           "rek": 1 if t.get("gpx_rekonstruiert") else 0}})
+        print(f"[tracks] Tour {t['id']}: {len(pts)} -> {len(simp)} Punkte · {km:.1f} km · +{hm:.0f} hm")
+    tracks_json = json.dumps({"type": "FeatureCollection", "features": _tfeats},
+                             ensure_ascii=False, separators=(",", ":"))
+
     touren_json = json.dumps(data["touren"], ensure_ascii=False)
 
 sts_json        = load_compact("soiusa_sts_colored.geojson")
@@ -765,6 +837,8 @@ Touren ansehen <span id="covCount"></span>
     <div class="grp" title="Wie komme ich hin? Talorte + Personen-Seilbahnen">Anreise</div>
     <div id="tglPlaces" class="tgl" onclick="togglePlaces()"><span>Orte</span><span class="sw"></span></div>
     <div id="tglCable" class="tgl" onclick="toggleCable()"><span>Seilbahnen</span><span class="sw"></span></div>
+    <!-- PRIV:START --><div class="grp" title="Rekonstruierte Routen aus dem Buch von Andreas">Erinnerung</div>
+    <div id="tglTracks" class="tgl on" onclick="toggleTracks()"><span>Touren-Tracks</span><span class="sw"></span></div><!-- PRIV:END -->
   </div></div>
 </div>
 
@@ -828,6 +902,8 @@ document.getElementById('covCount').textContent =
 
 // ── Tour point markers (privat only — public JSON has no coordinates) ─────────
 /* PRIV:START */
+// Rekonstruierte GPX-Track-Linien (SPEC_GPX_Tracks_Privat) — nur Privat-Build.
+const TRACKS = __TRACKS_GEOJSON__;
 const fc = {type:'FeatureCollection', features: TOUREN.map(t=>({
   type:'Feature',
   geometry:{type:'Point', coordinates:[t.lon, t.lat]},
@@ -1186,6 +1262,7 @@ map.on('load',()=>{
   map.addSource('sts-lp',    {type:'geojson', data:SOIUSA_LBL_PTS});
   /* PRIV:START */
   map.addSource('tours',     {type:'geojson', data:fc});
+  map.addSource('tracks',    {type:'geojson', data: TRACKS || {type:'FeatureCollection',features:[]}});
   /* PRIV:END */
   // OSM overlays as URL sources (not inlined) — keeps index.html small.
   map.addSource('osm-peaks', {type:'geojson', data:OSM_PEAKS  || './soiusa_osm_peaks.geojson'});
@@ -1580,6 +1657,30 @@ map.on('load',()=>{
     paint:{'line-color':'#ffffff','line-width':3.2,'line-opacity':0.95}});
 
   /* PRIV:START */
+  // ── Touren-Tracks (rekonstruierte GPX-Linien, unter Markern & Labels) ──────
+  // Weisse Casing-Linie fuer Lesbarkeit auf Satellit, darueber Besucht-Orange
+  // (Konvention t-dot verifiziert #d9640f). Toggle "Touren-Tracks" default AN.
+  map.addLayer({id:'trk-casing', type:'line', source:'tracks',
+    layout:{'line-cap':'round','line-join':'round'},
+    paint:{'line-color':'#ffffff',
+           'line-width':['interpolate',['linear'],['zoom'], 7,2.6, 11,5.0, 14,7.0],
+           'line-opacity':0.55}});
+  map.addLayer({id:'trk-line', type:'line', source:'tracks',
+    layout:{'line-cap':'round','line-join':'round'},
+    paint:{'line-color':'#d9640f',
+           'line-width':['interpolate',['linear'],['zoom'], 7,1.6, 11,3.0, 14,4.2],
+           'line-opacity':0.95}});
+  // Aktive Tour hervorheben (openTour); null = alle gleich.
+  function highlightTrack(id){
+    try{
+      map.setPaintProperty('trk-line','line-opacity',
+        id==null ? 0.95 : ['case',['==',['get','tour_id'],id], 1.0, 0.25]);
+      map.setPaintProperty('trk-casing','line-opacity',
+        id==null ? 0.55 : ['case',['==',['get','tour_id'],id], 0.7, 0.15]);
+    }catch(_){}
+  }
+  window.highlightTrack = highlightTrack;
+
   // ── Tour markers v2b (privat, Michael-Eskalation 2): POI-Pin-Charakter ─────
   // Weiche Glow-Scheibe (t-halo) · KRÄFTIGE helle Badge-Scheibe (t-badge, POI-
   // Rückgrund) · unsichtbarer Hit-Kreis (t-hit, ≥40 px) · großer SDF-Wanderer
@@ -1923,9 +2024,13 @@ function openTour(id){
   // Tour pane: private only (Hütten + Notiz)
   let tour='';
   if(t.huetten) tour+='<div class="sec"><h3>Hütten / Stationen</h3>'+t.huetten+'</div>';
+  if(t.track_km) tour+='<div class="sec"><h3>Track</h3>'+String(t.track_km).replace('.',',')+
+    ' km · +'+t.track_hm+' hm'+
+    (t.gpx_rekonstruiert?'<br><i>Route rekonstruiert nach Etappenpunkten (Buch von Andreas)</i>':'')+'</div>';
   if(t.bemerkung) tour+='<div class="sec"><h3>Notiz</h3>'+t.bemerkung+'</div>';
   setTourTab(tour, katOf(t));   // §5: Tab-Titel = Kategorie
   document.getElementById('panel').classList.add('open');
+  if(window.highlightTrack) highlightTrack(t.gpx?id:null);   // aktiven Track hervorheben
   map.flyTo({center:[t.lon,t.lat],zoom:9.5,pitch:20,bearing:0,duration:1200,essential:true});
 }
 /* PRIV:END */
@@ -2165,8 +2270,9 @@ function openSts(feat, camMode){   // camMode: undef=Gate(§6a), 'force'=immer f
 let _restoring=false;
 function persistToggles(){
   if(_restoring) return;
-  try{ localStorage.setItem('alpen_toggles', JSON.stringify(
-    {f:_farbungOn,n:_layersOn,b:_bordersOn,p:_peaksOn,h:_hutsOn,s:_passesOn,o:_placesOn,c:_cableOn})); }catch(_){}
+  try{ const _st={f:_farbungOn,n:_layersOn,b:_bordersOn,p:_peaksOn,h:_hutsOn,s:_passesOn,o:_placesOn,c:_cableOn};
+    if(typeof _tracksOn!=='undefined') _st.t=_tracksOn;   // nur Privat (PRIV-Strip laesst _tracksOn im Public weg)
+    localStorage.setItem('alpen_toggles', JSON.stringify(_st)); }catch(_){}
 }
 function restoreToggles(){
   let st; try{ st=JSON.parse(localStorage.getItem('alpen_toggles')||'null'); }catch(_){ st=null; }
@@ -2181,6 +2287,7 @@ function restoreToggles(){
     if(st.s===true  && !_passesOn) togglePasses();
     if(st.o===true  && !_placesOn) togglePlaces();
     if(st.c===true  && !_cableOn)  toggleCable();
+    if(typeof _tracksOn!=='undefined' && st.t===false && _tracksOn) toggleTracks();
   } finally { _restoring=false; }
 }
 
@@ -2265,6 +2372,16 @@ function toggleCable(){
   document.getElementById('tglCable').classList.toggle('on',_cableOn);
   persistToggles();
 }
+/* PRIV:START */
+// Touren-Tracks (rekonstruierte GPX-Linien) — default AN im Privat-Build.
+let _tracksOn=true;
+function toggleTracks(){
+  _tracksOn=!_tracksOn; const v=_tracksOn?'visible':'none';
+  _setVis(['trk-casing','trk-line'], v);
+  document.getElementById('tglTracks').classList.toggle('on',_tracksOn);
+  persistToggles();
+}
+/* PRIV:END */
 
 // ── kurzlebiger Hinweis (Toast, kein Modal) ───────────────────────────────────
 let _toastT=null;
@@ -2523,6 +2640,7 @@ if(sInput){
 function closePanel(){
   stsPopup.remove();
   document.getElementById('panel').classList.remove('open');
+  if(window.highlightTrack) highlightTrack(null);   // Track-Hervorhebung zuruecksetzen
   map.setFilter('sts-selected',['==',['get','STS'],'']);
   _selSts=''; updateStsLabelFilter();   // B4: Gruppennamen wieder alle einblenden
   resetGroupPeaks();
@@ -2808,6 +2926,7 @@ function chronoToggle(){ _chronoOn?chronoExit():chronoEnter(); }
 """
 
 html = TEMPLATE.replace("__TOUREN_GEOJSON__",        touren_json)
+html = html.replace("__TRACKS_GEOJSON__",             tracks_json)
 html = html.replace("__SOIUSA_STS_GEOJSON__",         sts_json)
 html = html.replace("__SOIUSA_HIGHLIGHTS_GEOJSON__",  highlights_json)
 html = html.replace("__MASK_GEOJSON__",               mask_json)

@@ -203,7 +203,12 @@ for bad, label in [("Tour mit Papa", "private tab label"),
                    ("privat_assets", "private photo asset path (privat-only)"),
                    ("openLightbox", "photo lightbox fn (privat-only)"),
                    ("Ihr wart hier", "hut visit badge (privat-only, §1)"),
-                   ("const HUT_VISITS", "hut visit map (privat-only, §1)")]:
+                   ("const HUT_VISITS", "hut visit map (privat-only, §1)"),
+                   ("const TRACKS", "GPX track data (privat-only, SPEC_GPX_Tracks)"),
+                   ("trk-line", "GPX track layer (privat-only)"),
+                   ('"tour_id"', "track tour_id prop (privat-only)"),
+                   ("tglTracks", "tracks toggle (privat-only)"),
+                   ("track_km", "track km field (privat-only)")]:
     if bad in html:
         print(f"FAIL public leak: '{bad}' ({label}) present in index.html")
         errors.append(f"public leak: {bad}")
