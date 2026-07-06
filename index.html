@@ -446,6 +446,7 @@
 
 <div id="panel">
   <div class="x" onclick="closePanel()">&times;</div>
+  
   <div class="ph">
     <div class="yr" id="pYear"></div>
     <h2 id="pGroup"></h2>
@@ -478,7 +479,6 @@
     <div class="grp" title="Wie komme ich hin? Talorte + Personen-Seilbahnen">Anreise</div>
     <div id="tglPlaces" class="tgl" onclick="togglePlaces()"><span>Orte</span><span class="sw"></span></div>
     <div id="tglCable" class="tgl" onclick="toggleCable()"><span>Seilbahnen</span><span class="sw"></span></div>
-    
   </div></div>
 </div>
 
@@ -1509,13 +1509,13 @@ function showTab(name){
   if(ta) ta.classList.toggle('active', name==='about');
   if(tt) tt.classList.toggle('active', name==='tour');
 }
-function setTourTab(html, label){
+function setTourTab(html, count){
   const el=document.getElementById('pTour');
   const tabs=document.getElementById('pTabs');
   const tt=document.getElementById('tabTour');
   const show = PRIV && !!html;
   if(el) el.innerHTML = show ? html : '';
-  if(tt && label) tt.textContent = label;      // §5: dynamischer Tab-Titel (Kategorie)
+  if(tt) tt.textContent = 'Touren'+(count?' ('+count+')':'');   // P2: „Touren (n)"
   if(tabs) tabs.style.display = show ? 'flex' : 'none';
   showTab(show ? 'tour' : 'about');
 }
@@ -1646,15 +1646,16 @@ function openSts(feat, camMode){   // camMode: undef=Gate(§6a), 'force'=immer f
   
 
   document.getElementById('pAbout').innerHTML = steckbriefHtml(stsName, props);
-  setTourTab(visited ? groupTourHtml(props) : '', visited ? katLabel(_toursOf(props)) : '');  // §5: Kategorie
+  setTourTab(visited ? groupTourHtml(props) : '', visited ? _toursOf(props).length : 0);  // P2: „Touren (n)"
   showGroupPeaks(stsName);
 
+  const _pnl=document.getElementById('panel');
   
   // §1 (W4): Steckbrief unter der Title-Card andocken (kein Overlap der KPI-Zeile).
-  // Nur Desktop; auf Mobile (<=640) uebernimmt die Bottom-Media-Query (top:auto).
-  const _tc=document.getElementById('title'), _pnl=document.getElementById('panel');
+  const _tc=document.getElementById('title');
   if(_tc && window.innerWidth>640) _pnl.style.top=(_tc.getBoundingClientRect().bottom+10)+'px';
   else _pnl.style.top='';
+  
   _pnl.classList.add('open');
   // §6a (W4)/Fix2: 'nofly' -> nie fliegen (Chronik fliegt selbst); sonst ab z>=11 kein
   // Auto-flyTo bei Klick (Fehlklick-Schutz), 'force' (Suche) springt immer.

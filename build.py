@@ -495,6 +495,33 @@ __HEAD_LIBS__
   @media (pointer: coarse){ .tf-chip{min-height:var(--row-h)} .tf-badge{min-height:32px} .tf-perstoggle{min-height:var(--row-h)} }
   /* Chronik-Sync: Auswahl-Rahmen (Gebiet offen) — teal Ring, klar vom Play-Cursor (orange) getrennt */
   #chronoChips .chip.chsel{box-shadow:inset 0 0 0 2px var(--accent2)}
+  /* Touren-Tracks-Toggle im Kopf des Touren-Panels (P2: aus Ebenen umgezogen) */
+  #tourFilter .tf-tracks{padding:5px 2px 1px;min-height:30px;font-size:12px;color:var(--muted);margin-top:2px;
+    border-top:1px solid rgba(255,255,255,.06)}
+  @media (pointer: coarse){ #tourFilter .tf-tracks{min-height:var(--row-h)} }
+  /* ── P2: Master-Detail — Steckbrief nutzt (Desktop, privat) die Tourenlisten-Position ── */
+  #panel.as-cov{top:auto;bottom:calc(var(--row-h) + 54px);left:16px;width:288px;
+    max-height:calc(100vh - 130px);display:flex;flex-direction:column}
+  #panel.as-cov .body{max-height:none;flex:1 1 auto;min-height:0}
+  #panel .pback{display:none;align-items:center;gap:7px;padding:8px 13px 7px;cursor:pointer;
+    font-size:12px;color:var(--accent2);border-bottom:1px solid var(--line);user-select:none;touch-action:manipulation}
+  #panel.has-back .pback{display:flex}   /* Rückzeile in allen Viewports (Master-Detail) */
+  #panel .pback:hover{color:var(--txt)}
+  /* ── P2: Touren-Accordion (Tab „Touren (n)") ── */
+  .tcard{border:1px solid var(--line);border-radius:9px;margin:0 0 7px;overflow:hidden;background:rgba(255,255,255,.02)}
+  .tcard-h{display:flex;align-items:center;gap:8px;padding:7px 9px;cursor:pointer;min-height:var(--row-h);
+    box-sizing:border-box;touch-action:manipulation;user-select:none}
+  .tcard-h .tc-yr{color:var(--accent);font-weight:700;font-variant-numeric:tabular-nums;cursor:pointer;flex:0 0 auto}
+  .tcard-h .tc-yr:hover{text-decoration:underline}
+  .tcard-h .tc-geb{flex:1;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tcard-h .tc-caret{color:var(--muted);transition:transform .25s;font-size:.85em;flex:0 0 auto}
+  .tcard.open .tc-caret{transform:rotate(180deg)}
+  .tcard-b{display:none;padding:2px 11px 10px;font-size:13px;line-height:1.5}
+  .tcard.open .tcard-b{display:block}
+  .tcard-b .tc-row{margin:5px 0}
+  .tcard-b .tc-k{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:1px}
+  .tcard-b .tc-chrono{display:inline-block;margin-top:6px;font-size:11.5px;color:var(--accent2);cursor:pointer}
+  .tcard-b .tc-chrono:hover{text-decoration:underline}
   /* PRIV:END */
 
   /* ── STS group popup ── */
@@ -851,6 +878,7 @@ __HEAD_LIBS__
 
 <div id="panel">
   <div class="x" onclick="closePanel()">&times;</div>
+  <!-- PRIV:START --><div class="pback" id="pBack" onclick="backToList()">&#8592; Touren</div><!-- PRIV:END -->
   <div class="ph">
     <div class="yr" id="pYear"></div>
     <h2 id="pGroup"></h2>
@@ -878,6 +906,7 @@ Touren ansehen <span id="covCount"></span>
       <div class="tf-perstoggle" id="tfPersToggle" onclick="togglePersGrid()"><span>Personen filtern</span><span class="tf-caret">&#9662;</span></div>
       <div class="tf-badges" id="filterBadges"></div>
       <div class="tf-chips" id="personChips"></div>
+      <div id="tglTracks" class="tgl on tf-tracks" onclick="toggleTracks()" title="Rekonstruierte Routen aus dem Buch von Andreas"><span>Touren-Tracks</span><span class="sw"></span></div>
     </div>
     <div id="covList"></div>
     <div id="covEmpty" class="tf-empty" style="display:none"></div>
@@ -918,8 +947,6 @@ Touren ansehen <span id="covCount"></span>
     <div class="grp" title="Wie komme ich hin? Talorte + Personen-Seilbahnen">Anreise</div>
     <div id="tglPlaces" class="tgl" onclick="togglePlaces()"><span>Orte</span><span class="sw"></span></div>
     <div id="tglCable" class="tgl" onclick="toggleCable()"><span>Seilbahnen</span><span class="sw"></span></div>
-    <!-- PRIV:START --><div class="grp" title="Rekonstruierte Routen aus dem Buch von Andreas">Erinnerung</div>
-    <div id="tglTracks" class="tgl on" onclick="toggleTracks()"><span>Touren-Tracks</span><span class="sw"></span></div><!-- PRIV:END -->
   </div></div>
 </div>
 
@@ -2075,13 +2102,13 @@ function showTab(name){
   if(ta) ta.classList.toggle('active', name==='about');
   if(tt) tt.classList.toggle('active', name==='tour');
 }
-function setTourTab(html, label){
+function setTourTab(html, count){
   const el=document.getElementById('pTour');
   const tabs=document.getElementById('pTabs');
   const tt=document.getElementById('tabTour');
   const show = PRIV && !!html;
   if(el) el.innerHTML = show ? html : '';
-  if(tt && label) tt.textContent = label;      // §5: dynamischer Tab-Titel (Kategorie)
+  if(tt) tt.textContent = 'Touren'+(count?' ('+count+')':'');   // P2: „Touren (n)"
   if(tabs) tabs.style.display = show ? 'flex' : 'none';
   showTab(show ? 'tour' : 'about');
 }
@@ -2096,29 +2123,9 @@ function gipfelUl(gipfel){
 
 // ── Open: tour marker (privat only) ───────────────────────────────────────────
 /* PRIV:START */
-function openTour(id){
-  const t=TOUREN.find(x=>x.id==id); if(!t) return;
-  map.setFilter('sts-selected',['==',['get','STS'],'']);
-  resetGroupPeaks();
-  document.getElementById('pYear').textContent=(t.land?t.land+' · ':'')+t.jahr;
-  document.getElementById('pGroup').textContent=t.gebirge;
-  document.getElementById('pGegend').textContent=t.gegend||'';
-  // About pane: impersonal facts (Gipfel)
-  let about='';
-  if(t.gipfel&&t.gipfel.length) about+='<div class="sec"><h3>Gipfel</h3>'+gipfelUl(t.gipfel)+'</div>';
-  document.getElementById('pAbout').innerHTML = about || '<div class="sb-open">—</div>';
-  // Tour pane: private only (Hütten + Notiz)
-  let tour='';
-  if(t.huetten) tour+='<div class="sec"><h3>Hütten / Stationen</h3>'+t.huetten+'</div>';
-  if(t.track_km) tour+='<div class="sec"><h3>Track</h3>'+String(t.track_km).replace('.',',')+
-    ' km · +'+t.track_hm+' hm'+
-    (t.gpx_rekonstruiert?'<br><i>Route rekonstruiert nach Etappenpunkten (Buch von Andreas)</i>':'')+'</div>';
-  if(t.bemerkung) tour+='<div class="sec"><h3>Notiz</h3>'+t.bemerkung+'</div>';
-  setTourTab(tour, katOf(t));   // §5: Tab-Titel = Kategorie
-  document.getElementById('panel').classList.add('open');
-  if(window.highlightTrack) highlightTrack(t.gpx?id:null);   // aktiven Track hervorheben
-  map.flyTo({center:[t.lon,t.lat],zoom:9.5,pitch:20,bearing:0,duration:1200,essential:true});
-}
+// P2: Tour-Marker-Klick öffnet — wie die Listen-Zeile — den Gruppen-Steckbrief
+// mit dieser Tour-Karte aufgeklappt (openTourRow). Vereinheitlicht Marker & Liste.
+function openTour(id){ openTourRow(id); }
 /* PRIV:END */
 
 // ── Steckbrief markup (public-safe, from soiusa_wiki.json) ────────────────────
@@ -2227,24 +2234,44 @@ function _toursOf(props){
 function katOf(t){ return (t && t.kategorie && String(t.kategorie).trim()) || 'Tour'; }
 function katLabel(tours){ const s=[...new Set((tours||[]).map(katOf))]; return s.length===1 ? s[0] : 'Touren'; }
 
+// P2: Tab „Touren (n)" = Accordion, eine Karte pro Tour (chronologisch aufsteigend).
+// Beim Einstieg über eine Listen-Zeile/Marker ist _pendingTour aufgeklappt.
 function groupTourHtml(props){
-  const tours = _toursOf(props);
+  const tours = _toursOf(props).slice().sort((a,b)=>(jahrSort(a.jahr)||0)-(jahrSort(b.jahr)||0));
   if(!tours.length) return '';
-  let html='';
-  const gebs=[...new Set(tours.map(t=>t.gebirge))];
-  if(gebs.length>1) html+='<div class="notiz" style="margin:0 0 9px">SOIUSA fasst '+
-    gebs.join(' &amp; ')+' zu einer Untergruppe zusammen ('+tours.length+' Touren).</div>';
-  tours.forEach(t=>{
-    html+='<div class="sec">';
-    if(tours.length>1) html+='<h3>'+t.gebirge+(t.jahr?' — '+t.jahr:'')+'</h3>';
-    html+=gipfelUl(t.gipfel);
-    if(t.huetten) html+='<div class="notiz"><b style="color:var(--muted)">Hütten:</b> '+t.huetten+'</div>';
-    if(t.bemerkung) html+='<div class="notiz">'+t.bemerkung+'</div>';
-    if(t.memo && t.memo.trim()) html+='<div class="tour-memo">'+_esc(t.memo.trim()).replace(/\n/g,'<br>')+'</div>';
-    html+=fotoBand(t);
-    html+='</div>';
-  });
-  return html;
+  // Einstiegs-Tour aufgeklappt: die angeklickte (_pendingTour) oder – bei Karten-Klick – die erste.
+  const openId = tours.some(t=>t.id===_pendingTour) ? _pendingTour : tours[0].id;
+  return tours.map(t=>{
+    const op=(t.id===openId)?' open':'';
+    const yr=_e(String(t.jahr||'')), geb=_e(t.gebirge||t.gegend||''), kat=_e(katOf(t));
+    const jj="chronoJumpYear('"+_e(String(t.jahr||''))+"')";
+    let b='';
+    if(t.datum) b+='<div class="tc-row"><span class="tc-k">Datum</span>'+_e(t.datum)+'</div>';
+    if(t.teilnehmer) b+='<div class="tc-row"><span class="tc-k">Teilnehmer</span>'+_e(t.teilnehmer)+'</div>';
+    if(t.gipfel&&t.gipfel.length) b+='<div class="tc-row"><span class="tc-k">Gipfel</span>'+gipfelUl(t.gipfel)+'</div>';
+    if(t.huetten) b+='<div class="tc-row"><span class="tc-k">Hütten / Stationen</span>'+_e(t.huetten)+'</div>';
+    if(t.track_km) b+='<div class="tc-row"><span class="tc-k">Track</span>'+String(t.track_km).replace('.',',')+
+      ' km · +'+t.track_hm+' hm'+(t.gpx_rekonstruiert?' · <i>rekonstruiert (Buch von Andreas)</i>':'')+'</div>';
+    if(t.bemerkung) b+='<div class="tc-row">'+_e(t.bemerkung)+'</div>';
+    if(t.memo&&t.memo.trim()) b+='<div class="tour-memo">'+_esc(t.memo.trim()).replace(/\n/g,'<br>')+'</div>';
+    b+=fotoBand(t);
+    b+='<span class="tc-chrono" onclick="event.stopPropagation();'+jj+'">In der Chronik zeigen &rarr;</span>';
+    return '<div class="tcard'+op+'" data-tid="'+t.id+'">'+
+      '<div class="tcard-h" onclick="toggleTcard(this)">'+
+        '<span class="tc-yr" onclick="event.stopPropagation();'+jj+'" title="In der Chronik zeigen">'+yr+'</span>'+
+        '<span class="tc-geb">'+geb+'</span><span class="cc-kat">'+kat+'</span>'+
+        '<span class="tc-caret">&#9662;</span></div>'+
+      '<div class="tcard-b">'+b+'</div></div>';
+  }).join('');
+}
+function toggleTcard(h){ if(h&&h.parentElement) h.parentElement.classList.toggle('open'); }
+// „In der Chronik zeigen": Steckbrief schließen, Chronik-Modus, zum Jahr springen (Play-Cursor setzen).
+function chronoJumpYear(jahr){
+  const y=jahrSort(jahr); if(y==null) return;
+  closePanel();
+  if(!_chronoOn) chronoEnter();
+  const idx=CHRONO.years.indexOf(y);
+  if(idx>=0) chronoSetYear(idx);
 }
 // Horizontales Foto-Scrollband einer Tour; Tap -> Lightbox.
 function fotoBand(t){
@@ -2254,13 +2281,13 @@ function fotoBand(t){
     '<img class="fb-img" src="'+f.src+'" loading="lazy" alt="'+_esc(f.caption||'')+
     '" onclick="openLightbox('+t.id+','+i+')">').join('')+'</div>';
 }
-// W1b: aus der Chronik-Caption das Tour-Panel (Tab „Tour mit Papa") mit Volltext oeffnen.
+// W1b: aus der Chronik-Caption den Steckbrief (Tab „Touren") mit dieser Tour-Karte öffnen.
 function openTourPanel(tourId){
   const f=SOIUSA_STS.features.find(x=>{
     let ids=[]; try{ ids=JSON.parse(x.properties.tour_ids||'[]'); }catch(_){}
     return ids.some(v=>String(v)===String(tourId));
   });
-  if(f){ openSts(f); showTab('tour'); }
+  if(f){ _pendingTour=tourId; openSts(f); showTab('tour'); }
 }
 
 // ── Foto-Lightbox (Vanilla): Fullscreen, Wischen/Pfeile/×, tap ausserhalb schliesst ──
@@ -2329,18 +2356,29 @@ function openSts(feat, camMode){   // camMode: undef=Gate(§6a), 'force'=immer f
   /* PRIV:END */
 
   document.getElementById('pAbout').innerHTML = steckbriefHtml(stsName, props);
-  setTourTab(visited ? groupTourHtml(props) : '', visited ? katLabel(_toursOf(props)) : '');  // §5: Kategorie
+  setTourTab(visited ? groupTourHtml(props) : '', visited ? _toursOf(props).length : 0);  // P2: „Touren (n)"
   showGroupPeaks(stsName);
 
+  const _pnl=document.getElementById('panel');
   /* PRIV:START */
-  document.getElementById('cov').classList.remove('open');   // Liste einklappen (P1: #panel getrennt; P2 merged)
+  // P2 Master-Detail: Desktop-Privat -> Steckbrief nimmt die Tourenlisten-Position ein
+  // (as-cov, „← Touren"-Rückzeile). Vorher Scrollposition der Liste merken.
+  const _cl=document.querySelector('#cov .cl'); _covScroll=_cl?_cl.scrollTop:0;
+  const asCov = PRIV && window.innerWidth>640 && !_chronoOn;
+  _pnl.classList.toggle('as-cov', asCov);
+  _pnl.classList.toggle('has-back', !_chronoOn);   // „← Touren"-Rückzeile (nicht im Chronik-Modus)
+  document.getElementById('cov').classList.remove('open');   // Liste einklappen (Steckbrief übernimmt)
   markChronoGroupYears(props);   // P1: Jahres-Chips dieses Gebiets markieren (Play-Cursor bleibt)
+  if(asCov){ _pnl.style.top=''; }
+  else {
   /* PRIV:END */
   // §1 (W4): Steckbrief unter der Title-Card andocken (kein Overlap der KPI-Zeile).
-  // Nur Desktop; auf Mobile (<=640) uebernimmt die Bottom-Media-Query (top:auto).
-  const _tc=document.getElementById('title'), _pnl=document.getElementById('panel');
+  const _tc=document.getElementById('title');
   if(_tc && window.innerWidth>640) _pnl.style.top=(_tc.getBoundingClientRect().bottom+10)+'px';
   else _pnl.style.top='';
+  /* PRIV:START */
+  }
+  /* PRIV:END */
   _pnl.classList.add('open');
   // §6a (W4)/Fix2: 'nofly' -> nie fliegen (Chronik fliegt selbst); sonst ab z>=11 kein
   // Auto-flyTo bei Klick (Fehlklick-Schutz), 'force' (Suche) springt immer.
@@ -2732,8 +2770,10 @@ function closePanel(){
   _selSts=''; updateStsLabelFilter();   // B4: Gruppennamen wieder alle einblenden
   resetGroupPeaks();
   /* PRIV:START */
-  // P1: Chronik-Auswahlrahmen räumen + Zeilen-Highlight zurück. try/catch schützt
-  // vor TDZ, falls closePanel vor der Coverage-Block-Init einmal früh läuft.
+  // P1/P2: Chronik-Auswahlrahmen räumen, Zeilen-Highlight zurück, Master-Detail-Klasse ab.
+  // try/catch schützt vor TDZ, falls closePanel vor der Coverage-Block-Init einmal früh läuft.
+  document.getElementById('panel').classList.remove('as-cov');
+  document.getElementById('panel').classList.remove('has-back');
   try{ clearChronoSel(); _selTourId=null; markSelTourRow(); }catch(_){}
   /* PRIV:END */
 }
@@ -2854,6 +2894,17 @@ function renderBadges(){
 // erscheinen mehrfach (Tagebuch-Logik). Strang/Personen filtern die Zeilen.
 let _selTourId=null;    // im Steckbrief geöffnete Tour (Zeilen-Highlight)
 let _pendingTour=null;  // P2: im Steckbrief aufzuklappende Tour-Karte
+let _covScroll=0;       // P2: Scrollposition der Liste (für Rückkehr aus dem Steckbrief)
+// P2: aus dem Steckbrief zurück zur Liste (Scrollposition + Filter bleiben erhalten).
+function backToList(){
+  const pnl=document.getElementById('panel'); if(!pnl.classList.contains('open')) return;
+  const wasList=pnl.classList.contains('has-back');
+  closePanel();
+  if(wasList){
+    const cov=document.getElementById('cov'); cov.classList.add('open'); sizeCov();
+    const cl=cov.querySelector('.cl'); if(cl) cl.scrollTop=_covScroll||0;
+  }
+}
 function renderCovList(){
   const cl=document.getElementById('covList'), empty=document.getElementById('covEmpty'); if(!cl) return;
   const active=filterActive();
@@ -2940,6 +2991,19 @@ function markChronoGroupYears(props){
   const cov=document.getElementById('cov');
   if(cov && v==='1') cov.classList.add('pers-open');
 })();
+// P2: Esc-Kaskade — Steckbrief -> Liste (backToList), Liste -> Panel zu. Lightbox/Suche haben Vorrang.
+document.addEventListener('keydown', e=>{
+  if(e.key!=='Escape') return;
+  const lb=document.getElementById('lightbox'); if(lb && lb.classList.contains('open')) return;
+  const s=document.getElementById('search'); if(s && s.classList.contains('open')) return;
+  const pnl=document.getElementById('panel');
+  if(pnl && pnl.classList.contains('open')){
+    if(pnl.classList.contains('has-back')) backToList(); else closePanel();
+    return;
+  }
+  const cov=document.getElementById('cov');
+  if(cov && cov.classList.contains('open')) cov.classList.remove('open');
+});
 function updateCovCount(tours){
   const el=document.getElementById('covCount'); if(!el) return;
   if(!filterActive()){
@@ -3325,10 +3389,10 @@ for _m in ("<!-- PRIV:START -->", "<!-- PRIV:END -->", "<!-- PUB:START -->", "<!
            "/* PRIV:START */", "/* PRIV:END */", "/* PUB:START */", "/* PUB:END */"):
     html = html.replace(_m, "")
 
-# Tab bar only in the private build — keeps the string "Tour mit Papa" out of public HTML.
+# Tab bar only in the private build (P2: „Touren (n)" / „Über die Gruppe").
 PTABS = "" if PUBLIC else (
     '<div class="tabs" id="pTabs">'
-    "<div class=\"tab\" id=\"tabTour\" onclick=\"showTab('tour')\">Tour mit Papa</div>"
+    "<div class=\"tab\" id=\"tabTour\" onclick=\"showTab('tour')\">Touren</div>"
     "<div class=\"tab active\" id=\"tabAbout\" onclick=\"showTab('about')\">Über die Gruppe</div>"
     "</div>")
 html = html.replace("__PTABS__", PTABS)
