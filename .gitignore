@@ -53,3 +53,8 @@ chairlift_report.json
 node_modules/
 _pw_*.mjs
 package-lock.json
+
+# Nachtjob P1: Besuchsmuster (privat, gitignored) — Overlay (Quelle der Wahrheit) + Highlight-Polygone
+visited_overlay.json
+soiusa_highlights_clean.geojson
+soiusa_highlights.geojson

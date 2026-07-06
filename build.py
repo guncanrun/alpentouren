@@ -170,9 +170,32 @@ else:
     touren_json = json.dumps(data["touren"], ensure_ascii=False)
 
 sts_json        = load_compact("soiusa_sts_colored.geojson")
-highlights_json = load_compact("soiusa_highlights_clean.geojson")
+highlights_json = load_compact("soiusa_highlights_clean.geojson") if (HERE / "soiusa_highlights_clean.geojson").exists() else '{"type":"FeatureCollection","features":[]}'
 lp_json         = load_compact("soiusa_sts_label_points.geojson")
 mask_json       = load_compact("soiusa_mask.geojson")
+
+# ── Nachtjob P1: Besuchsmuster-Overlay (gitignored) NUR im Privat-Build mergen ──────
+# Die getrackten colored/label_points sind neutral (visited:0, tour_ids:"[]"). Das
+# Besuchsmuster liegt in der gitignorierten visited_overlay.json (Quelle der Wahrheit,
+# {CODICE:{visited,tour_ids}}) und wird hier in-memory zurueckgemerged -> Privat-Render
+# identisch wie zuvor. Public bleibt uniform (zeichnet ohnehin visited:0).
+if not PUBLIC:
+    _ovp = HERE / "visited_overlay.json"
+    if _ovp.exists():
+        _ov = json.loads(_ovp.read_text(encoding="utf-8"))
+        def _merge_visited(_js):
+            _d = json.loads(_js)
+            for _f in _d["features"]:
+                _c = _f["properties"].get("CODICE")
+                if _c in _ov:
+                    _f["properties"]["visited"] = _ov[_c].get("visited", 1)
+                    _f["properties"]["tour_ids"] = json.dumps(_ov[_c].get("tour_ids", []))
+            return json.dumps(_d, ensure_ascii=False, separators=(",", ":"))
+        sts_json = _merge_visited(sts_json)
+        lp_json  = _merge_visited(lp_json)
+        print(f"  P1-Overlay: {len(_ov)} Gruppen visited/tour_ids gemerged (Privat)")
+    else:
+        print("[overlay] WARN visited_overlay.json fehlt -- Privat-Build ohne Besuchsmuster")
 
 # ── Anreise-Orte v2: city/town + villages (Michael-Fund Tschagguns/Schruns) ──────
 # v1 hatte NUR city/town -> Montafon-Talorte (village) fehlten. v2 nimmt villages

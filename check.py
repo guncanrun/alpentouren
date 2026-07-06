@@ -407,6 +407,41 @@ else:
     except ImportError:
         print("SKIP HR-Clip guard (shapely fehlt)")
 
+# ── Nachtjob P1: Besuchsmuster raus aus dem Tracking ──────────────────────────
+# Getrackte SOIUSA-GeoJSONs muessen neutral sein (visited:0, tour_ids leer); das
+# Besuchsmuster liegt gitignored in visited_overlay.json (Privat-Merge in build.py).
+import re as _rep1
+for _fn in ("soiusa_sts_colored.geojson", "soiusa_sts_label_points.geojson"):
+    _p = pathlib.Path(__file__).parent / _fn
+    if not _p.exists():
+        continue
+    _txt = _p.read_text(encoding="utf-8")
+    if '"visited": 1' in _txt or '"visited":1' in _txt:
+        print(f"FAIL privacy: '{_fn}' enthaelt visited:1 (Besuchsmuster gehoert ins Overlay)")
+        errors.append(f"privacy: {_fn} visited:1")
+    else:
+        print(f"OK   {_fn}: 0x visited:1")
+    _bad = _rep1.findall(r'"tour_ids":\s*"\[[^\]]+\]"', _txt) + _rep1.findall(r'"tour_ids":\s*\[[^\]]+\]', _txt)
+    if _bad:
+        print(f"FAIL privacy: '{_fn}' enthaelt nicht-leere tour_ids ({_bad[:2]})")
+        errors.append(f"privacy: {_fn} tour_ids")
+    else:
+        print(f"OK   {_fn}: tour_ids leer")
+
+# Besuchsmuster-Dateien (highlights / overlay) duerfen NICHT getrackt sein.
+import subprocess as _sp1
+try:
+    _tracked = _sp1.run(["git", "ls-files"], capture_output=True, text=True,
+                        cwd=str(pathlib.Path(__file__).parent)).stdout
+    _leak = [l for l in _tracked.splitlines() if "highlights" in l or l == "visited_overlay.json"]
+    if _leak:
+        print(f"FAIL privacy: Besuchsmuster-Dateien noch getrackt: {_leak}")
+        errors.append(f"privacy: tracked {_leak}")
+    else:
+        print("OK   highlights/overlay nicht getrackt (git ls-files)")
+except Exception as _e:
+    print(f"SKIP git ls-files check ({_e})")
+
 print()
 if errors:
     print(f"FEHLER: {len(errors)} Check(s) fehlgeschlagen:")
