@@ -1607,8 +1607,20 @@ function focusGipfel(name){
     feat=OSM_PEAKS.features.find(f=>f.properties && f.properties.name===name);
   if(!feat||!feat.geometry) return;
   const c=feat.geometry.coordinates.slice(0,2);
-  saveUndo(); map.flyTo({center:c, zoom:Math.max(map.getZoom(),12.5), pitch:30, essential:true}); showUndoChip();
-  pulseGipfel(c);
+  // Abnahme-Fix Befund 1: Zoom-Deckel ~13,5 (Gipfel im Gebirgskontext, Track/Marker sichtbar) —
+  // nie darüber reinzoomen; wer schon näher dran ist, behält den Zoom (Math.max). Panel-Offset
+  // via padding (Gipfel im sichtbaren Bereich rechts vom offenen Panel bzw. über dem Bottom-Sheet).
+  // Pitch moderat (≤30, nicht eskalieren). Puls-Marker erst NACH Ankunft (moveend) -> im Blick.
+  const tz=Math.max(map.getZoom(), 13.5);
+  const panelOpen=document.getElementById('panel').classList.contains('open');
+  const mobile=window.innerWidth<=640;
+  const pad = !panelOpen ? {left:60,right:60,top:70,bottom:90}
+    : mobile ? {left:40,right:40,top:70,bottom:Math.round(window.innerHeight*0.5)}
+             : {left:320,right:70,top:80,bottom:90};
+  saveUndo();
+  map.once('moveend', ()=>{ pulseGipfel(c); });
+  map.flyTo({center:c, zoom:tz, pitch:Math.min(map.getPitch(),30), padding:pad, essential:true});
+  showUndoChip();
 }
 let _gpRAF=null;
 function pulseGipfel(c){
