@@ -38,7 +38,7 @@ PASS_Q = (f'[out:json][timeout:300];'
 PLACES_Q = (f'[out:json][timeout:300];'
             f'(node["place"~"^(city|town|village)$"]["name"]({BBOX});'
             f'node["place"="hamlet"]["name"]["ele"]({BBOX}););out qt;')
-# Seilbahnen: NUR cable_car + gondola (Michael-Entscheid). Linien + zugehoerige Stationen;
+# Seilbahnen: NUR cable_car + gondola (Kurator-Entscheid). Linien + zugehoerige Stationen;
 # als Punkt spaeter die niedrigste Station (Talstation) je Linie.
 CABLE_Q = (f'[out:json][timeout:300];'
            f'way["aerialway"~"^(cable_car|gondola)$"]({BBOX})->.lines;'

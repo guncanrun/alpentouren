@@ -13,7 +13,7 @@ SPEC.md
 PHASE_2C_*.md
 HANDOVER_*.md
 CLAUDE_CODE_PROMPT_*.md
-Bergtouren_mit_Michael.xlsx
+Bergtouren_*.xlsx
 
 # Private canon + private build (full version with names/notes — local only)
 touren.json
@@ -37,7 +37,7 @@ touren_public.json
 # Private Memoiren-Assets (Fotos/Abzeichen) — nie committen
 privat_assets/
 
-# Rekonstruierte GPX-Tracks (privat, Quelle: Buch von Andreas) — nie committen
+# Rekonstruierte GPX-Tracks (privat, Buchquelle) — nie committen
 tracks/
 
 # Standalone-Privat-Build (file://-Versand, base64-Fotos) — nie committen
@@ -58,3 +58,10 @@ package-lock.json
 visited_overlay.json
 soiusa_highlights_clean.geojson
 soiusa_highlights.geojson
+
+# Nachtjob P2: privater Template-Kanon (Klartext-Strings, gitignored)
+privat_template.py
+
+# Einmalige Delta-Merge-Skripte (haben soiusa_wiki.json befuellt, nicht Teil der Pipeline)
+apply_2c_delta.py
+apply_delta_unbesucht.py

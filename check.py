@@ -185,11 +185,10 @@ for name, marker in checks:
 # ── Public-hygiene negative guards (SPEC_Build_Teilung E1/E2 + E8 atlas) ──────
 # The public index.html must carry NO private markers, NO year fields, NO
 # private-only functions/KPIs, and (E8) NO visited/tour layer whatsoever.
-for bad, label in [("Tour mit Papa", "private tab label"),
-                   # Politur: privater Familien-Titel darf nicht in den Public. NICHT bare
-                   # "Günther" — false-positive auf die OSM-Hütte „Alois-Günther-Haus"
-                   # (neutrale Geodaten, unbeteiligte Person). Spezifisch der Titel:
-                   ("Günther-Alpenchronik", "private family title (Politur, privat-only)"),
+for bad, label in [
+                   # Nachtjob P2: privater Titel + Kategorie-Labels + Tab-Label stehen NICHT
+                   # mehr als Literal hier — der privacy-scan (unten) prueft die Begriffe aus
+                   # der gitignorierten privat_template.py gegen ALLE getrackten Dateien.
                    ("PRIV:START", "PRIV start marker"),
                    ("PRIV:END", "PRIV end marker"),
                    ("PUB:START", "PUB start marker (must be stripped)"),
@@ -221,8 +220,7 @@ for bad, label in [("Tour mit Papa", "private tab label"),
                    ("__PERSONEN_JSON__", "personen json token (must be replaced/stripped)"),
                    ("teilnehmer_ids", "teilnehmer ids data (privat-only)"),
                    ("applyTourFilter", "tour filter fn (privat-only)"),
-                   ("tf-chip", "person chip class (privat-only)"),
-                   ("Brüdertouren (", "strang segment markup (privat-only)")]:
+                   ("tf-chip", "person chip class (privat-only)")]:
     if bad in html:
         print(f"FAIL public leak: '{bad}' ({label}) present in index.html")
         errors.append(f"public leak: {bad}")
@@ -441,6 +439,70 @@ try:
         print("OK   highlights/overlay nicht getrackt (git ls-files)")
 except Exception as _e:
     print(f"SKIP git ls-files check ({_e})")
+
+# ── Nachtjob P2: privacy-scan ueber ALLE getrackten Text-Dateien ──────────────
+# Suchbegriffe kommen aus der gitignorierten privat_template.py + personen.json
+# (KEINE privaten Literale im getrackten check.py). Strikte Begriffe (Titel,
+# Kategorie-Labels, Filter-Label) muessen 0x in JEDER getrackten Datei sein;
+# Register-Vornamen 0x in Code-Dateien -- Daten-/Output-Dateien (OSM-Geojsons,
+# Wiki-Attributionen, Toponyme) tragen legitime Namen und sind ausgenommen.
+try:
+    import privat_template as _PTC
+except ImportError:
+    _PTC = None
+_hered = pathlib.Path(__file__).parent
+try:
+    import subprocess as _sp2
+    _trackedf = _sp2.run(["git", "ls-files"], capture_output=True, text=True,
+                         cwd=str(_hered)).stdout.splitlines()
+except Exception:
+    _trackedf = []
+if _PTC is None:
+    print("SKIP privacy-scan (privat_template.py fehlt -- Public-only-Umgebung)")
+elif not _trackedf:
+    print("SKIP privacy-scan (git ls-files leer)")
+else:
+    import re as _rescan2
+    _strict = [_PTC.TITLE, _PTC.LBL["persfilter"]]
+    for _c in _PTC.STRANG_CATS:
+        _strict.append(_c)                        # Kategorie-Label (mit Umlaut)
+        _strict.append(_c.replace("ü", "ue"))     # ASCII-Variante
+    _strict = sorted(set(x for x in _strict if x))
+    _pnames = []
+    _pjp = _hered / "personen.json"
+    if _pjp.exists():
+        _pnames = [p["name"] for p in _jf.loads(_pjp.read_text(encoding="utf-8")).get("personen", [])]
+
+    def _is_data_file(fn):
+        return (fn.endswith(".geojson") or fn.endswith(".json")
+                or fn == "index.html" or fn.startswith("vendor/"))
+
+    def _is_text_file(fn):
+        return fn.rsplit(".", 1)[-1].lower() in (
+            "py", "js", "html", "css", "json", "geojson", "md", "txt", "svg", "gitignore")
+
+    _pfail = 0
+    for _fn in _trackedf:
+        if not _is_text_file(_fn):
+            continue
+        try:
+            _t = (_hered / _fn).read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            continue
+        for _term in _strict:
+            if _term in _t:
+                print(f"FAIL privacy-scan: '{_term}' in getrackter Datei '{_fn}'")
+                errors.append(f"privacy-scan: {_term} in {_fn}")
+                _pfail += 1
+        if not _is_data_file(_fn):
+            for _nm in _pnames:
+                if _rescan2.search(r'(?<![A-Za-zäöüßÄÖÜ])' + _rescan2.escape(_nm) + r'(?![A-Za-zäöüßÄÖÜ])', _t):
+                    print(f"FAIL privacy-scan: Vorname '{_nm}' in Code-Datei '{_fn}'")
+                    errors.append(f"privacy-scan: name {_nm} in {_fn}")
+                    _pfail += 1
+    if _pfail == 0:
+        print(f"OK   privacy-scan: 0 Treffer ({len(_strict)} Begriffe + {len(_pnames)} Namen "
+              f"ueber {sum(1 for f in _trackedf if _is_text_file(f))} getrackte Text-Dateien)")
 
 print()
 if errors:

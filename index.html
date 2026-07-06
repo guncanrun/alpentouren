@@ -284,7 +284,7 @@
   #attribPop a{color:var(--accent2);text-decoration:none}
   #attribPop a:hover{text-decoration:underline}
   /* §2 (W4): runde Controls rechts unten in einer Flucht (right:var(--ctl-right)),
-     alle WEISS wie der Zoom-Stack (Michael-Entscheid). Reihenfolge oben->unten:
+     alle WEISS wie der Zoom-Stack (Kurator-Entscheid). Reihenfolge oben->unten:
      2D/3D · Home · [Zoom+/Zoom-/Kompass]. */
   #home{position:absolute;bottom:168px;right:var(--ctl-right);z-index:6;width:var(--ctl-round);height:var(--ctl-round);
     border-radius:9px;background:rgba(255,255,255,.95);border:1px solid rgba(0,0,0,.18);color:#2a2f36;
@@ -657,7 +657,7 @@ document.addEventListener('click', e=>{
 });
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeAllOverlays(); });
 setAttrib(false);   // W1.5: Kartenquellen-Div beim Init befuellen (Sat-Default) — sonst leeres ⓘ-Popup
-// W1.2 (Michael-Entscheid): Kompass-Klick = Norden UND Pitch-Reset -> visualizePitch:true.
+// W1.2 (Kurator-Entscheid): Kompass-Klick = Norden UND Pitch-Reset -> visualizePitch:true.
 map.addControl(new maplibregl.NavigationControl({visualizePitch:true}), 'bottom-right');
 // B2: Maßstabsleiste (metrisch) — jetzt unten MITTIG + groesser, im zentrierten Footer.
 map.addControl(new maplibregl.ScaleControl({maxWidth:170, unit:'metric'}), 'bottom-left');
@@ -1056,7 +1056,7 @@ map.on('load',()=>{
   // Default aus (Toggle). K1 ≥100k = Quadrat (places-sq), K2 20–100k = großer Kreis,
   // K3 <20k / pop fehlt = kleiner Kreis (places-dot). Kein Rot. Labels staffeln mit.
   const _POP = ['coalesce',['get','pop'],0];   // fehlendes pop -> 0 -> K3
-  // Orte in ATLAS-ROT (Michael-Entscheid): K1 ≥100k = rotes Quadrat (places-sq),
+  // Orte in ATLAS-ROT (Kurator-Entscheid): K1 ≥100k = rotes Quadrat (places-sq),
   // K2 20–100k = roter Kreis, K3 <20k = kleiner heller Ring. Größe MONOTON über
   // alle Zooms: K1-Quadratkante > K2-Kreisdurchmesser > K3-Ringdurchmesser.
   map.addLayer({id:'places-dot', type:'circle', source:'osm-places', minzoom:6,
@@ -1251,7 +1251,7 @@ map.on('load',()=>{
     map.on('mouseleave',l,()=>map.getCanvas().style.cursor='');
   });
 
-  // ── T3 (Michael 03.07.): Cursor-Feedback beim Drehen/Neigen/Zoomen ─────────
+  // ── T3 (Kurator 03.07.): Cursor-Feedback beim Drehen/Neigen/Zoomen ─────────
   // Rechtsklick-Drag horizontal-dominant = Drehen -> 'grabbing'; vertikal-dominant =
   // Neigen -> 'nesw-resize'. Mausrad -> kurz 'zoom-in'/'zoom-out'. Nur Desktop
   // (pointer:fine); Touch/Stift unberührt. Setzt den Canvas-Cursor direkt (MapLibre-

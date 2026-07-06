@@ -21,7 +21,18 @@ PUBLIC     = not PRIVATE
 SRC   = "touren.json"   # only the private/standalone build reads tour data (E8)
 OUT   = ("index_privat_standalone.html" if STANDALONE
          else "index.html" if PUBLIC else "index_privat.html")
-TITEL = "Alpen-Atlas" if PUBLIC else "Günther-Alpenchronik"
+# Nachtjob P2: private Klartext-Strings kommen aus der gitignorierten privat_template.py.
+# Der oeffentliche Build braucht sie NICHT (Public-Strings sind unten hartkodiert);
+# der interne Build bricht ohne die Datei mit klarer Meldung ab.
+try:
+    import privat_template as _PT
+except ImportError:
+    _PT = None
+if not PUBLIC and _PT is None:
+    raise SystemExit("privat_template.py fehlt -- interner Build kann private Strings nicht "
+                     "aufloesen. Der oeffentliche Build (python build.py) laeuft ohne die Datei.")
+
+TITEL = "Alpen-Atlas" if PUBLIC else _PT.TITLE
 UNTER = ("Die Alpen nach SOIUSA, der internationalen Alpen-Gliederung — Gruppen, Gipfel, "
          "Hütten & Pässe interaktiv. Fläche anklicken für Steckbrief."
          if PUBLIC else
@@ -197,7 +208,7 @@ if not PUBLIC:
     else:
         print("[overlay] WARN visited_overlay.json fehlt -- Privat-Build ohne Besuchsmuster")
 
-# ── Anreise-Orte v2: city/town + villages (Michael-Fund Tschagguns/Schruns) ──────
+# ── Anreise-Orte v2: city/town + villages (Nutzer-Fund Tschagguns/Schruns) ──────
 # v1 hatte NUR city/town -> Montafon-Talorte (village) fehlten. v2 nimmt villages
 # wieder auf (kleinste Klasse); im Client erst ab z>=10 gerendert (Dichte-Schutz),
 # in der Suche aber ohne Zoom-Gate auffindbar. Hamlets bleiben draußen. Dateiname
@@ -235,7 +246,7 @@ _HUT_ALIASES_RAW = {
     "Rotwandhütte":   "Rifugio Roda di Vael",
     "Vajolethütte":   "Rifugio Vajolet",
     "Antermoiahütte": "Rifugio Antermoia",
-    # Nachtjob P4 (Michael-bestätigt): Pisciadù-Langname; Gardeccia in OSM-Hütten (nicht huts_wiki).
+    # Nachtjob P4 (kuratiert): Pisciadù-Langname; Gardeccia in OSM-Hütten (nicht huts_wiki).
     "Rifugio F. Cavazza al Pisciadù": "Utia Pisciadù - Pisciadù Hütte - Rifugio Franco Cavazza al Pisciadù",
     "Gardecciahütte": "Rifugio Gardeccia",
 }
@@ -709,7 +720,7 @@ __HEAD_LIBS__
   #attribPop a{color:var(--accent2);text-decoration:none}
   #attribPop a:hover{text-decoration:underline}
   /* §2 (W4): runde Controls rechts unten in einer Flucht (right:var(--ctl-right)),
-     alle WEISS wie der Zoom-Stack (Michael-Entscheid). Reihenfolge oben->unten:
+     alle WEISS wie der Zoom-Stack (Kurator-Entscheid). Reihenfolge oben->unten:
      2D/3D · Home · [Zoom+/Zoom-/Kompass]. */
   #home{position:absolute;bottom:168px;right:var(--ctl-right);z-index:6;width:var(--ctl-round);height:var(--ctl-round);
     border-radius:9px;background:rgba(255,255,255,.95);border:1px solid rgba(0,0,0,.18);color:#2a2f36;
@@ -997,7 +1008,7 @@ Touren ansehen <span id="covCount"></span>
       <div class="tf-filterbody">
         <div class="tf-seg" id="strangSeg">
           <button class="tf-sbtn on" data-strang="alle" onclick="setStrang('alle')">Alle (<b id="cntAlle">18</b>)</button>
-          <button class="tf-sbtn" data-strang="brueder" onclick="setStrang('brueder')">Brüdertouren (<b id="cntBrueder">10</b>)</button>
+          <button class="tf-sbtn" data-strang="brueder" onclick="setStrang('brueder')">__PT_LBL_BRUEDER__ (<b id="cntBrueder">10</b>)</button>
           <button class="tf-sbtn" data-strang="weitere" onclick="setStrang('weitere')">Weitere (<b id="cntWeitere">8</b>)</button>
         </div>
         <div class="tf-jahr" id="tfJahr">
@@ -1008,11 +1019,11 @@ Touren ansehen <span id="covCount"></span>
             <input type="range" id="tfJahrBis" min="1993" max="2023" step="1" value="2023" aria-label="Jahr bis">
           </div>
         </div>
-        <div class="tf-perstoggle" id="tfPersToggle" onclick="togglePersGrid()"><span>Personen filtern</span><span class="tf-caret">&#9662;</span></div>
+        <div class="tf-perstoggle" id="tfPersToggle" onclick="togglePersGrid()"><span>__PT_LBL_PERSFILTER__</span><span class="tf-caret">&#9662;</span></div>
         <div class="tf-chips" id="personChips"></div>
       </div>
       <div class="tf-badges" id="filterBadges"></div>
-      <div id="tglTracks" class="tgl on tf-tracks" onclick="toggleTracks()" title="Rekonstruierte Routen aus dem Buch von Andreas"><span>Touren-Tracks</span><span class="sw"></span></div>
+      <div id="tglTracks" class="tgl on tf-tracks" onclick="toggleTracks()" title="Rekonstruierte Routen aus dem __PT_LBL_BOOKSRC__"><span>Touren-Tracks</span><span class="sw"></span></div>
     </div>
     <div id="covList"></div>
     <div id="covEmpty" class="tf-empty" style="display:none"></div>
@@ -1245,7 +1256,7 @@ document.addEventListener('click', e=>{
 });
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeAllOverlays(); });
 setAttrib(false);   // W1.5: Kartenquellen-Div beim Init befuellen (Sat-Default) — sonst leeres ⓘ-Popup
-// W1.2 (Michael-Entscheid): Kompass-Klick = Norden UND Pitch-Reset -> visualizePitch:true.
+// W1.2 (Kurator-Entscheid): Kompass-Klick = Norden UND Pitch-Reset -> visualizePitch:true.
 map.addControl(new maplibregl.NavigationControl({visualizePitch:true}), 'bottom-right');
 // B2: Maßstabsleiste (metrisch) — jetzt unten MITTIG + groesser, im zentrierten Footer.
 map.addControl(new maplibregl.ScaleControl({maxWidth:170, unit:'metric'}), 'bottom-left');
@@ -1672,7 +1683,7 @@ map.on('load',()=>{
   // Default aus (Toggle). K1 ≥100k = Quadrat (places-sq), K2 20–100k = großer Kreis,
   // K3 <20k / pop fehlt = kleiner Kreis (places-dot). Kein Rot. Labels staffeln mit.
   const _POP = ['coalesce',['get','pop'],0];   // fehlendes pop -> 0 -> K3
-  // Orte in ATLAS-ROT (Michael-Entscheid): K1 ≥100k = rotes Quadrat (places-sq),
+  // Orte in ATLAS-ROT (Kurator-Entscheid): K1 ≥100k = rotes Quadrat (places-sq),
   // K2 20–100k = roter Kreis, K3 <20k = kleiner heller Ring. Größe MONOTON über
   // alle Zooms: K1-Quadratkante > K2-Kreisdurchmesser > K3-Ringdurchmesser.
   map.addLayer({id:'places-dot', type:'circle', source:'osm-places', minzoom:6,
@@ -1867,7 +1878,7 @@ map.on('load',()=>{
     map.on('mouseleave',l,()=>map.getCanvas().style.cursor='');
   });
 
-  // ── T3 (Michael 03.07.): Cursor-Feedback beim Drehen/Neigen/Zoomen ─────────
+  // ── T3 (Kurator 03.07.): Cursor-Feedback beim Drehen/Neigen/Zoomen ─────────
   // Rechtsklick-Drag horizontal-dominant = Drehen -> 'grabbing'; vertikal-dominant =
   // Neigen -> 'nesw-resize'. Mausrad -> kurz 'zoom-in'/'zoom-out'. Nur Desktop
   // (pointer:fine); Touch/Stift unberührt. Setzt den Canvas-Cursor direkt (MapLibre-
@@ -1999,7 +2010,7 @@ map.on('load',()=>{
   }
   window.highlightTrack = highlightTrack;
 
-  // ── Tour markers v2b (privat, Michael-Eskalation 2): POI-Pin-Charakter ─────
+  // ── Tour markers v2b (privat, Eskalation 2): POI-Pin-Charakter ─────
   // Weiche Glow-Scheibe (t-halo) · KRÄFTIGE helle Badge-Scheibe (t-badge, POI-
   // Rückgrund) · unsichtbarer Hit-Kreis (t-hit, ≥40 px) · großer SDF-Wanderer
   // (t-dot, ~2–2,5×) oben. Ziel: auf Satellit-z8 sofort als Symbol erkennbar.
@@ -2538,7 +2549,7 @@ function groupTourHtml(props){
     if(t.gipfel&&t.gipfel.length) b+='<div class="tc-row"><span class="tc-k">Gipfel</span>'+gipfelUl(t.gipfel)+'</div>';
     if(t.huetten) b+='<div class="tc-row"><span class="tc-k">Hütten / Stationen</span>'+_e(t.huetten)+'</div>';
     if(t.track_km) b+='<div class="tc-row"><span class="tc-k">Track</span>'+String(t.track_km).replace('.',',')+
-      ' km · +'+t.track_hm+' hm'+(t.gpx_rekonstruiert?' · <i>rekonstruiert (Buch von Andreas)</i>':'')+'</div>';
+      ' km · +'+t.track_hm+' hm'+(t.gpx_rekonstruiert?' · <i>rekonstruiert (__PT_LBL_BOOKSRC__)</i>':'')+'</div>';
     if(t.bemerkung) b+='<div class="tc-row">'+_e(t.bemerkung)+'</div>';
     if(t.memo&&t.memo.trim()) b+='<div class="tour-memo">'+_esc(t.memo.trim()).replace(/\n/g,'<br>')+'</div>';
     b+=fotoBand(t);
@@ -3121,7 +3132,7 @@ function _groupTourIds(g){ return typeof g.tour_ids==='string'?JSON.parse(g.tour
 
 // Register-Lookup + Personen-Häufigkeit (alle teilnehmer_ids). Chip-Liste: nur
 // filterbar!=false und Zähler>0, Häufigkeit absteigend (Tie-Break Name). Chip-Name
-// = Register-name (also „Alan", nie „Andrea").
+// = Register-name (kanonischer Anzeigename).
 const PERSON_BY_ID={}; (PERSONEN.personen||[]).forEach(p=>{ PERSON_BY_ID[p.id]=p; });
 const _personFreq={};
 TOUREN.forEach(t=>(t.teilnehmer_ids||[]).forEach(id=>{ _personFreq[id]=(_personFreq[id]||0)+1; }));
@@ -3131,7 +3142,7 @@ const CHIP_PERSONS=Object.keys(_personFreq)
   .sort((a,b)=> b.n-a.n || String(a.name).localeCompare(String(b.name)));
 
 // Strang: fester Schnitt, EINMALIG abgeleitet aus kategorie.
-function serieOf(t){ return ['Brüdertour','Brüdertour Next Gen'].includes(t.kategorie)?'brueder':'weitere'; }
+function serieOf(t){ return __PT_STRANG_CATS__.includes(t.kategorie)?'brueder':'weitere'; }
 const _strangCount={alle:TOUREN.length, brueder:0, weitere:0};
 TOUREN.forEach(t=>{ _strangCount[serieOf(t)]++; });
 { const set=(id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
@@ -3201,7 +3212,7 @@ function renderChips(){
       _e(p.name)+' <span class="n">'+p.n+'</span></button>';
   }).join('');
 }
-// P3a: Filter-Bilanzzeile („Brüdertouren · Daniel · 2001–2004 → 3 Touren ✕"); ✕ resettet F komplett.
+// P3a: Filter-Bilanzzeile (Strang · Personen · Jahr-Range -> N Touren ✕); ✕ resettet F komplett.
 function renderBilanz(){
   const el=document.getElementById('filterBadges'); if(!el) return;
   if(!filterActive()){ el.innerHTML=''; return; }
@@ -3239,7 +3250,7 @@ function _yearSliderPaint(){
   if(val) val.textContent=FILTER.jahrVon===FILTER.jahrBis?String(FILTER.jahrVon):FILTER.jahrVon+'–'+FILTER.jahrBis;
 }
 // P1: EINE Zeile pro Tour (chronologisch aufsteigend, Tie-Break gegend). Gebiete
-// erscheinen mehrfach (Tagebuch-Logik). Strang/Personen filtern die Zeilen.
+// erscheinen mehrfach (Tagebuch-Logik). Strang/Personen-Chips filtern die Zeilen.
 let _selTourId=null;    // im Steckbrief geöffnete Tour (Zeilen-Highlight)
 let _pendingTour=null;  // P2: im Steckbrief aufzuklappende Tour-Karte
 let _covScroll=0;       // P2: Scrollposition der Liste (für Rückkehr aus dem Steckbrief)
@@ -3400,7 +3411,7 @@ function updateCovCount(tours){
   }
   const idSet=new Set(tours.map(t=>t.id));
   let nGeb=0; visitedGroups.forEach(g=>{ if(_groupTourIds(g).some(id=>idSet.has(id))) nGeb++; });
-  const word={brueder:'Brüdertouren', weitere:'Weitere'}[FILTER.strang];
+  const word={brueder:'__PT_LBL_BRUEDER__', weitere:'__PT_LBL_WEITERE_S__'}[FILTER.strang];
   el.textContent=(word?word+' · ':'')+tours.length+' Touren · '+nGeb+' Gebiete';
 }
 
@@ -3484,7 +3495,7 @@ let CHRONO = buildChrono(TOUREN);   // let: bei Filterwechsel neu zugewiesen
 let _chronoOn=false, _chronoIdx=-1, _chronoSaved=null;
 let _chronoPlaying=false, _chronoTimer=null, _chronoFallback=null, _pulseRAF=null;
 // B1b: Play-Takt = dynamischer Flug (speed-basiert) + feste Lese-Pause nach Ankunft.
-// Live mit Michael kalibrierbar (schneller: SPEED hoch / DWELL runter).
+// Live kalibrierbar (schneller: SPEED hoch / DWELL runter).
 const CHRONO_SPEED=1.5;        // flyTo-speed (Default 1.2; hoeher = zuegiger)
 const CHRONO_DWELL=1300;       // ms Lese-Pause nach Ankunft, bevor das naechste Jahr laeuft
 // Fix1: Chrono-Fuellungen zoom-interpoliert wie sts-fill (beim Reinzoomen freie Sicht),
@@ -3619,9 +3630,9 @@ function chronoFinale(){
   overview();                                            // zurück zur Gesamt-Übersicht (Home-Ausdehnung)
   const yrs=CHRONO.years, minY=yrs[0], maxY=yrs[yrs.length-1];
   const spanY=Math.max(0, maxY-minY);
-  // Abspann-Bilanz zählt die GEFILTERTE Menge (SPEC „10 Brüdertouren · X Gebiete").
+  // Abspann-Bilanz zählt die GEFILTERTE Menge (Strang-Label · N Touren · M Gebiete).
   const nT=matchedTours().length;
-  const word={brueder:'Brüdertouren', weitere:'Weitere Touren'}[FILTER.strang] || 'Touren';
+  const word={brueder:'__PT_LBL_BRUEDER__', weitere:'__PT_LBL_WEITERE_L__'}[FILTER.strang] || 'Touren';
   const cap=document.getElementById('chronoCap');
   if(cap) cap.innerHTML =
     '<div class="cc-h"><span class="cc-y">'+minY+'&ndash;'+maxY+'</span>'+
@@ -3795,6 +3806,17 @@ PTABS = "" if PUBLIC else (
     "<div class=\"tab active\" id=\"tabAbout\" onclick=\"showTab('about')\">Über die Gruppe</div>"
     "</div>")
 html = html.replace("__PTABS__", PTABS)
+
+# Nachtjob P2: private Klartext-Tokens NUR im internen Build aus privat_template.py fuellen.
+# Im oeffentlichen Build stehen diese Tokens ausschliesslich in PRIV-Bloecken und sind
+# zu diesem Zeitpunkt bereits entfernt -> nichts zu ersetzen (die Tokens tauchen public nie auf).
+if not PUBLIC and _PT is not None:
+    html = html.replace("__PT_STRANG_CATS__", json.dumps(_PT.STRANG_CATS, ensure_ascii=False))
+    html = html.replace("__PT_LBL_BRUEDER__",    _PT.LBL["brueder"])
+    html = html.replace("__PT_LBL_WEITERE_S__",  _PT.LBL["weitere_short"])
+    html = html.replace("__PT_LBL_WEITERE_L__",  _PT.LBL["weitere_long"])
+    html = html.replace("__PT_LBL_PERSFILTER__", _PT.LBL["persfilter"])
+    html = html.replace("__PT_LBL_BOOKSRC__",    _PT.LBL["book_source"])
 
 out = HERE / OUT
 out.write_text(html, encoding="utf-8")
