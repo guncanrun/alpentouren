@@ -56,6 +56,7 @@ if PUBLIC:
     data = {"touren": []}
     touren_json = "[]"
     tracks_json = "null"   # E8: keine Track-Daten im Public-Build
+    personen_json = "null"  # E8: kein Personen-Register im Public-Build
 else:
     _raw = (HERE / SRC).read_text(encoding="utf-8").replace("\x00", "").strip()
     data = json.loads(_raw)
@@ -146,6 +147,25 @@ else:
         print(f"[tracks] Tour {t['id']}: {len(pts)} -> {len(simp)} Punkte · {km:.1f} km · +{hm:.0f} hm")
     tracks_json = json.dumps({"type": "FeatureCollection", "features": _tfeats},
                              ensure_ascii=False, separators=(",", ":"))
+
+    # ── Personen-Register (privat/gitignored, SPEC_Personenfilter) — nur Privat/Standalone ──
+    # personen.json inline (const PERSONEN, PRIV-Block). Validierung: jede teilnehmer_ids-id
+    # muss im Register existieren -> sonst WARN (check.py FAILt zusätzlich über die Rohdaten).
+    _preg = HERE / "personen.json"
+    if _preg.exists():
+        _pdata = json.loads(_preg.read_text(encoding="utf-8").replace("\x00", "").strip())
+        _known = {p["id"] for p in _pdata.get("personen", [])}
+        _bad = 0
+        for t in data["touren"]:
+            for _pid in (t.get("teilnehmer_ids") or []):
+                if _pid not in _known:
+                    print(f"[personen] WARN Tour {t['id']}: unbekannte teilnehmer_id '{_pid}'")
+                    _bad += 1
+        print(f"  Personen-Register: {len(_known)} Personen · {_bad} unbekannte teilnehmer_ids")
+        personen_json = json.dumps(_pdata, ensure_ascii=False, separators=(",", ":"))
+    else:
+        print("[personen] WARN personen.json fehlt -- Register leer (Filter-Chips ohne Namen)")
+        personen_json = '{"personen":[]}'
 
     touren_json = json.dumps(data["touren"], ensure_ascii=False)
 
@@ -904,6 +924,8 @@ document.getElementById('covCount').textContent =
 /* PRIV:START */
 // Rekonstruierte GPX-Track-Linien (SPEC_GPX_Tracks_Privat) — nur Privat-Build.
 const TRACKS = __TRACKS_GEOJSON__;
+// Personen-Register (SPEC_Personenfilter, privat/gitignored) — Namen/Aliasse/Rollen.
+const PERSONEN = __PERSONEN_JSON__;
 const fc = {type:'FeatureCollection', features: TOUREN.map(t=>({
   type:'Feature',
   geometry:{type:'Point', coordinates:[t.lon, t.lat]},
@@ -2927,6 +2949,7 @@ function chronoToggle(){ _chronoOn?chronoExit():chronoEnter(); }
 
 html = TEMPLATE.replace("__TOUREN_GEOJSON__",        touren_json)
 html = html.replace("__TRACKS_GEOJSON__",             tracks_json)
+html = html.replace("__PERSONEN_JSON__",              personen_json)
 html = html.replace("__SOIUSA_STS_GEOJSON__",         sts_json)
 html = html.replace("__SOIUSA_HIGHLIGHTS_GEOJSON__",  highlights_json)
 html = html.replace("__MASK_GEOJSON__",               mask_json)

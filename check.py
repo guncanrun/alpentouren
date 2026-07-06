@@ -208,7 +208,17 @@ for bad, label in [("Tour mit Papa", "private tab label"),
                    ("trk-line", "GPX track layer (privat-only)"),
                    ('"tour_id"', "track tour_id prop (privat-only)"),
                    ("tglTracks", "tracks toggle (privat-only)"),
-                   ("track_km", "track km field (privat-only)")]:
+                   ("track_km", "track km field (privat-only)"),
+                   # Personenfilter (SPEC_Personenfilter, privat-only, E8). NICHT bare
+                   # "personen" prüfen — false-positive auf "Personen-Seilbahn" (hutCableChip,
+                   # bewusst in beiden Builds). Nur diese spezifischen Marker:
+                   ("personen.json", "personen register file ref (privat-only)"),
+                   ("const PERSONEN", "personen register const (privat-only)"),
+                   ("__PERSONEN_JSON__", "personen json token (must be replaced/stripped)"),
+                   ("teilnehmer_ids", "teilnehmer ids data (privat-only)"),
+                   ("applyTourFilter", "tour filter fn (privat-only)"),
+                   ("tf-chip", "person chip class (privat-only)"),
+                   ("Brüdertouren (", "strang segment markup (privat-only)")]:
     if bad in html:
         print(f"FAIL public leak: '{bad}' ({label}) present in index.html")
         errors.append(f"public leak: {bad}")
@@ -247,6 +257,26 @@ if _tj.exists():
     for _src, _kb in _big:
         print(f"WARN Foto > 400 KB: {_src} ({_kb} KB) -> Qualitaet senken")
 
+# ── Personenfilter (SPEC_Personenfilter): teilnehmer_ids ↔ personen.json ──────
+# Beide Dateien sind gitignored (nur lokal). Skip, wenn eine fehlt. Unbekannte id
+# in irgendeiner Tour -> FAIL (Register-Integrität, spiegelt den build.py-WARN).
+_tjp = pathlib.Path(__file__).parent / "touren.json"
+_pjp = pathlib.Path(__file__).parent / "personen.json"
+if _tjp.exists() and _pjp.exists():
+    _known = {p.get("id") for p in _jf.loads(_pjp.read_text(encoding="utf-8")).get("personen", [])}
+    _unknown = []
+    for _t in _jf.loads(_tjp.read_text(encoding="utf-8")).get("touren", []):
+        for _pid in (_t.get("teilnehmer_ids") or []):
+            if _pid not in _known:
+                _unknown.append((_t.get("id"), _pid))
+    if _unknown:
+        print(f"FAIL personen: unbekannte teilnehmer_ids (nicht im Register): {_unknown[:5]}")
+        errors.append(f"personen: unknown teilnehmer_ids {_unknown[:5]}")
+    else:
+        print("OK   personen: alle teilnehmer_ids im Register")
+else:
+    print("SKIP personen-Register-Check (touren.json/personen.json nicht vorhanden)")
+
 # ── Standalone-Build (Paket B, SPEC §6): file://-Tauglichkeit + Groesse ────────
 # Standalone ist privat/gitignored -> Skip, wenn nicht gebaut.
 _sa = pathlib.Path(__file__).parent / "index_privat_standalone.html"
@@ -267,6 +297,14 @@ if _sa.exists():
         errors.append("standalone: inline data missing")
     else:
         print("OK   standalone: 4 Daten-Konstanten + 'Piz Linard' inline")
+    # Personenfilter (SPEC_Personenfilter): Privat-Positiv-Checks (Register + Filter-Logik inline).
+    _pf_pos = [c for c in ("const PERSONEN", "function serieOf", "function applyTourFilter",
+                           'class="tf-chip', 'id="strangSeg"') if c not in _sah]
+    if _pf_pos:
+        print(f"FAIL standalone: Personenfilter-Marker fehlen: {_pf_pos}")
+        errors.append(f"standalone: personenfilter missing {_pf_pos}")
+    else:
+        print("OK   standalone: Personenfilter inline (PERSONEN/serieOf/applyTourFilter/tf-chip/strangSeg)")
     # Fix0 v2: echtes CSP-Worker-Bundle via Blob + setWorkerUrl (sonst kein GeoJSON).
     if 'id="mlworker"' in _sah and "setWorkerUrl(URL.createObjectURL" in _sah:
         print("OK   standalone: CSP-Worker-Bundle inline + setWorkerUrl")
