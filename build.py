@@ -2782,8 +2782,9 @@ function matchedTours(){
 
 // ── Karten-Dimmen (Muster highlightTrack: Opacity-Case auf id-Liste, nicht ausblenden) ──
 function _dimMarkers(ids, active){
-  const inSet=['in',['get','id'],['literal',ids]];
   try{
+    if(!map || !map.getLayer || !map.getLayer('t-halo')) return;   // Layer erst nach map.on('load') da
+    const inSet=['in',['get','id'],['literal',ids]];
     map.setPaintProperty('t-halo','circle-opacity', active?['case',inSet,0.20,0.03]:0.20);
     map.setPaintProperty('t-badge','circle-opacity', active?['case',inSet,0.96,0.10]:0.96);
     map.setPaintProperty('t-badge','circle-stroke-opacity', active?['case',inSet,1,0.12]:1);
@@ -2799,6 +2800,7 @@ function _trackBaseOpacity(which){   // von highlightTrack(null) genutzt -> Filt
 }
 function _dimTracks(){
   try{
+    if(!map || !map.getLayer || !map.getLayer('trk-line')) return;   // Layer erst nach map.on('load') da
     map.setPaintProperty('trk-line','line-opacity', _trackBaseOpacity('line'));
     map.setPaintProperty('trk-casing','line-opacity', _trackBaseOpacity('casing'));
   }catch(_){}
@@ -2878,36 +2880,58 @@ function togglePerson(id){
   applyTourFilter();
 }
 function resetFilter(){ FILTER.strang='alle'; FILTER.personen=[]; applyTourFilter(); }
-function _chronoRefilter(){ /* P3: Chronik bei Filterwechsel neu ableiten */ }
+// Chronik bei Filterwechsel neu ableiten: Jahresleiste/Färbung aus der gefilterten
+// Menge, Chips neu; laufender Modus auf gültigen Jahr-Index geclamped
+// (chrono-cur-Clamp-Altlast). Wird auch beim Initial-Render aufgerufen.
+function _chronoRefilter(){
+  CHRONO = buildChrono(matchedTours());
+  chronoBuildChips();
+  if(!_chronoOn) return;
+  if(!CHRONO.years.length){                 // Auswahl ohne Jahre: Färbung/Caption leeren
+    ['chrono-past','chrono-cur','chrono-cur-line','chrono-cur-name']
+      .forEach(l=>{ try{ map.setFilter(l,['in',['get','STS'],['literal',[]]]); }catch(_){} });
+    _chronoIdx=-1;
+    const cap=document.getElementById('chronoCap');
+    if(cap) cap.innerHTML='<div class="cc-t">Keine Tour in dieser Auswahl.</div>';
+    return;
+  }
+  _chronoIdx=Math.min(Math.max(0,_chronoIdx), CHRONO.years.length-1);   // Clamp auf gültigen Index
+  chronoSetYear(_chronoIdx,{fly:false});
+}
 
-applyTourFilter();   // Initial: Default Alle/leer -> Karte voll, Chips/Liste/Bilanz gerendert
+// Initial-Render (applyTourFilter) erfolgt am Ende des Chronik-Blocks — erst dort ist
+// CHRONO/_chronoOn initialisiert, sonst TDZ in _chronoRefilter.
 /* PRIV:END */
 
 // ══ Chronologie-Modus (nur Privat) — Stufe 1: Jahresleiste + kumulative Färbung ══
 /* PRIV:START */
 function jahrSort(j){ const m=String(j==null?'':j).match(/\d{4}/); return m?+m[0]:null; }
-// Pro STS-Gruppe die Besuchsjahre + globale Jahresliste (nur Jahre mit Touren).
-const CHRONO = (function(){
-  const tourById={}; TOUREN.forEach(t=>{ tourById[t.id]=t; });
-  // Färbung folgt der Gruppen-Zuordnung (tour_ids) — konsistent mit der besucht-Logik.
+// buildChrono(tours): Jahresleiste + Färbung aus einer (ggf. gefilterten) Tour-Menge.
+// stsYears = Treffer-Jahre je STS-Gruppe, geschnitten mit der Menge; years/yearTours nur
+// Jahre mit Treffer. Bei Filterwechsel neu berechnet (_chronoRefilter).
+function buildChrono(tours){
+  const idSet=new Set(tours.map(t=>t.id));
+  const tourById={}; tours.forEach(t=>{ tourById[t.id]=t; });
+  // Färbung folgt der Gruppen-Zuordnung (tour_ids), geschnitten mit der gefilterten Menge.
   const stsYears={};
   SOIUSA_STS.features.forEach(f=>{
     const p=f.properties; if(p.visited!==1) return;
     let ids=[]; try{ ids = typeof p.tour_ids==='string'?JSON.parse(p.tour_ids||'[]'):(p.tour_ids||[]); }catch(_){}
     const ys=new Set();
-    ids.forEach(id=>{ const t=tourById[id]; const y=t&&jahrSort(t.jahr); if(y) ys.add(y); });
+    ids.forEach(id=>{ if(!idSet.has(id)) return; const t=tourById[id]; const y=t&&jahrSort(t.jahr); if(y) ys.add(y); });
     if(ys.size) stsYears[p.STS]=[...ys];
   });
-  // Jahresleiste = ALLE Touren-Jahre (Spec: „nur Jahre mit Touren"), auch wenn eine
-  // Tour (noch) keiner STS-Gruppe zugeordnet ist -> Chip erscheint, Färbung ggf. leer.
+  // Jahresleiste = Jahre der (gefilterten) Touren, auch wenn eine Tour (noch) keiner
+  // STS-Gruppe zugeordnet ist -> Chip erscheint, Färbung ggf. leer.
   const yearMeta={}, yearTours={};
-  TOUREN.forEach(t=>{ const y=jahrSort(t.jahr); if(!y) return;
+  tours.forEach(t=>{ const y=jahrSort(t.jahr); if(!y) return;
     if(!yearMeta[y]) yearMeta[y]={label:String(t.jahr), unsure:!!t.jahr_unsicher};
     if(t.jahr_unsicher) yearMeta[y].unsure=true;
     (yearTours[y]=yearTours[y]||[]).push(t); });
   const years=Object.keys(yearMeta).map(Number).sort((a,b)=>a-b);
   return {stsYears, years, yearMeta, yearTours};
-})();
+}
+let CHRONO = buildChrono(TOUREN);   // let: bei Filterwechsel neu zugewiesen
 
 let _chronoOn=false, _chronoIdx=-1, _chronoSaved=null;
 let _chronoPlaying=false, _chronoTimer=null, _chronoFallback=null, _pulseRAF=null;
@@ -3047,11 +3071,14 @@ function chronoFinale(){
   overview();                                            // zurück zur Gesamt-Übersicht (Home-Ausdehnung)
   const yrs=CHRONO.years, minY=yrs[0], maxY=yrs[yrs.length-1];
   const spanY=Math.max(0, maxY-minY);
+  // Abspann-Bilanz zählt die GEFILTERTE Menge (SPEC „10 Brüdertouren · X Gebiete").
+  const nT=matchedTours().length;
+  const word={brueder:'Brüdertouren', weitere:'Weitere Touren'}[FILTER.strang] || 'Touren';
   const cap=document.getElementById('chronoCap');
   if(cap) cap.innerHTML =
     '<div class="cc-h"><span class="cc-y">'+minY+'&ndash;'+maxY+'</span>'+
     '<span class="cc-d">R&uuml;ckblick</span></div>'+
-    '<div class="cc-t">'+spanY+' Jahre &middot; '+TOUREN.length+' Touren &middot; '+
+    '<div class="cc-t">'+spanY+' Jahre &middot; '+nT+' '+word+' &middot; '+
     all.length+' Gebiete</div>';
 }
 
@@ -3101,16 +3128,22 @@ function chronoExit(){
 }
 function chronoToggle(){ _chronoOn?chronoExit():chronoEnter(); }
 
-// Jahres-Chips (nur Jahre mit Touren). Ohne Jahre: Modus ausblenden.
-(function(){
+// Jahres-Chips aus CHRONO.years (bei Filterwechsel neu). Ohne Jahre: Modus-Button aus.
+function chronoBuildChips(){
   const wrap=document.getElementById('chronoChips'), btn=document.getElementById('chronoBtn');
   if(!wrap) return;
-  if(!CHRONO.years.length){ if(btn) btn.style.display='none'; return; }
+  if(!CHRONO.years.length){ wrap.innerHTML=''; if(btn) btn.style.display='none'; return; }
+  if(btn) btn.style.display='';
   wrap.innerHTML=CHRONO.years.map((y,i)=>{
     const m=CHRONO.yearMeta[y]||{}; return '<button class="chip" data-i="'+i+'">'+(m.unsure?'~':'')+y+'</button>';
   }).join('');
   [...wrap.children].forEach(b=>b.addEventListener('click',()=>chronoSetYear(+b.dataset.i,{manual:true})));
-})();
+}
+chronoBuildChips();
+
+// Initial-Render: Default Alle/leer -> Karte voll, Chips/Liste/Bilanz gerendert.
+// Hier (nicht im Filter-Block), damit CHRONO/_chronoOn initialisiert sind.
+applyTourFilter();
 /* PRIV:END */
 </script>
 </body>
