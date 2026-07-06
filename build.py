@@ -412,6 +412,11 @@ __HEAD_LIBS__
   #panel li{padding:2px 0;display:flex;justify-content:space-between;gap:8px;
     border-bottom:1px dotted rgba(255,255,255,.08)}
   #panel li b{color:var(--accent);font-variant-numeric:tabular-nums;white-space:nowrap}
+  /* P3b §10a: klickbare Gipfel-Einträge (flyTo + Puls) */
+  #panel li.gip{cursor:pointer;border-radius:5px;margin:0 -4px;padding-left:4px;padding-right:4px}
+  #panel li.gip:hover{background:rgba(95,208,197,.12)}
+  #panel b.gip{cursor:pointer;border-bottom:1px dotted var(--accent2)}
+  #panel b.gip:hover{color:var(--accent2)}
   #panel .notiz{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4}
   #panel .x{position:absolute;top:6px;right:6px;cursor:pointer;color:var(--muted);
     width:var(--ctl);height:var(--ctl);border-radius:10px;display:grid;place-items:center;font-size:22px;
@@ -1612,8 +1617,11 @@ map.on('load',()=>{
     paint:{'icon-color':'#e2f2f7','icon-halo-color':'#06141a','icon-halo-width':1.8,
       'text-color':'#bfe6ee','text-halo-color':'#06141a','text-halo-width':1.3}});
 
+  // §11-Fix: Bulk-Gipfel (tier>=2) — die unsichtbaren tier-4-Icons (icon-opacity 0)
+  // belegen Kollisionsraum und verdrängten bisher die Gold-Gipfel. Gold (tier<=1) liegt
+  // deshalb in EIGENEM Layer (osm-peaks-gold) mit icon-allow-overlap -> immer sichtbar.
   map.addLayer({id:'osm-peaks', type:'symbol', source:'osm-peaks', minzoom:5,
-    filter:['!=',['get','landmark'],1],
+    filter:['all',['!=',['get','landmark'],1],['>=',['get','tier'],2]],
     layout:{'visibility':'none','icon-anchor':'bottom','icon-allow-overlap':false,
       // Tier 0 = Mont Blanc (Stern), 1 = Länder-Höchste (Gold-Dreieck), 2-4 = Höhenbänder.
       'icon-image':['match',['get','tier'], 0,'peak-star', 1,'peak-hi', 'peak'],
@@ -1644,6 +1652,22 @@ map.on('load',()=>{
         11, ['case',['<=',['get','tier'],3],1,['case',['>=',['get','ele'],2600],1,0]],
         12, ['case',['<=',['get','tier'],3],1,['case',['>=',['get','ele'],2300],1,0]],
         13, 1]}});
+
+  // §11-Fix: Gold-Gipfel (tier 0 Stern / tier 1 Länder-Höchste) in EIGENEM Layer mit
+  // icon-allow-overlap+ignore-placement -> Icon IMMER sichtbar (Vorrang vor Bulk-Dreiecken,
+  // auf allen Zoomstufen). Label bleibt text-optional -> weicht Gruppennamen (unter ihnen).
+  map.addLayer({id:'osm-peaks-gold', type:'symbol', source:'osm-peaks', minzoom:5,
+    filter:['all',['!=',['get','landmark'],1],['<=',['get','tier'],1]],
+    layout:{'visibility':'none','icon-anchor':'bottom','icon-allow-overlap':true,'icon-ignore-placement':true,
+      'icon-image':['match',['get','tier'], 0,'peak-star', 'peak-hi'],
+      'icon-size':['match',['get','tier'], 0,1.9, 1.35],
+      'text-field':['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],
+      'text-font':['Noto Sans Bold'],'text-size':['match',['get','tier'], 0,12+LB, 11+LB],
+      'symbol-sort-key':['get','tier'],
+      'text-variable-anchor':['top','bottom','left','right'],'text-radial-offset':0.6,
+      'text-optional':true,'text-allow-overlap':false},
+    paint:{'text-color':['match',['get','tier'], 0,'#ffe08a', '#ffd24d'],
+      'text-halo-color':'#06101a','text-halo-width':1.5}});
 
   // Landmark-Gipfel: eigener Rang — Icon nach Tier, Label immer, ab Übersicht sichtbar.
   map.addLayer({id:'osm-landmarks', type:'symbol', source:'osm-peaks', minzoom:5,
@@ -1697,7 +1721,7 @@ map.on('load',()=>{
   });
 
   // ── §7 (W4): Cursor-Pointer auf allen klickbaren Punkt-Layern (Desktop) ────
-  ['osm-peaks','osm-landmarks','osm-passes','osm-passes-famous','places-sq','places-dot','places-label','cable-icon'].forEach(l=>{
+  ['osm-peaks','osm-peaks-gold','osm-landmarks','osm-passes','osm-passes-famous','places-sq','places-dot','places-label','cable-icon'].forEach(l=>{
     map.on('mouseenter',l,()=>map.getCanvas().style.cursor='pointer');
     map.on('mouseleave',l,()=>map.getCanvas().style.cursor='');
   });
@@ -1814,6 +1838,13 @@ map.on('load',()=>{
     paint:{'line-color':'#d9640f',
            'line-width':['interpolate',['linear'],['zoom'], 7,1.6, 11,3.0, 14,4.2],
            'line-opacity':0.95}});
+  // P3b §9: breite unsichtbare Hit-Linie fuer Track-Klick (großzügig, Tablet-tauglich).
+  map.addLayer({id:'trk-hit', type:'line', source:'tracks',
+    layout:{'line-cap':'round','line-join':'round'},
+    paint:{'line-color':'#000','line-width':18,'line-opacity':0.01}});
+  map.on('mouseenter','trk-hit',()=>{ map.getCanvas().style.cursor='pointer'; });
+  map.on('mouseleave','trk-hit',()=>{ map.getCanvas().style.cursor=''; });
+  map.on('click','trk-hit',e=>{ const id=e.features[0].properties.tour_id; if(id!=null) openTourRow(+id); });
   // Aktive Tour hervorheben (openTour); null = alle gleich.
   function highlightTrack(id){
     try{
@@ -1846,6 +1877,11 @@ map.on('load',()=>{
       'icon-size':['interpolate',['linear'],['zoom'], 5,1.5, 9,2.0, 13,2.6]},   // ~2–2,5× (war 0,72–1,3)
     paint:{'icon-color':['case',['==',['get','verifiziert'],1],'#d9640f','#1f7d74'],  // kräftig auf heller Scheibe
       'icon-halo-color':'rgba(40,20,5,0.35)','icon-halo-width':1.0}});
+  // P3b §8: Jahr-Label am Wanderer-Icon ab z>=9 (eigener Layer -> in PRIO UNTER die Gruppennamen).
+  map.addLayer({id:'t-label', type:'symbol', source:'tours', minzoom:9,
+    layout:{'text-field':['to-string',['get','jahr']],'text-font':['Noto Sans Bold'],'text-size':10.5,
+      'text-offset':[0,1.5],'text-anchor':'top','text-optional':true,'text-allow-overlap':false},
+    paint:{'text-color':'#ffcf94','text-halo-color':'#06101a','text-halo-width':1.6}});
   const pop = new maplibregl.Popup({closeButton:false,closeOnClick:false,offset:12});
   map.on('mouseenter','t-hit',e=>{
     map.getCanvas().style.cursor='pointer';
@@ -1871,7 +1907,9 @@ map.on('load',()=>{
   (function(){
     const PRIO = [
       'sts-label','sts-label-hl',                        // 1 Gruppenname (höchste)
-      'peaks-highest','peaks-in-group','osm-peaks',      // 2 Gipfel (Top zuerst via layer-sort-key)
+      't-label',                                         //   Jahr-Label am Tour-Icon (P3b §8, unter Namen)
+      'peaks-highest','peaks-in-group',                  // 2 Gruppen-Gipfel (Gold-Highlight)
+      'osm-peaks-gold','osm-peaks',                      //   Gold-Gipfel VOR Bulk (§11-Fix)
       'places-label',                                    // 3 Orte K1 (K1>K2>K3 via sort-key)
       'osm-huts-club','osm-huts-wild','osm-huts-other',  // 4 Hütten
       'osm-passes-famous','osm-passes',                  // 5 Pässe
@@ -1949,7 +1987,7 @@ map.on('load',()=>{
     if(!map.queryRenderedFeatures(e.point,{layers:HUT_LAYERS}).length) hutPopup.remove();
     // W1c: Klick ohne Gruppen-/Linien-/Punkt-Feature -> Steckbrief schliessen + Auswahl-Rand weg.
     const feats=map.queryRenderedFeatures(e.point,{layers:
-      ['sts-hit','hl-line','osm-peaks','osm-landmarks','osm-passes','osm-passes-famous',
+      ['sts-hit','hl-line','osm-peaks','osm-peaks-gold','osm-landmarks','osm-passes','osm-passes-famous',
        'places-sq','places-dot','places-label','cable-icon']
         .concat(HUT_LAYERS).concat(TOUR_LAYERS)});
     if(!feats.length) closePanel();
@@ -2110,6 +2148,39 @@ function resetGroupPeaks(){
   map.setLayoutProperty('peaks-in-group','visibility','none');
   map.setLayoutProperty('peaks-highest','visibility','none');
 }
+// P3b §10a: Gipfel-Eintrag im Steckbrief anklicken -> flyTo + kurzer Puls auf dem Punkt.
+// Koordinate aus der geladenen osm-peaks-Quelle (Viewport) oder dem Inline-OSM_PEAKS (Standalone).
+function focusGipfel(name){
+  if(!name) return;
+  let feat=null;
+  try{ const fs=map.querySourceFeatures('osm-peaks',{filter:['==',['get','name'],name]}); if(fs&&fs.length) feat=fs[0]; }catch(_){}
+  if(!feat && typeof OSM_PEAKS!=='undefined' && OSM_PEAKS && OSM_PEAKS.features)
+    feat=OSM_PEAKS.features.find(f=>f.properties && f.properties.name===name);
+  if(!feat||!feat.geometry) return;
+  const c=feat.geometry.coordinates.slice(0,2);
+  saveUndo(); map.flyTo({center:c, zoom:Math.max(map.getZoom(),12.5), pitch:30, essential:true}); showUndoChip();
+  pulseGipfel(c);
+}
+let _gpRAF=null;
+function pulseGipfel(c){
+  try{
+    const data={type:'Feature',geometry:{type:'Point',coordinates:c}};
+    if(!map.getSource('gipfel-pulse')){
+      map.addSource('gipfel-pulse',{type:'geojson',data});
+      map.addLayer({id:'gipfel-pulse',type:'circle',source:'gipfel-pulse',
+        paint:{'circle-radius':6,'circle-color':'#ffd47a','circle-opacity':0.55,'circle-stroke-color':'#fff','circle-stroke-width':2}});
+    } else { map.getSource('gipfel-pulse').setData(data); map.setLayoutProperty('gipfel-pulse','visibility','visible'); }
+    const t0=performance.now(); if(_gpRAF) cancelAnimationFrame(_gpRAF);
+    const step=t=>{ const k=(t-t0)/1400;
+      if(k>=1){ try{ map.setLayoutProperty('gipfel-pulse','visibility','none'); }catch(_){} _gpRAF=null; return; }
+      try{ map.setPaintProperty('gipfel-pulse','circle-radius',6+30*k); map.setPaintProperty('gipfel-pulse','circle-opacity',0.55*(1-k)); }catch(_){}
+      _gpRAF=requestAnimationFrame(step); };
+    _gpRAF=requestAnimationFrame(step);
+  }catch(_){}
+}
+// Delegierter Klick auf Gipfel-Einträge im Steckbrief (beide Tabs) -> focusGipfel.
+(function(){ const p=document.getElementById('panel'); if(p) p.addEventListener('click', e=>{
+  const g=e.target.closest&&e.target.closest('.gip'); if(g&&g.dataset.gip) focusGipfel(g.dataset.gip); }); })();
 
 // ── featBbox: handles Polygon, MultiPolygon, GeometryCollection ───────────────
 function featBbox(feat){
@@ -2148,12 +2219,15 @@ function setTourTab(html, count){
   showTab(show ? 'tour' : 'about');
 }
 
-// ── Gipfel list markup (shared) ───────────────────────────────────────────────
+// ── Gipfel list markup (shared) — P3b §10a: Einträge klickbar (flyTo + Puls) ──
 function gipfelUl(gipfel){
   if(!gipfel||!gipfel.length) return '';
-  return '<ul>'+gipfel.map(g=>'<li><span>'+g.name+
-    (g.hinweis?' <i style="color:var(--muted)">('+g.hinweis+')</i>':'')+
-    '</span>'+(g.hoehe_m?'<b>'+g.hoehe_m+' m</b>':'')+'</li>').join('')+'</ul>';
+  return '<ul>'+gipfel.map(g=>{
+    const da=_escp(String(g.name||'')).replace(/"/g,'&quot;');
+    return '<li class="gip" data-gip="'+da+'" title="Auf der Karte zeigen"><span>'+_escp(g.name)+
+      (g.hinweis?' <i style="color:var(--muted)">('+_escp(g.hinweis)+')</i>':'')+
+      '</span>'+(g.hoehe_m?'<b>'+g.hoehe_m+' m</b>':'')+'</li>';
+  }).join('')+'</ul>';
 }
 
 // ── Open: tour marker (privat only) ───────────────────────────────────────────
@@ -2168,8 +2242,12 @@ function steckbriefHtml(stsName, props){
   const w = (WIKI.gruppen||{})[stsName] || null;
   const settore = props.settore || '';
   const rows = [];
-  if(w && w.hoechster_berg)
-    rows.push(['Höchster Berg','<b>'+w.hoechster_berg+'</b>'+(w.hoehe_m?' · '+w.hoehe_m+' m':'')]);
+  if(w && w.hoechster_berg){
+    const _bn=String(w.hoechster_berg).replace(/\s*\(.*?\)\s*/g,'').trim();   // OSM-Name ohne Klammerzusatz
+    const _da=_escp(_bn).replace(/"/g,'&quot;');
+    rows.push(['Höchster Berg','<b class="gip" data-gip="'+_da+'" title="Auf der Karte zeigen">'+_escp(w.hoechster_berg)+
+      '</b>'+(w.hoehe_m?' · '+w.hoehe_m+' m':'')]);
+  }
   if(settore) rows.push(['Lage', settore+' (Settore)']);
   const land = (w && w.land && w.land.length) ? w.land.join(' · ')
     : (CNAMES[props.country]||props.country||'');
@@ -2299,7 +2377,14 @@ function groupTourHtml(props){
       '<div class="tcard-b">'+b+'</div></div>';
   }).join('');
 }
-function toggleTcard(h){ if(h&&h.parentElement) h.parentElement.classList.toggle('open'); }
+function toggleTcard(h){
+  if(!h||!h.parentElement) return;
+  const card=h.parentElement, willOpen=!card.classList.contains('open');
+  card.classList.toggle('open');
+  if(willOpen) _selTourId=+card.dataset.tid;
+  else { const o=document.querySelector('#pTour .tcard.open'); _selTourId=o?+o.dataset.tid:null; }
+  markSelTourRow(); emphasizeTour(_selTourId);   // P3b §7: Selektion -> Karte betonen
+}
 // „In der Chronik zeigen" (Deep-Link, P3a.4): ist die Ziel-Tour von F ausgeschlossen,
 // wird F SICHTBAR auf Default resettet (Segmented „Alle", Slider voll, Chips leer) und dann
 // gesprungen — keine Sonderfälle, kein verstecktes Merken (behebt den „läuft ins Leere"-Bug).
@@ -2419,6 +2504,11 @@ function openSts(feat, camMode){   // camMode: undef=Gate(§6a), 'force'=immer f
   }
   /* PRIV:END */
   _pnl.classList.add('open');
+  /* PRIV:START */
+  // P3b §7: die aufgeklappte Tour-Karte betonen (Icon+Track), andere im Gebiet dimmen.
+  { const oc=document.querySelector('#pTour .tcard.open'); const eid=oc?+oc.dataset.tid:null;
+    _selTourId=eid; markSelTourRow(); emphasizeTour(eid); }
+  /* PRIV:END */
   // §6a (W4)/Fix2: 'nofly' -> nie fliegen (Chronik fliegt selbst); sonst ab z>=11 kein
   // Auto-flyTo bei Klick (Fehlklick-Schutz), 'force' (Suche) springt immer.
   if(camMode==='nofly') return;
@@ -2502,7 +2592,7 @@ function _syncPointToggles(){
 let _peaksOn=false;
 function togglePeaks(){
   _peaksOn=!_peaksOn; const v=_peaksOn?'visible':'none';
-  _setVis(['osm-peaks','osm-landmark-glow','osm-landmarks'], v);
+  _setVis(['osm-peaks','osm-peaks-gold','osm-landmark-glow','osm-landmarks'], v);
   _applyGroupPeaksVis();   // Punkt 3: Gruppen-Gipfel (inkl. Gold) mitschalten, wenn Gruppe gewaehlt
   document.getElementById('tglPeaks').classList.toggle('on',_peaksOn);
   persistToggles();
@@ -2813,7 +2903,7 @@ function closePanel(){
   // try/catch schützt vor TDZ, falls closePanel vor der Coverage-Block-Init einmal früh läuft.
   document.getElementById('panel').classList.remove('as-cov');
   document.getElementById('panel').classList.remove('has-back');
-  try{ clearChronoSel(); _selTourId=null; markSelTourRow(); }catch(_){}
+  try{ clearChronoSel(); _selTourId=null; markSelTourRow(); emphasizeTour(null); }catch(_){}
   /* PRIV:END */
 }
 function overview(){
@@ -2901,9 +2991,9 @@ function _applyMapFilter(ids, active){
   try{
     if(!map || !map.getLayer) return;
     const mf = active ? ['in',['get','id'],['literal',ids]] : null;
-    ['t-halo','t-badge','t-hit','t-dot'].forEach(l=>{ if(map.getLayer(l)) map.setFilter(l, mf); });
+    ['t-halo','t-badge','t-hit','t-dot','t-label'].forEach(l=>{ if(map.getLayer(l)) map.setFilter(l, mf); });
     const tf = active ? ['in',['get','tour_id'],['literal',ids]] : null;
-    ['trk-line','trk-casing'].forEach(l=>{ if(map.getLayer(l)) map.setFilter(l, tf); });
+    ['trk-line','trk-casing','trk-hit'].forEach(l=>{ if(map.getLayer(l)) map.setFilter(l, tf); });
     if(map.getLayer('hl-line')){
       const g = active ? _matchedGroupSTS(new Set(ids)) : null;
       map.setFilter('hl-line', g ? ['in',['get','parent_sts'],['literal',g]] : null);
@@ -3020,6 +3110,30 @@ function _groupFeatureOfTour(tid){
 }
 function markSelTourRow(){
   document.querySelectorAll('#covList .trow').forEach(r=>r.classList.toggle('sel', +r.dataset.tid===_selTourId));
+}
+// P3b §7: selektierte (aufgeklappte) Tour betonen — ihr Icon+Track heller, andere
+// Icons DESSELBEN Gebiets gedimmt. id=null hebt auf (Basis-Deckkraft).
+function _selGroupTourIds(){
+  if(!_selSts) return [];
+  const f=SOIUSA_STS.features.find(x=>x.properties.STS===_selSts);
+  return f?_groupTourIds(f.properties):[];
+}
+function emphasizeTour(id){
+  try{
+    if(!map||!map.getLayer||!map.getLayer('t-dot')) return;
+    if(id==null){
+      map.setPaintProperty('t-dot','icon-opacity',1);
+      map.setPaintProperty('t-halo','circle-opacity',0.20);
+      map.setPaintProperty('t-badge','circle-opacity',0.96);
+      highlightTrack(null); return;
+    }
+    const others=_selGroupTourIds().filter(x=>x!==id);
+    const dim=['in',['get','id'],['literal',others]], sel=['==',['get','id'],id];
+    map.setPaintProperty('t-dot','icon-opacity',['case',sel,1,dim,0.22,1]);
+    map.setPaintProperty('t-halo','circle-opacity',['case',sel,0.42,dim,0.05,0.20]);   // Glow auf selektierter
+    map.setPaintProperty('t-badge','circle-opacity',['case',sel,1,dim,0.25,0.96]);
+    highlightTrack(id);   // Track der selektierten Tour betont (0.25 für die übrigen)
+  }catch(_){}
 }
 
 // P1: Personen-Chip-Grid ein-/ausklappen (Default zu; Zustand in localStorage; aktive
