@@ -492,7 +492,32 @@ __HEAD_LIBS__
   .tf-reset:hover{text-decoration:underline}
   .tf-empty{padding:10px 14px 12px;font-size:12.5px;color:var(--muted);line-height:1.5}
   .tf-empty .tf-reset{display:inline;padding:0;margin-left:4px}
-  @media (pointer: coarse){ .tf-chip{min-height:var(--row-h)} .tf-badge{min-height:32px} .tf-perstoggle{min-height:var(--row-h)} }
+  /* P3a: Jahr-Range-Slider (Doppelgriff) */
+  .tf-jahr{margin:2px 0 7px}
+  .tf-jahr-lbl{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px}
+  .tf-jahr-lbl span:last-child{color:var(--txt);font-variant-numeric:tabular-nums;font-weight:600}
+  .tf-jahr-slider{position:relative;height:22px}
+  .tf-jahr-track{position:absolute;left:8px;right:8px;top:9px;height:4px;border-radius:2px;background:rgba(255,255,255,.15)}
+  .tf-jahr-fill{position:absolute;top:0;height:100%;border-radius:2px;background:var(--accent2)}
+  .tf-jahr-slider input[type=range]{position:absolute;left:0;right:0;top:0;width:100%;height:22px;margin:0;
+    -webkit-appearance:none;appearance:none;background:none;pointer-events:none}
+  .tf-jahr-slider input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+    width:16px;height:16px;border-radius:50%;background:var(--accent2);border:2px solid #0a0e14;cursor:pointer;pointer-events:auto}
+  .tf-jahr-slider input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;
+    background:var(--accent2);border:2px solid #0a0e14;cursor:pointer;pointer-events:auto}
+  .tf-jahr-slider input[type=range]::-moz-range-track{background:none;border:none}
+  /* P3a: Filter-Bilanzzeile */
+  #filterBadges{align-items:center}
+  .tf-bilanz-txt{flex:1;font-size:12px;color:var(--txt);line-height:1.35}
+  #filterBadges .tf-reset{font-size:17px;line-height:1;padding:0 7px;border:1px solid var(--line);
+    border-radius:8px;min-height:26px;display:inline-flex;align-items:center}
+  #filterBadges .tf-reset:hover{border-color:var(--accent2);text-decoration:none}
+  @media (pointer: coarse){ .tf-chip{min-height:var(--row-h)} .tf-badge{min-height:32px} .tf-perstoggle{min-height:var(--row-h)}
+    .tf-jahr-slider{height:40px} .tf-jahr-track{top:18px}
+    .tf-jahr-slider input[type=range]{height:40px}
+    .tf-jahr-slider input[type=range]::-webkit-slider-thumb{width:28px;height:28px}
+    .tf-jahr-slider input[type=range]::-moz-range-thumb{width:28px;height:28px}
+    #filterBadges .tf-reset{min-height:var(--row-h);min-width:40px;justify-content:center} }
   /* Chronik-Sync: Auswahl-Rahmen (Gebiet offen) — teal Ring, klar vom Play-Cursor (orange) getrennt */
   #chronoChips .chip.chsel{box-shadow:inset 0 0 0 2px var(--accent2)}
   /* Touren-Tracks-Toggle im Kopf des Touren-Panels (P2: aus Ebenen umgezogen) */
@@ -902,6 +927,14 @@ Touren ansehen <span id="covCount"></span>
         <button class="tf-sbtn on" data-strang="alle" onclick="setStrang('alle')">Alle (<b id="cntAlle">18</b>)</button>
         <button class="tf-sbtn" data-strang="brueder" onclick="setStrang('brueder')">Brüdertouren (<b id="cntBrueder">10</b>)</button>
         <button class="tf-sbtn" data-strang="weitere" onclick="setStrang('weitere')">Weitere (<b id="cntWeitere">8</b>)</button>
+      </div>
+      <div class="tf-jahr" id="tfJahr">
+        <div class="tf-jahr-lbl"><span>Jahre</span><span id="tfJahrVal">1993&ndash;2023</span></div>
+        <div class="tf-jahr-slider">
+          <div class="tf-jahr-track"><div class="tf-jahr-fill" id="tfJahrFill"></div></div>
+          <input type="range" id="tfJahrVon" min="1993" max="2023" step="1" value="1993" aria-label="Jahr von">
+          <input type="range" id="tfJahrBis" min="1993" max="2023" step="1" value="2023" aria-label="Jahr bis">
+        </div>
       </div>
       <div class="tf-perstoggle" id="tfPersToggle" onclick="togglePersGrid()"><span>Personen filtern</span><span class="tf-caret">&#9662;</span></div>
       <div class="tf-badges" id="filterBadges"></div>
@@ -1822,6 +1855,8 @@ map.on('load',()=>{
   });
   map.on('mouseleave','t-hit',()=>{map.getCanvas().style.cursor='';pop.remove();});
   map.on('click','t-hit',e=>openTour(e.features[0].properties.id));
+  // P3a: Layer stehen jetzt -> restaurierten Filter F auf die Karte anwenden (Icons/Tracks/Kontur).
+  try{ _applyMapFilter(matchedTours().map(t=>t.id), filterActive()); }catch(_){}
   /* PRIV:END */
 
   // ── W8.3 / Review-#2: EINE globale Kollisions-Prioritätsliste über alle Symbol-Layer ──
@@ -2244,7 +2279,7 @@ function groupTourHtml(props){
   return tours.map(t=>{
     const op=(t.id===openId)?' open':'';
     const yr=_e(String(t.jahr||'')), geb=_e(t.gebirge||t.gegend||''), kat=_e(katOf(t));
-    const jj="chronoJumpYear('"+_e(String(t.jahr||''))+"')";
+    const jj="chronoJumpYear('"+_e(String(t.jahr||''))+"',"+t.id+")";
     let b='';
     if(t.datum) b+='<div class="tc-row"><span class="tc-k">Datum</span>'+_e(t.datum)+'</div>';
     if(t.teilnehmer) b+='<div class="tc-row"><span class="tc-k">Teilnehmer</span>'+_e(t.teilnehmer)+'</div>';
@@ -2265,9 +2300,13 @@ function groupTourHtml(props){
   }).join('');
 }
 function toggleTcard(h){ if(h&&h.parentElement) h.parentElement.classList.toggle('open'); }
-// „In der Chronik zeigen": Steckbrief schließen, Chronik-Modus, zum Jahr springen (Play-Cursor setzen).
-function chronoJumpYear(jahr){
+// „In der Chronik zeigen" (Deep-Link, P3a.4): ist die Ziel-Tour von F ausgeschlossen,
+// wird F SICHTBAR auf Default resettet (Segmented „Alle", Slider voll, Chips leer) und dann
+// gesprungen — keine Sonderfälle, kein verstecktes Merken (behebt den „läuft ins Leere"-Bug).
+function chronoJumpYear(jahr, tourId){
   const y=jahrSort(jahr); if(y==null) return;
+  const inF = tourId==null || matchedTours().some(t=>t.id==tourId);
+  if(!inF) resetFilter();   // baut CHRONO auf vollen Bereich neu -> Zieljahr wieder vorhanden
   closePanel();
   if(!_chronoOn) chronoEnter();
   const idx=CHRONO.years.indexOf(y);
@@ -2833,9 +2872,13 @@ TOUREN.forEach(t=>{ _strangCount[serieOf(t)]++; });
 { const set=(id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
   set('cntAlle',_strangCount.alle); set('cntBrueder',_strangCount.brueder); set('cntWeitere',_strangCount.weitere); }
 
-const FILTER={strang:'alle', personen:[]};
+// P3a: EIN Filterzustand F = Strang × Personen (UND) × Jahr [von–bis].
+const YEAR_MIN=Math.min(...TOUREN.map(t=>jahrSort(t.jahr)).filter(v=>v!=null));
+const YEAR_MAX=Math.max(...TOUREN.map(t=>jahrSort(t.jahr)).filter(v=>v!=null));
+const FILTER={strang:'alle', personen:[], jahrVon:YEAR_MIN, jahrBis:YEAR_MAX};
 let _filterIds=null;   // null = Filter inaktiv (Karte voll); sonst Treffer-tour_id-Liste
-function filterActive(){ return FILTER.strang!=='alle' || FILTER.personen.length>0; }
+function jahrDefault(){ return FILTER.jahrVon<=YEAR_MIN && FILTER.jahrBis>=YEAR_MAX; }
+function filterActive(){ return FILTER.strang!=='alle' || FILTER.personen.length>0 || !jahrDefault(); }
 function matchedTours(){
   return TOUREN.filter(t=>{
     if(FILTER.strang!=='alle' && serieOf(t)!==FILTER.strang) return false;
@@ -2843,35 +2886,39 @@ function matchedTours(){
       const ids=t.teilnehmer_ids||[];
       if(!FILTER.personen.every(p=>ids.includes(p))) return false;
     }
+    const y=jahrSort(t.jahr);
+    if(y!=null && (y<FILTER.jahrVon || y>FILTER.jahrBis)) return false;   // Jahr-Range
     return true;
   });
 }
-
-// ── Karten-Dimmen (Muster highlightTrack: Opacity-Case auf id-Liste, nicht ausblenden) ──
-function _dimMarkers(ids, active){
+// STS-Codes der Gebiete mit >=1 Treffer-Tour (für hl-line-Kontur).
+function _matchedGroupSTS(idSet){
+  const s=[]; visitedGroups.forEach(g=>{ if(_groupTourIds(g).some(id=>idSet.has(id))) s.push(g.STS); }); return s;
+}
+// ── Karte folgt F: Wanderer-Icons + Tracks ausgefilterter Touren AUSBLENDEN (setFilter),
+// Besucht-Kontur (hl-line) nur für Gebiete mit Treffer; Flächen bleiben (gedimmt via fehlende Kontur). ──
+function _applyMapFilter(ids, active){
   try{
-    if(!map || !map.getLayer || !map.getLayer('t-halo')) return;   // Layer erst nach map.on('load') da
-    const inSet=['in',['get','id'],['literal',ids]];
-    map.setPaintProperty('t-halo','circle-opacity', active?['case',inSet,0.20,0.03]:0.20);
-    map.setPaintProperty('t-badge','circle-opacity', active?['case',inSet,0.96,0.10]:0.96);
-    map.setPaintProperty('t-badge','circle-stroke-opacity', active?['case',inSet,1,0.12]:1);
-    map.setPaintProperty('t-dot','icon-opacity', active?['case',inSet,1,0.14]:1);
+    if(!map || !map.getLayer) return;
+    const mf = active ? ['in',['get','id'],['literal',ids]] : null;
+    ['t-halo','t-badge','t-hit','t-dot'].forEach(l=>{ if(map.getLayer(l)) map.setFilter(l, mf); });
+    const tf = active ? ['in',['get','tour_id'],['literal',ids]] : null;
+    ['trk-line','trk-casing'].forEach(l=>{ if(map.getLayer(l)) map.setFilter(l, tf); });
+    if(map.getLayer('hl-line')){
+      const g = active ? _matchedGroupSTS(new Set(ids)) : null;
+      map.setFilter('hl-line', g ? ['in',['get','parent_sts'],['literal',g]] : null);
+    }
   }catch(_){}
 }
-function _trackBaseOpacity(which){   // von highlightTrack(null) genutzt -> Filter-Dim bleibt erhalten
-  if(_filterIds){
-    const inSet=['in',['get','tour_id'],['literal',_filterIds]];
-    return which==='casing'?['case',inSet,0.55,0.08]:['case',inSet,0.95,0.12];
-  }
-  return which==='casing'?0.55:0.95;
-}
-function _dimTracks(){
-  try{
-    if(!map || !map.getLayer || !map.getLayer('trk-line')) return;   // Layer erst nach map.on('load') da
-    map.setPaintProperty('trk-line','line-opacity', _trackBaseOpacity('line'));
-    map.setPaintProperty('trk-casing','line-opacity', _trackBaseOpacity('casing'));
-  }catch(_){}
-}
+function _trackBaseOpacity(which){ return which==='casing'?0.55:0.95; }   // F blendet aus (setFilter), kein Opazitäts-Dim mehr
+// Filter-Persistenz (P3a.5): F wie die Ebenen-Toggles in localStorage.
+function persistFilter(){ try{ localStorage.setItem('alpen_filter', JSON.stringify(FILTER)); }catch(_){} }
+function restoreFilter(){ try{ const f=JSON.parse(localStorage.getItem('alpen_filter')||'null'); if(f){
+    FILTER.strang = (f.strang==='brueder'||f.strang==='weitere')?f.strang:'alle';
+    FILTER.personen = Array.isArray(f.personen)?f.personen.filter(id=>CHIP_PERSONS.some(p=>p.id===id)):[];
+    FILTER.jahrVon = Math.max(YEAR_MIN, Math.min(+f.jahrVon||YEAR_MIN, YEAR_MAX));
+    FILTER.jahrBis = Math.max(FILTER.jahrVon, Math.min(+f.jahrBis||YEAR_MAX, YEAR_MAX));
+  } }catch(_){} }
 
 // ── UI-Render: Chips, Badges, Liste, Kopf-Bilanz ──
 function renderChips(){
@@ -2882,13 +2929,42 @@ function renderChips(){
       _e(p.name)+' <span class="n">'+p.n+'</span></button>';
   }).join('');
 }
-function renderBadges(){
+// P3a: Filter-Bilanzzeile („Brüdertouren · Daniel · 2001–2004 → 3 Touren ✕"); ✕ resettet F komplett.
+function renderBilanz(){
   const el=document.getElementById('filterBadges'); if(!el) return;
-  let h=FILTER.personen.map(id=>PERSON_BY_ID[id]).filter(Boolean).map(p=>
-    '<span class="tf-badge">'+_e(p.name)+
-    '<span class="rm" onclick="togglePerson(\''+_e(p.id)+'\')" title="Entfernen">&times;</span></span>').join('');
-  if(filterActive()) h+='<button class="tf-reset" onclick="resetFilter()">&times; Zur&uuml;cksetzen</button>';
-  el.innerHTML=h;
+  if(!filterActive()){ el.innerHTML=''; return; }
+  const parts=[];
+  if(FILTER.strang==='brueder') parts.push('Br&uuml;dertouren');
+  else if(FILTER.strang==='weitere') parts.push('Weitere');
+  FILTER.personen.map(id=>PERSON_BY_ID[id]).filter(Boolean).forEach(p=>parts.push(_e(p.name)));
+  if(!jahrDefault()) parts.push(FILTER.jahrVon===FILTER.jahrBis?String(FILTER.jahrVon):FILTER.jahrVon+'&ndash;'+FILTER.jahrBis);
+  const n=matchedTours().length;
+  el.innerHTML='<span class="tf-bilanz-txt">'+parts.join(' &middot; ')+' &rarr; '+n+(n===1?' Tour':' Touren')+'</span>'+
+    '<button class="tf-reset" onclick="resetFilter()" title="Filter zur&uuml;cksetzen" aria-label="Zur&uuml;cksetzen">&times;</button>';
+}
+// ── Jahr-Range-Slider (Doppelgriff, YEAR_MIN..YEAR_MAX aus Daten, von=bis erlaubt) ──
+function _yearSliderInit(){
+  const von=document.getElementById('tfJahrVon'), bis=document.getElementById('tfJahrBis'); if(!von||!bis) return;
+  [von,bis].forEach(s=>{ s.min=YEAR_MIN; s.max=YEAR_MAX; s.step=1; });
+  _yearSliderSync();
+  const upd=(from)=>{
+    let a=+von.value, b=+bis.value;
+    if(a>b){ if(from==='von'){ b=a; bis.value=b; } else { a=b; von.value=a; } }   // von=bis erlaubt
+    FILTER.jahrVon=a; FILTER.jahrBis=b; applyTourFilter();
+  };
+  von.oninput=()=>upd('von'); bis.oninput=()=>upd('bis');
+  _yearSliderPaint();
+}
+function _yearSliderSync(){   // Input-Werte aus FILTER (nach Reset/Restore)
+  const von=document.getElementById('tfJahrVon'), bis=document.getElementById('tfJahrBis');
+  if(von) von.value=FILTER.jahrVon; if(bis) bis.value=FILTER.jahrBis;
+}
+function _yearSliderPaint(){
+  const fill=document.getElementById('tfJahrFill'), val=document.getElementById('tfJahrVal');
+  const span=(YEAR_MAX-YEAR_MIN)||1;
+  const l=(FILTER.jahrVon-YEAR_MIN)/span*100, r=(FILTER.jahrBis-YEAR_MIN)/span*100;
+  if(fill){ fill.style.left=l+'%'; fill.style.width=Math.max(0,r-l)+'%'; }
+  if(val) val.textContent=FILTER.jahrVon===FILTER.jahrBis?String(FILTER.jahrVon):FILTER.jahrVon+'–'+FILTER.jahrBis;
 }
 // P1: EINE Zeile pro Tour (chronologisch aufsteigend, Tie-Break gegend). Gebiete
 // erscheinen mehrfach (Tagebuch-Logik). Strang/Personen filtern die Zeilen.
@@ -3016,19 +3092,19 @@ function updateCovCount(tours){
   el.textContent=(word?word+' · ':'')+tours.length+' Touren · '+nGeb+' Gebiete';
 }
 
-// ── Die EINE Schaltfunktion: schaltet alle Sichten konsistent ──
+// ── Die EINE Schaltfunktion: schaltet alle Sichten konsistent (F = Strang×Personen×Jahr) ──
 function applyTourFilter(){
   const tours=matchedTours();
   const ids=tours.map(t=>t.id);
   const active=filterActive();
   _filterIds=active?ids:null;
-  _dimMarkers(ids, active);          // Karte: Marker dimmen (Kontext bleibt)
-  _dimTracks();                      // Karte: Tracks dimmen (respektiert _filterIds)
+  _applyMapFilter(ids, active);      // Karte: Icons/Tracks ausblenden, Kontur nur Treffer-Gebiete
   document.querySelectorAll('#strangSeg .tf-sbtn')
     .forEach(b=>b.classList.toggle('on', b.dataset.strang===FILTER.strang));
-  renderChips(); renderBadges();
+  renderChips(); renderBilanz(); _yearSliderPaint();
   renderCovList(); updateCovCount(tours);   // Liste = Ergebnisfläche (filtern), Kopf = Bilanz
-  _chronoRefilter();                 // Chronik-Jahresleiste/Play (P3)
+  _chronoRefilter();                 // Chronik-Jahresleiste/Play folgt F (inkl. Jahr)
+  persistFilter();
 }
 function setStrang(s){ FILTER.strang=s; applyTourFilter(); }
 function togglePerson(id){
@@ -3036,7 +3112,10 @@ function togglePerson(id){
   if(i>=0) FILTER.personen.splice(i,1); else FILTER.personen.push(id);
   applyTourFilter();
 }
-function resetFilter(){ FILTER.strang='alle'; FILTER.personen=[]; applyTourFilter(); }
+function resetFilter(){
+  FILTER.strang='alle'; FILTER.personen=[]; FILTER.jahrVon=YEAR_MIN; FILTER.jahrBis=YEAR_MAX;
+  _yearSliderSync(); applyTourFilter();
+}
 // Chronik bei Filterwechsel neu ableiten: Jahresleiste/Färbung aus der gefilterten
 // Menge, Chips neu; laufender Modus auf gültigen Jahr-Index geclamped
 // (chrono-cur-Clamp-Altlast). Wird auch beim Initial-Render aufgerufen.
@@ -3298,8 +3377,9 @@ function chronoBuildChips(){
 }
 chronoBuildChips();
 
-// Initial-Render: Default Alle/leer -> Karte voll, Chips/Liste/Bilanz gerendert.
-// Hier (nicht im Filter-Block), damit CHRONO/_chronoOn initialisiert sind.
+// Initial-Render. Hier (nicht im Filter-Block), damit CHRONO/_chronoOn initialisiert sind.
+restoreFilter();      // P3a.5: F aus localStorage (Bilanzzeile macht ihn sofort sichtbar)
+_yearSliderInit();    // Jahr-Slider (YEAR_MIN..YEAR_MAX, Werte aus F)
 applyTourFilter();
 sizeCov();   // P1: #cov-Höhe initial messen (Title-Card-Layout steht am Script-Ende)
 /* PRIV:END */
