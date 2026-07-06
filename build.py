@@ -437,36 +437,51 @@ __HEAD_LIBS__
   #panel .sb-open{font-size:11px;color:var(--muted);margin-top:9px}
 
   /* ── Coverage list (default collapsed) ── */
-  #cov{position:absolute;bottom:96px;left:16px;z-index:5;width:270px;max-height:42vh;
+  /* #cov: Höhe bis knapp über die Chronoleiste (JS sizeCov -> --cov-max), damit die
+     Tourenliste maximal viele Zeilen zeigt; harte vh-Kappe als Fallback. */
+  #cov{position:absolute;bottom:calc(var(--row-h) + 54px);left:16px;z-index:5;width:288px;
+    max-height:calc(100vh - 130px);
     background:var(--panel);backdrop-filter:blur(8px);border:1px solid var(--line);
     border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.45);overflow:hidden}
   #cov .ch{padding:9px 14px;font-size:var(--fs-ui);font-weight:600;cursor:pointer;min-height:var(--row-h);
     display:flex;justify-content:space-between;align-items:center;user-select:none;touch-action:manipulation}
   #cov .ch span{color:var(--muted);font-weight:400;font-size:11px}
   #cov .cl{max-height:0;overflow-y:auto;transition:max-height .3s ease}
-  #cov.open .cl{max-height:34vh}
-  #cov .row{padding:8px 14px;font-size:var(--fs-ui);cursor:pointer;min-height:var(--row-h);box-sizing:border-box;
-    display:flex;justify-content:space-between;align-items:center;gap:8px;
-    border-top:1px solid rgba(255,255,255,.06);touch-action:manipulation}
-  #cov .row:hover{background:rgba(255,178,77,.10)}
-  #cov .row .yr{color:var(--muted);font-variant-numeric:tabular-nums}
+  #cov.open .cl{max-height:var(--cov-max,46vh)}
   /* PRIV:START */
-  /* ── Personen-/Strang-Filter (SPEC_Personenfilter) — nur Privat ── */
-  #tourFilter{padding:8px 14px 4px}
-  .tf-seg{display:flex;gap:5px;margin-bottom:8px}
+  /* ── Tourenliste: eine Zeile pro Tour (Jahr · Gegend · Kategorie-Badge) ── */
+  .trow{padding:7px 14px;font-size:var(--fs-ui);cursor:pointer;min-height:var(--row-h);box-sizing:border-box;
+    display:flex;align-items:center;gap:9px;border-top:1px solid rgba(255,255,255,.06);touch-action:manipulation}
+  .trow:hover{background:rgba(255,178,77,.10)}
+  .trow.sel{background:rgba(95,208,197,.13)}
+  .trow .tyr{color:var(--accent);font-weight:700;font-variant-numeric:tabular-nums;flex:0 0 auto;min-width:34px}
+  .trow .tgeb{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .trow .tkat{flex:0 0 auto;font-size:9.5px;padding:1px 6px;border-radius:5px;white-space:nowrap;
+    border:1px solid var(--line);color:var(--muted)}
+  .trow .tkat.br{color:var(--accent2);border-color:rgba(95,208,197,.4);background:rgba(95,208,197,.10)}
+  /* ── Personen-/Strang-Filter (SPEC_Personenfilter) — sticky, Chips einklappbar ── */
+  #tourFilter{padding:8px 14px 6px;position:sticky;top:0;z-index:3;
+    background:var(--panel);backdrop-filter:blur(8px);border-bottom:1px solid rgba(255,255,255,.06)}
+  .tf-seg{display:flex;gap:5px;margin-bottom:7px}
   .tf-sbtn{flex:1;min-height:var(--row-h);padding:5px 4px;border:1px solid var(--line);border-radius:9px;
     background:rgba(255,255,255,.04);color:var(--muted);font-size:11px;cursor:pointer;
     font-family:inherit;touch-action:manipulation;white-space:nowrap;text-align:center;line-height:1.25}
   .tf-sbtn b{font-weight:700;font-variant-numeric:tabular-nums}
   .tf-sbtn.on{background:rgba(95,208,197,.16);border-color:var(--accent2);color:var(--txt)}
-  .tf-chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:2px}
+  .tf-perstoggle{display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:4px 2px;cursor:pointer;font-size:12px;color:var(--muted);min-height:28px;
+    touch-action:manipulation;user-select:none}
+  .tf-perstoggle .tf-caret{transition:transform .25s;font-size:.85em}
+  #cov.pers-open .tf-perstoggle .tf-caret{transform:rotate(180deg)}
+  #cov:not(.pers-open) .tf-chips{display:none}
+  .tf-chips{display:flex;flex-wrap:wrap;gap:5px;margin:2px 0 4px}
   .tf-chip{display:inline-flex;align-items:center;gap:5px;min-height:30px;padding:3px 9px;border-radius:16px;
     border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--txt);font-size:12px;
     font-family:inherit;cursor:pointer;touch-action:manipulation}
   .tf-chip .n{color:var(--muted);font-variant-numeric:tabular-nums;font-size:11px}
   .tf-chip.on{background:rgba(255,178,77,.18);border-color:var(--accent);font-weight:600}
   .tf-chip.on .n{color:var(--accent)}
-  .tf-badges{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;align-items:center;empty-cells:hide}
+  .tf-badges{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 2px;align-items:center}
   .tf-badges:empty{display:none}
   .tf-badge{display:inline-flex;align-items:center;gap:6px;padding:2px 8px;border-radius:14px;
     background:rgba(255,178,77,.16);border:1px solid rgba(255,178,77,.45);color:var(--txt);font-size:11.5px}
@@ -477,7 +492,9 @@ __HEAD_LIBS__
   .tf-reset:hover{text-decoration:underline}
   .tf-empty{padding:10px 14px 12px;font-size:12.5px;color:var(--muted);line-height:1.5}
   .tf-empty .tf-reset{display:inline;padding:0;margin-left:4px}
-  @media (pointer: coarse){ .tf-chip{min-height:var(--row-h)} .tf-badge{min-height:32px} }
+  @media (pointer: coarse){ .tf-chip{min-height:var(--row-h)} .tf-badge{min-height:32px} .tf-perstoggle{min-height:var(--row-h)} }
+  /* Chronik-Sync: Auswahl-Rahmen (Gebiet offen) — teal Ring, klar vom Play-Cursor (orange) getrennt */
+  #chronoChips .chip.chsel{box-shadow:inset 0 0 0 2px var(--accent2)}
   /* PRIV:END */
 
   /* ── STS group popup ── */
@@ -716,7 +733,9 @@ __HEAD_LIBS__
     #title{max-width:calc(100vw - 90px)}
     #panel{width:auto;left:16px;right:16px;top:auto;bottom:16px;z-index:9}
     #ebenen{max-width:calc(100vw - 32px)}
-    #cov{display:none}
+    /* P1: Tourenliste auch auf dem Handy als Bottom-Sheet (Papas 10-Zoll ist Zielgerät).
+       #panel (z9) öffnet darüber; openSts klappt #cov ein -> kein Overlap-Konflikt. */
+    #cov{left:16px;right:16px;width:auto;bottom:16px;z-index:8;max-height:72vh}
   }
   /* UX(2): Title-Card kollabiert bei kleiner Fensterhoehe auf die Titelzeile (Tablet quer),
      damit der Steckbrief Platz hat. */
@@ -846,7 +865,7 @@ __HEAD_LIBS__
 
 <!-- PRIV:START -->
 <div id="cov">
-  <div class="ch" onclick="document.getElementById('cov').classList.toggle('open')">
+  <div class="ch" onclick="toggleCov()">
 Touren ansehen <span id="covCount"></span>
   </div>
   <div class="cl">
@@ -856,6 +875,7 @@ Touren ansehen <span id="covCount"></span>
         <button class="tf-sbtn" data-strang="brueder" onclick="setStrang('brueder')">Brüdertouren (<b id="cntBrueder">10</b>)</button>
         <button class="tf-sbtn" data-strang="weitere" onclick="setStrang('weitere')">Weitere (<b id="cntWeitere">8</b>)</button>
       </div>
+      <div class="tf-perstoggle" id="tfPersToggle" onclick="togglePersGrid()"><span>Personen filtern</span><span class="tf-caret">&#9662;</span></div>
       <div class="tf-badges" id="filterBadges"></div>
       <div class="tf-chips" id="personChips"></div>
     </div>
@@ -1290,7 +1310,8 @@ function toggleAbout(){ const c=document.getElementById('aboutCard'); if(c) c.cl
 function toggleAboutCard(){ document.getElementById('about').classList.remove('open');
   document.getElementById('aboutCard').classList.toggle('open'); }
 // T4: Legende (Sektoren) auf-/zuklappen.
-function toggleLegend(){ document.getElementById('legend').classList.toggle('open'); }
+function toggleLegend(){ document.getElementById('legend').classList.toggle('open');
+  if(typeof sizeCov==='function') sizeCov(); }   /* P1: Title-Höhe ändert sich -> #cov-Höhe neu messen */
 // W1.3: Einheitliche Schließ-UX — alle schwarzen Popups (Gruppe/Hütte/Hover/Treffer/Tour).
 function closeAllPopups(){
   try{ stsPopup.remove(); hutPopup.remove(); hoverPop.remove(); }catch(_){}
@@ -2312,7 +2333,8 @@ function openSts(feat, camMode){   // camMode: undef=Gate(§6a), 'force'=immer f
   showGroupPeaks(stsName);
 
   /* PRIV:START */
-  document.getElementById('cov').classList.remove('open');   // Touren-Liste einklappen (kein Overlap)
+  document.getElementById('cov').classList.remove('open');   // Liste einklappen (P1: #panel getrennt; P2 merged)
+  markChronoGroupYears(props);   // P1: Jahres-Chips dieses Gebiets markieren (Play-Cursor bleibt)
   /* PRIV:END */
   // §1 (W4): Steckbrief unter der Title-Card andocken (kein Overlap der KPI-Zeile).
   // Nur Desktop; auf Mobile (<=640) uebernimmt die Bottom-Media-Query (top:auto).
@@ -2709,6 +2731,11 @@ function closePanel(){
   map.setFilter('sts-selected',['==',['get','STS'],'']);
   _selSts=''; updateStsLabelFilter();   // B4: Gruppennamen wieder alle einblenden
   resetGroupPeaks();
+  /* PRIV:START */
+  // P1: Chronik-Auswahlrahmen räumen + Zeilen-Highlight zurück. try/catch schützt
+  // vor TDZ, falls closePanel vor der Coverage-Block-Init einmal früh läuft.
+  try{ clearChronoSel(); _selTourId=null; markSelTourRow(); }catch(_){}
+  /* PRIV:END */
 }
 function overview(){
   closePanel();
@@ -2823,30 +2850,96 @@ function renderBadges(){
   if(filterActive()) h+='<button class="tf-reset" onclick="resetFilter()">&times; Zur&uuml;cksetzen</button>';
   el.innerHTML=h;
 }
+// P1: EINE Zeile pro Tour (chronologisch aufsteigend, Tie-Break gegend). Gebiete
+// erscheinen mehrfach (Tagebuch-Logik). Strang/Personen filtern die Zeilen.
+let _selTourId=null;    // im Steckbrief geöffnete Tour (Zeilen-Highlight)
+let _pendingTour=null;  // P2: im Steckbrief aufzuklappende Tour-Karte
 function renderCovList(){
   const cl=document.getElementById('covList'), empty=document.getElementById('covEmpty'); if(!cl) return;
   const active=filterActive();
-  const idSet=new Set(active?matchedTours().map(t=>t.id):[]);
-  let rows='', shown=0;
-  visitedGroups.forEach(g=>{
-    const gids=_groupTourIds(g);
-    const hitIds=active?gids.filter(id=>idSet.has(id)):gids;
-    if(active && !hitIds.length) return;               // Gruppe ohne Treffer-Tour: ausblenden
-    shown++;
-    const nm=(g.name_de||g.STS||'').replace(/</g,'&lt;');
-    const key=String(g.STS||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-    const yrs=[...new Set(hitIds.map(id=>{const t=TOUREN.find(x=>x.id==id);return t&&t.jahr;}).filter(Boolean))];
-    rows+='<div class="row" onclick="openGroup(\''+key+'\')"><span>'+nm+'</span><span class="yr">'+_e(yrs.join(', '))+'</span></div>';
-  });
-  cl.innerHTML=rows;
+  const tours=(active?matchedTours():TOUREN.slice())
+    .sort((a,b)=> (jahrSort(a.jahr)||0)-(jahrSort(b.jahr)||0)
+               || String(a.gegend||a.gebirge||'').localeCompare(String(b.gegend||b.gebirge||'')));
+  cl.innerHTML=tours.map(t=>{
+    const yr=_e(String(t.jahr||'')), geb=_e(t.gegend||t.gebirge||''), kat=_e(katOf(t));
+    const kc=serieOf(t)==='brueder'?' br':'';
+    const sel=t.id===_selTourId?' sel':'';
+    return '<div class="trow'+sel+'" data-tid="'+t.id+'" onclick="openTourRow('+t.id+')">'+
+      '<span class="tyr">'+yr+'</span><span class="tgeb">'+geb+'</span>'+
+      '<span class="tkat'+kc+'">'+kat+'</span></div>';
+  }).join('');
   if(empty){
-    if(active && shown===0){
+    if(active && !tours.length){
       empty.innerHTML='Keine gemeinsame Tour mit dieser Auswahl. '+
         '<button class="tf-reset" onclick="resetFilter()">&times; Zur&uuml;cksetzen</button>';
       empty.style.display='';
     } else empty.style.display='none';
   }
 }
+// Zeilen-Klick: Steckbrief der SOIUSA-Gruppe dieser Tour öffnen (P2: mit Tour-Karte aufgeklappt).
+function openTourRow(tid){
+  const t=TOUREN.find(x=>x.id==tid); if(!t) return;
+  _selTourId=tid; _pendingTour=tid; markSelTourRow();
+  const f=_groupFeatureOfTour(tid);
+  if(f) openSts(f);
+  else { closeAllPopups(); if(t.lon!=null&&t.lat!=null){ saveUndo(); map.flyTo({center:[t.lon,t.lat],zoom:9,pitch:18,essential:true}); showUndoChip(); } }
+}
+function _groupFeatureOfTour(tid){
+  return SOIUSA_STS.features.find(x=>{
+    if(x.properties.visited!==1) return false;
+    let ids=[]; try{ ids = typeof x.properties.tour_ids==='string'?JSON.parse(x.properties.tour_ids||'[]'):(x.properties.tour_ids||[]); }catch(_){}
+    return ids.some(v=>String(v)===String(tid));
+  });
+}
+function markSelTourRow(){
+  document.querySelectorAll('#covList .trow').forEach(r=>r.classList.toggle('sel', +r.dataset.tid===_selTourId));
+}
+
+// P1: Personen-Chip-Grid ein-/ausklappen (Default zu; Zustand in localStorage; aktive
+// Auswahl bleibt über die Badge-Zeile sichtbar/abwählbar).
+function togglePersGrid(){
+  const cov=document.getElementById('cov'); if(!cov) return;
+  const open=cov.classList.toggle('pers-open');
+  try{ localStorage.setItem('alpen_pers_open', open?'1':'0'); }catch(_){}
+  sizeCov();
+}
+// #cov-Kopf: auf-/zuklappen + Höhe neu messen.
+function toggleCov(){
+  const cov=document.getElementById('cov'); if(!cov) return;
+  if(cov.classList.toggle('open')) sizeCov();
+}
+// Panel-Höhe bis knapp über die Chronoleiste (kein Overlap mit Title-Card) -> --cov-max.
+function sizeCov(){
+  const cov=document.getElementById('cov'); if(!cov) return;
+  const phone=window.matchMedia && window.matchMedia('(max-width:640px)').matches;
+  let avail;
+  if(phone){ avail=Math.round(window.innerHeight*0.72); }
+  else{
+    const tc=document.getElementById('title');
+    const top=(tc?tc.getBoundingClientRect().bottom:80)+12;
+    const rowH=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--row-h'))||32;
+    avail=window.innerHeight-top-(rowH+104);   // Chrono-Button/-Caption + Ränder
+  }
+  cov.style.setProperty('--cov-max', Math.max(140, avail-44)+'px');   // 44 = Kopfzeile
+}
+window.addEventListener('resize', sizeCov);
+
+// P1: Chronik-Sync — offenes Gebiet markiert seine Jahres-Chips (teal Ring, chsel),
+// OHNE den Play-Cursor (.on) zu bewegen. Deselect/Esc räumt die Rahmen.
+function clearChronoSel(){ document.querySelectorAll('#chronoChips .chip.chsel').forEach(c=>c.classList.remove('chsel')); }
+function markChronoGroupYears(props){
+  clearChronoSel(); if(!props) return;
+  const yrs=new Set(_toursOf(props).map(t=>jahrSort(t.jahr)).filter(Boolean));
+  document.querySelectorAll('#chronoChips .chip').forEach(c=>{
+    const y=CHRONO.years[+c.dataset.i]; if(yrs.has(y)) c.classList.add('chsel');
+  });
+}
+// Init: Chip-Grid-Zustand aus localStorage; #cov-Höhe initial messen.
+(function(){
+  let v='0'; try{ v=localStorage.getItem('alpen_pers_open')||'0'; }catch(_){}
+  const cov=document.getElementById('cov');
+  if(cov && v==='1') cov.classList.add('pers-open');
+})();
 function updateCovCount(tours){
   const el=document.getElementById('covCount'); if(!el) return;
   if(!filterActive()){
@@ -3144,6 +3237,7 @@ chronoBuildChips();
 // Initial-Render: Default Alle/leer -> Karte voll, Chips/Liste/Bilanz gerendert.
 // Hier (nicht im Filter-Block), damit CHRONO/_chronoOn initialisiert sind.
 applyTourFilter();
+sizeCov();   // P1: #cov-Höhe initial messen (Title-Card-Layout steht am Script-Ende)
 /* PRIV:END */
 </script>
 </body>
