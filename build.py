@@ -150,9 +150,11 @@ else:
         simp = _dp(pts, 1e-4)
         t["track_km"] = round(km, 1)
         t["track_hm"] = int(round(hm / 10) * 10)
+        # P5: ele (ganze Meter) als 3. Koordinatenwert behalten -> Hoehenprofil-Sparkline.
+        # MapLibre nutzt fuer die 2D-Linie nur x/y; der z-Wert wird ignoriert (nur Daten).
         _tfeats.append({"type": "Feature",
             "geometry": {"type": "LineString",
-                         "coordinates": [[round(x, 5), round(y, 5)] for x, y, _e in simp]},
+                         "coordinates": [[round(x, 5), round(y, 5), round(_e)] for x, y, _e in simp]},
             "properties": {"tour_id": t["id"],
                            "rek": 1 if t.get("gpx_rekonstruiert") else 0}})
         print(f"[tracks] Tour {t['id']}: {len(pts)} -> {len(simp)} Punkte · {km:.1f} km · +{hm:.0f} hm")
@@ -610,6 +612,13 @@ __HEAD_LIBS__
   .tcard.open .tcard-b{display:block}
   .tcard-b .tc-row{margin:5px 0}
   .tcard-b .tc-k{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:1px}
+  /* P5: Mini-Höhenprofil (Sparkline) im Track-Abschnitt — dezent, Besucht-Orange. */
+  .tc-spark{margin:1px 0 6px;padding:0 1px}
+  .tc-spark svg{width:100%;height:44px;display:block}
+  .tcs-line{fill:none;stroke:var(--accent);stroke-width:1.4;vector-effect:non-scaling-stroke;stroke-linejoin:round;stroke-linecap:round}
+  .tcs-area{fill:var(--accent);opacity:.10}
+  .tcs-lbl{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:1px}
+  .tcs-lbl .tcs-max{color:var(--accent)}
   .tcard-b .tc-chrono{display:inline-block;margin-top:6px;font-size:11.5px;color:var(--accent2);cursor:pointer}
   .tcard-b .tc-chrono:hover{text-decoration:underline}
   /* PRIV:END */
@@ -2532,6 +2541,37 @@ function _toursOf(props){
 function katOf(t){ return (t && t.kategorie && String(t.kategorie).trim()) || 'Tour'; }
 function katLabel(tours){ const s=[...new Set((tours||[]).map(katOf))]; return s.length===1 ? s[0] : 'Touren'; }
 
+// P5: Mini-Höhenprofil als SVG-Sparkline aus den Inline-Track-Höhen (3. Koordinatenwert).
+// x = kumulative Distanz (Haversine), y = Höhe; dezent, Besucht-Orange. Leer ohne ele/Track.
+function _trackSparkline(tid){
+  try{
+    if(typeof TRACKS==='undefined' || !TRACKS.features) return '';
+    const f=TRACKS.features.find(x=>x.properties.tour_id===tid);
+    if(!f || !f.geometry) return '';
+    const c=f.geometry.coordinates;
+    if(!c.length || c[0].length<3) return '';
+    const R=6371000, rad=Math.PI/180;
+    let d=0; const xs=[0], es=[c[0][2]];
+    for(let i=1;i<c.length;i++){
+      const a=c[i-1], b=c[i], la1=a[1]*rad, la2=b[1]*rad, dla=(b[1]-a[1])*rad, dlo=(b[0]-a[0])*rad;
+      const h=Math.sin(dla/2)**2 + Math.cos(la1)*Math.cos(la2)*Math.sin(dlo/2)**2;
+      d+=R*2*Math.asin(Math.sqrt(h))/1000; xs.push(d); es.push(b[2]);
+    }
+    const total=d||1, eMin=Math.min(...es), eMax=Math.max(...es), eRng=(eMax-eMin)||1;
+    const W=240,H=44,PX=2,PY=5;
+    const px=i=>PX+(xs[i]/total)*(W-2*PX), py=i=>PY+(1-(es[i]-eMin)/eRng)*(H-2*PY);
+    let pts=''; for(let i=0;i<xs.length;i++){ pts+=(i?' ':'')+px(i).toFixed(1)+','+py(i).toFixed(1); }
+    let area='M'+px(0).toFixed(1)+','+(H-PY);
+    for(let i=0;i<xs.length;i++){ area+=' L'+px(i).toFixed(1)+','+py(i).toFixed(1); }
+    area+=' L'+px(xs.length-1).toFixed(1)+','+(H-PY)+' Z';
+    return '<div class="tc-spark" title="Höhenprofil">'+
+      '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true">'+
+        '<path class="tcs-area" d="'+area+'"/><polyline class="tcs-line" points="'+pts+'"/></svg>'+
+      '<div class="tcs-lbl"><span>'+Math.round(es[0])+' m</span>'+
+        '<span class="tcs-max">▲ '+Math.round(eMax)+' m</span>'+
+        '<span>'+Math.round(es[es.length-1])+' m</span></div></div>';
+  }catch(_){ return ''; }
+}
 // P2: Tab „Touren (n)" = Accordion, eine Karte pro Tour (chronologisch aufsteigend).
 // Beim Einstieg über eine Listen-Zeile/Marker ist _pendingTour aufgeklappt.
 function groupTourHtml(props){
@@ -2548,8 +2588,9 @@ function groupTourHtml(props){
     if(t.teilnehmer) b+='<div class="tc-row"><span class="tc-k">Teilnehmer</span>'+_e(t.teilnehmer)+'</div>';
     if(t.gipfel&&t.gipfel.length) b+='<div class="tc-row"><span class="tc-k">Gipfel</span>'+gipfelUl(t.gipfel)+'</div>';
     if(t.huetten) b+='<div class="tc-row"><span class="tc-k">Hütten / Stationen</span>'+_e(t.huetten)+'</div>';
-    if(t.track_km) b+='<div class="tc-row"><span class="tc-k">Track</span>'+String(t.track_km).replace('.',',')+
+    if(t.track_km){ b+='<div class="tc-row"><span class="tc-k">Track</span>'+String(t.track_km).replace('.',',')+
       ' km · +'+t.track_hm+' hm'+(t.gpx_rekonstruiert?' · <i>rekonstruiert (__PT_LBL_BOOKSRC__)</i>':'')+'</div>';
+      b+=_trackSparkline(t.id); }   // P5: Mini-Höhenprofil
     if(t.bemerkung) b+='<div class="tc-row">'+_e(t.bemerkung)+'</div>';
     if(t.memo&&t.memo.trim()) b+='<div class="tour-memo">'+_esc(t.memo.trim()).replace(/\n/g,'<br>')+'</div>';
     b+=fotoBand(t);
