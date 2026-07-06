@@ -539,6 +539,7 @@ const OSM_PASSES = null;
 const OSM_PLACES = null;
 const OSM_CABLE  = null;
 const OSM_CABLE_LINES = null;   // W4: Seilbahn-Linien (voller Verlauf)
+const OSM_CHAIRLIFTS  = null;    // Anreise-Folgepaket: Sessellift-Linien (chair_lift)
 const BORDERS_GJ = null;
 const PRIV = false;
 const TOUR_LAYERS = PRIV ? ['t-hit','t-cluster-halo'] : [];   // tour markers only exist in the private build (Hit-Kreis + Cluster)
@@ -936,6 +937,7 @@ map.on('load',()=>{
   map.addSource('osm-places',{type:'geojson', data:OSM_PLACES || './soiusa_osm_places_v1.geojson'});     // Anreise: Orte (v1: nur city/town)
   map.addSource('osm-cable', {type:'geojson', data:OSM_CABLE  || './soiusa_osm_cableways.geojson'});   // Anreise: Seilbahn-Talstationen
   map.addSource('osm-cable-lines', {type:'geojson', data:OSM_CABLE_LINES || './soiusa_osm_cableways_lines.geojson'});  // W4: Seilbahn-Linien
+  map.addSource('osm-chairlifts', {type:'geojson', data:OSM_CHAIRLIFTS || './soiusa_osm_chairlifts.geojson'});  // Sessellift-Linien (Standalone inline)
 
   // ── Non-Alpine mask — always on ───────────────────────────────────────────
   map.addLayer({id:'mask-fill', type:'fill', source:'mask',
@@ -1104,6 +1106,12 @@ map.on('load',()=>{
       'text-variable-anchor':['left','right','top','bottom'],'text-radial-offset':0.7,
       'text-optional':true,'text-allow-overlap':false,'symbol-sort-key':['*',-1,_POP]},
     paint:{'text-color':'#d8c8a0','text-halo-color':'#1a1206','text-halo-width':1.2}});
+  // Sessellift-LINIEN (chair_lift) — deutlich dezenter als Gondel/Seilbahn: minzoom 11,
+  // ~60% Breite (0,9 vs 1,5), gedämpfte Farbe/Opacity, KEIN Halo, KEINE Gondel-Icons.
+  // ZUERST hinzugefügt -> zeichnet UNTER den Gondelbahn-Linien (Kollisions-/PRIO-Vorrang Gondel).
+  map.addLayer({id:'chairlift-line', type:'line', source:'osm-chairlifts', minzoom:11,
+    layout:{visibility:'none','line-join':'round','line-cap':'round'},
+    paint:{'line-color':'#6b7580','line-width':0.9,'line-opacity':0.6}});
   // W4: Seilbahn-LINIEN (voller Verlauf Tal->Berg) — dunkle Linie mit hellem Halo,
   // dünn/dezent, Zoom-Gate z≥10; am bestehenden Seilbahnen-Toggle. Vor dem Logo.
   map.addLayer({id:'cable-line-halo', type:'line', source:'osm-cable-lines', minzoom:10,
@@ -1915,7 +1923,7 @@ function togglePlaces(){
 let _cableOn=false;
 function toggleCable(){
   _cableOn=!_cableOn; const v=_cableOn?'visible':'none';
-  _setVis(['cable-line-halo','cable-line','cable-icon'], v);
+  _setVis(['cable-line-halo','cable-line','cable-icon','chairlift-line'], v);   // ein Toggle: Gondeln + Sessellifte
   document.getElementById('tglCable').classList.toggle('on',_cableOn);
   persistToggles();
 }

@@ -473,6 +473,18 @@ if "--cable-lines" in _ARGS:
     save("soiusa_osm_cableways_lines.geojson", lf, f"Seilbahn-Linien (von {before} nach Maske-Clip)")
     sys.exit(0)
 
+# Sessellift-EINBAU (Anreise-Folgepaket): chair_lift-Linien als EIGENE Datei (Muster --cable-lines),
+# EINE Overpass-Query, out geom, gleicher Maske-Clip. Keine Stationen. Bestehende cable/gondola-Datei bleibt.
+if "--chairlifts" in _ARGS:
+    print("Overpass: Sessellift-LINIEN (aerialway=chair_lift, out geom)...")
+    CHAIR_LINES_Q = (f'[out:json][timeout:300];'
+                     f'(way["aerialway"="chair_lift"]({BBOX}););out geom;')
+    lf = cableway_lines_geojson(query(CHAIR_LINES_Q).get("elements", []))
+    before = len(lf)
+    lf = line_mask_filter(lf, 0.02)
+    save("soiusa_osm_chairlifts.geojson", lf, f"Sessellift-Linien (von {before} nach Maske-Clip)")
+    sys.exit(0)
+
 # Anreise-Workorder B: Sessellift-ZAEHL-Report — NUR zaehlen, KEIN Layer/Persist der Geometrie.
 # Eine Overpass-Query (Server schonen), Clip wie die W4-Linien (line_mask_filter).
 if "--count-chairlifts" in _ARGS:

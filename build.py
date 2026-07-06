@@ -1054,6 +1054,7 @@ const OSM_PASSES = __OSM_PASSES__;
 const OSM_PLACES = __OSM_PLACES__;
 const OSM_CABLE  = __OSM_CABLE__;
 const OSM_CABLE_LINES = __OSM_CABLE_LINES__;   // W4: Seilbahn-Linien (voller Verlauf)
+const OSM_CHAIRLIFTS  = __OSM_CHAIRLIFTS__;    // Anreise-Folgepaket: Sessellift-Linien (chair_lift)
 const BORDERS_GJ = __BORDERS__;
 const PRIV = __PRIV__;
 const TOUR_LAYERS = PRIV ? ['t-hit','t-cluster-halo'] : [];   // tour markers only exist in the private build (Hit-Kreis + Cluster)
@@ -1501,6 +1502,7 @@ map.on('load',()=>{
   map.addSource('osm-places',{type:'geojson', data:OSM_PLACES || './soiusa_osm_places_v1.geojson'});     // Anreise: Orte (v1: nur city/town)
   map.addSource('osm-cable', {type:'geojson', data:OSM_CABLE  || './soiusa_osm_cableways.geojson'});   // Anreise: Seilbahn-Talstationen
   map.addSource('osm-cable-lines', {type:'geojson', data:OSM_CABLE_LINES || './soiusa_osm_cableways_lines.geojson'});  // W4: Seilbahn-Linien
+  map.addSource('osm-chairlifts', {type:'geojson', data:OSM_CHAIRLIFTS || './soiusa_osm_chairlifts.geojson'});  // Sessellift-Linien (Standalone inline)
 
   // ── Non-Alpine mask — always on ───────────────────────────────────────────
   map.addLayer({id:'mask-fill', type:'fill', source:'mask',
@@ -1694,6 +1696,12 @@ map.on('load',()=>{
       'text-variable-anchor':['left','right','top','bottom'],'text-radial-offset':0.7,
       'text-optional':true,'text-allow-overlap':false,'symbol-sort-key':['*',-1,_POP]},
     paint:{'text-color':'#d8c8a0','text-halo-color':'#1a1206','text-halo-width':1.2}});
+  // Sessellift-LINIEN (chair_lift) — deutlich dezenter als Gondel/Seilbahn: minzoom 11,
+  // ~60% Breite (0,9 vs 1,5), gedämpfte Farbe/Opacity, KEIN Halo, KEINE Gondel-Icons.
+  // ZUERST hinzugefügt -> zeichnet UNTER den Gondelbahn-Linien (Kollisions-/PRIO-Vorrang Gondel).
+  map.addLayer({id:'chairlift-line', type:'line', source:'osm-chairlifts', minzoom:11,
+    layout:{visibility:'none','line-join':'round','line-cap':'round'},
+    paint:{'line-color':'#6b7580','line-width':0.9,'line-opacity':0.6}});
   // W4: Seilbahn-LINIEN (voller Verlauf Tal->Berg) — dunkle Linie mit hellem Halo,
   // dünn/dezent, Zoom-Gate z≥10; am bestehenden Seilbahnen-Toggle. Vor dem Logo.
   map.addLayer({id:'cable-line-halo', type:'line', source:'osm-cable-lines', minzoom:10,
@@ -2750,7 +2758,7 @@ function togglePlaces(){
 let _cableOn=false;
 function toggleCable(){
   _cableOn=!_cableOn; const v=_cableOn?'visible':'none';
-  _setVis(['cable-line-halo','cable-line','cable-icon'], v);
+  _setVis(['cable-line-halo','cable-line','cable-icon','chairlift-line'], v);   // ein Toggle: Gondeln + Sessellifte
   document.getElementById('tglCable').classList.toggle('on',_cableOn);
   persistToggles();
 }
@@ -3703,6 +3711,7 @@ if STANDALONE:
     osm_places = load_compact("soiusa_osm_places_v1.geojson")   # v1: nur city/town (schlank)
     osm_cable  = load_compact("soiusa_osm_cableways.geojson")
     osm_cable_lines = load_compact("soiusa_osm_cableways_lines.geojson")
+    osm_chairlifts = load_compact("soiusa_osm_chairlifts.geojson")   # Sessellifte inline (file://-Pflicht)
     borders_gj = load_compact("soiusa_borders.geojson")
 else:
     head_libs = ('<link href="./vendor/maplibre-gl-4.7.1.min.css" rel="stylesheet" />\n'
@@ -3712,6 +3721,7 @@ else:
     glyphs_data = "null"
     osm_peaks = osm_huts = osm_passes = osm_places = osm_cable = borders_gj = "null"
     osm_cable_lines = "null"
+    osm_chairlifts = "null"
 html = html.replace("__GLYPHS_DATA__", glyphs_data)
 html = html.replace("__GLYPHS__", glyphs)
 html = html.replace("__OSM_PEAKS__",  osm_peaks)
@@ -3720,6 +3730,7 @@ html = html.replace("__OSM_PASSES__", osm_passes)
 html = html.replace("__OSM_PLACES__", osm_places)
 html = html.replace("__OSM_CABLE__",  osm_cable)
 html = html.replace("__OSM_CABLE_LINES__", osm_cable_lines)
+html = html.replace("__OSM_CHAIRLIFTS__", osm_chairlifts)
 html = html.replace("__BORDERS__",    borders_gj)
 html = html.replace("__HUT_VISITS__", hut_visits_json)   # §1: Besuchsjahre je OSM-Hütte (Privat)
 html = html.replace("__HEAD_LIBS__",  head_libs)   # zuletzt (Lib-Inhalt nicht rescannen)
