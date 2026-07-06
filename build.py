@@ -619,6 +619,10 @@ __HEAD_LIBS__
   .tcs-area{fill:var(--accent);opacity:.10}
   .tcs-lbl{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:1px}
   .tcs-lbl .tcs-max{color:var(--accent)}
+  /* P6: klickbare Teilnehmer-Chips in der Tour-Karte (nur filterbar). */
+  .tc-pers{color:var(--accent);cursor:pointer;border-bottom:1px dotted var(--accent);touch-action:manipulation;white-space:nowrap}
+  .tc-pers.on{background:var(--accent);color:#1a1200;border-radius:4px;padding:0 4px;border-bottom:0}
+  .tc-pers-plain{color:var(--txt);white-space:nowrap}
   .tcard-b .tc-chrono{display:inline-block;margin-top:6px;font-size:11.5px;color:var(--accent2);cursor:pointer}
   .tcard-b .tc-chrono:hover{text-decoration:underline}
   /* PRIV:END */
@@ -2572,6 +2576,26 @@ function _trackSparkline(tid){
         '<span>'+Math.round(es[es.length-1])+' m</span></div></div>';
   }catch(_){ return ''; }
 }
+// P6: Teilnehmer-Namen in der Tour-Karte als klickbare Chips (nur filterbar!=false).
+// Klick setzt/entfernt den Personen-Filter-Chip (UND-Logik) und wechselt zur
+// gefilterten Liste. Nicht-filterbare Personen (z. B. der Betrachter) bleiben Klartext.
+function _teilnehmerHtml(t){
+  const ids=(t&&t.teilnehmer_ids)||[];
+  if(!ids.length) return _e((t&&t.teilnehmer)||'');
+  const parts=ids.map(id=>{
+    const p=PERSON_BY_ID[id]; if(!p) return null;
+    const nm=_e(p.name);
+    if(p.filterbar===false) return '<span class="tc-pers-plain">'+nm+'</span>';
+    const on=FILTER.personen.indexOf(id)>=0?' on':'';
+    return '<span class="tc-pers'+on+'" onclick="event.stopPropagation();togglePersonFromCard(\''+id+'\')" '+
+           'title="Touren mit '+nm+'">'+nm+'</span>';
+  }).filter(Boolean);
+  return parts.length ? parts.join(', ') : _e(t.teilnehmer||'');
+}
+function togglePersonFromCard(id){
+  togglePerson(id);   // setzt/entfernt Chip + applyTourFilter (Liste + Karte folgen F)
+  closePanel();       // Detail-Steckbrief schliessen -> gefilterte Liste im #cov sichtbar
+}
 // P2: Tab „Touren (n)" = Accordion, eine Karte pro Tour (chronologisch aufsteigend).
 // Beim Einstieg über eine Listen-Zeile/Marker ist _pendingTour aufgeklappt.
 function groupTourHtml(props){
@@ -2585,7 +2609,7 @@ function groupTourHtml(props){
     const jj="chronoJumpYear('"+_e(String(t.jahr||''))+"',"+t.id+")";
     let b='';
     if(t.datum) b+='<div class="tc-row"><span class="tc-k">Datum</span>'+_e(t.datum)+'</div>';
-    if(t.teilnehmer) b+='<div class="tc-row"><span class="tc-k">Teilnehmer</span>'+_e(t.teilnehmer)+'</div>';
+    if(t.teilnehmer) b+='<div class="tc-row"><span class="tc-k">Teilnehmer</span>'+_teilnehmerHtml(t)+'</div>';
     if(t.gipfel&&t.gipfel.length) b+='<div class="tc-row"><span class="tc-k">Gipfel</span>'+gipfelUl(t.gipfel)+'</div>';
     if(t.huetten) b+='<div class="tc-row"><span class="tc-k">Hütten / Stationen</span>'+_e(t.huetten)+'</div>';
     if(t.track_km){ b+='<div class="tc-row"><span class="tc-k">Track</span>'+String(t.track_km).replace('.',',')+
