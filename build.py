@@ -174,19 +174,20 @@ highlights_json = load_compact("soiusa_highlights_clean.geojson")
 lp_json         = load_compact("soiusa_sts_label_points.geojson")
 mask_json       = load_compact("soiusa_mask.geojson")
 
-# ── Anreise-Orte v1: Layer + Suche auf NUR city/town reduzieren (Cowork-QA 03.07.) ──
-# Village/hamlet fliegen aus Layer UND Suchindex: 494 statt 14 916 Features
-# (~80 statt 2450 KB, Standalone -2,2 MB). Die volle soiusa_osm_places.geojson bleibt
-# als Rohquelle liegen (nicht neu fetchen). Der spätere Village-Nachzug
-# „Top-N je Gruppe nach Einwohnern" nutzt das bereits vorhandene pop-Feld
-# (8146/12991 Villages getaggt). Erzeugt die schlanke, deployte Quelle neu.
+# ── Anreise-Orte v2: city/town + villages (Michael-Fund Tschagguns/Schruns) ──────
+# v1 hatte NUR city/town -> Montafon-Talorte (village) fehlten. v2 nimmt villages
+# wieder auf (kleinste Klasse); im Client erst ab z>=10 gerendert (Dichte-Schutz),
+# in der Suche aber ohne Zoom-Gate auffindbar. Hamlets bleiben draußen. Dateiname
+# bleibt soiusa_osm_places_v1.geojson (deployte Quelle, alle Referenzen unverändert).
 _places_full = json.loads((HERE / "soiusa_osm_places.geojson").read_text(encoding="utf-8"))
 _places_v1 = {"type": "FeatureCollection",
               "features": [f for f in _places_full["features"]
-                           if f["properties"].get("place") in ("city", "town")]}
+                           if f["properties"].get("place") in ("city", "town", "village")]}
 (HERE / "soiusa_osm_places_v1.geojson").write_text(
     json.dumps(_places_v1, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-print(f"  Orte-v1: {len(_places_v1['features'])} city/town (von {len(_places_full['features'])} roh)")
+_pv = collections_places = {k: sum(1 for f in _places_v1["features"] if f["properties"].get("place") == k)
+                            for k in ("city", "town", "village")}
+print(f"  Orte-v2: {len(_places_v1['features'])} (city {_pv['city']} · town {_pv['town']} · village {_pv['village']}) von {len(_places_full['features'])} roh")
 
 # ── §1 „Ihr wart hier": OSM-Hütten-Name -> Besuchsjahre (nur Privat-Build) ──────
 # Build-seitiger, normalisierter Match (lowercase · Diakritika/ß · Satzzeichen+Leerraum
@@ -1569,7 +1570,7 @@ map.on('load',()=>{
   // K2 20–100k = roter Kreis, K3 <20k = kleiner heller Ring. Größe MONOTON über
   // alle Zooms: K1-Quadratkante > K2-Kreisdurchmesser > K3-Ringdurchmesser.
   map.addLayer({id:'places-dot', type:'circle', source:'osm-places', minzoom:6,
-    filter:['<',_POP,100000],
+    filter:['all',['<',_POP,100000],['!=',['get','place'],'village']],   // v2: villages eigener Layer
     layout:{visibility:'none'},
     paint:{
       'circle-color':['case',['>=',_POP,20000],'#cc3322','rgba(0,0,0,0)'],       // K2 rot, K3 Ring (kein Fill)
@@ -1583,10 +1584,11 @@ map.on('load',()=>{
   // icon-size so gewählt, dass die Quadratkante über alle Zooms > K2-Ø bleibt
   // (citysq: Quadrat ~0,76·20 px Canvas, pixelRatio 2 -> ~7,6 px/Größeneinheit).
   map.addLayer({id:'places-sq', type:'symbol', source:'osm-places', minzoom:6,
-    filter:['>=',_POP,100000],
+    filter:['all',['>=',_POP,100000],['!=',['get','place'],'village']],
     layout:{visibility:'none','icon-image':'citysq','icon-allow-overlap':true,'icon-ignore-placement':true,
       'icon-size':['interpolate',['linear'],['zoom'], 6,1.4, 9,1.8, 12,2.3]}});  // Kante ~10,6 / 13,7 / 17,5 px
   map.addLayer({id:'places-label', type:'symbol', source:'osm-places', minzoom:6,
+    filter:['!=',['get','place'],'village'],
     layout:{visibility:'none',
       // Sichtbarkeit gestaffelt: K1 ab z6, K2 ab z7.5, K3 ab z9 (entzerrt die Dichte).
       'text-field':['step',['zoom'],
@@ -1601,6 +1603,19 @@ map.on('load',()=>{
       'text-variable-anchor':['left','right','top','bottom'],'text-radial-offset':0.85,
       'text-optional':true,'text-allow-overlap':false,'symbol-sort-key':['*',-1,_POP]},   // große Städte zuerst
     paint:{'text-color':'#f2e3c0','text-halo-color':'#1a1206','text-halo-width':1.4}});
+  // Orte v2: villages (Talorte) — kleinste Klasse, erst ab z>=10, kleiner Ring + gedämpftes
+  // Label (heller als Karte, aber dunkler als town). In PRIO unter town einsortiert.
+  map.addLayer({id:'places-village', type:'circle', source:'osm-places', minzoom:10,
+    filter:['==',['get','place'],'village'], layout:{visibility:'none'},
+    paint:{'circle-radius':['interpolate',['linear'],['zoom'], 10,2.0, 13,3.0],
+      'circle-color':'rgba(0,0,0,0)','circle-stroke-color':'#e6d2a8','circle-stroke-width':1.1}});
+  map.addLayer({id:'places-village-label', type:'symbol', source:'osm-places', minzoom:10.5,
+    filter:['==',['get','place'],'village'],
+    layout:{visibility:'none','text-field':['get','name'],'text-font':['Noto Sans Bold'],
+      'text-size':['interpolate',['linear'],['zoom'], 10.5,9.5+LB, 13,11.5+LB],
+      'text-variable-anchor':['left','right','top','bottom'],'text-radial-offset':0.7,
+      'text-optional':true,'text-allow-overlap':false,'symbol-sort-key':['*',-1,_POP]},
+    paint:{'text-color':'#d8c8a0','text-halo-color':'#1a1206','text-halo-width':1.2}});
   // W4: Seilbahn-LINIEN (voller Verlauf Tal->Berg) — dunkle Linie mit hellem Halo,
   // dünn/dezent, Zoom-Gate z≥10; am bestehenden Seilbahnen-Toggle. Vor dem Logo.
   map.addLayer({id:'cable-line-halo', type:'line', source:'osm-cable-lines', minzoom:10,
@@ -1723,7 +1738,7 @@ map.on('load',()=>{
   });
 
   // ── §7 (W4): Cursor-Pointer auf allen klickbaren Punkt-Layern (Desktop) ────
-  ['osm-peaks','osm-peaks-gold','osm-landmarks','osm-passes','osm-passes-famous','places-sq','places-dot','places-label','cable-icon'].forEach(l=>{
+  ['osm-peaks','osm-peaks-gold','osm-landmarks','osm-passes','osm-passes-famous','places-sq','places-dot','places-label','places-village','places-village-label','cable-icon'].forEach(l=>{
     map.on('mouseenter',l,()=>map.getCanvas().style.cursor='pointer');
     map.on('mouseleave',l,()=>map.getCanvas().style.cursor='');
   });
@@ -1753,7 +1768,7 @@ map.on('load',()=>{
     }, {passive:true});
   }
   // Anreise: Klick-Popups (Ort = Name/Typ/Höhe/Einwohner; Seilbahn = Name + Tal->Berg).
-  ['places-sq','places-dot','places-label'].forEach(l=>map.on('click',l,e=>{
+  ['places-sq','places-dot','places-label','places-village','places-village-label'].forEach(l=>map.on('click',l,e=>{
     stsPopup.remove();
     hutPopup.setLngLat(e.features[0].geometry.coordinates.slice())
       .setHTML(placePopupHtml(e.features[0].properties||{})).addTo(map);
@@ -1912,7 +1927,7 @@ map.on('load',()=>{
       't-label',                                         //   Jahr-Label am Tour-Icon (P3b §8, unter Namen)
       'peaks-highest','peaks-in-group',                  // 2 Gruppen-Gipfel (Gold-Highlight)
       'osm-peaks-gold','osm-peaks',                      //   Gold-Gipfel VOR Bulk (§11-Fix)
-      'places-label',                                    // 3 Orte K1 (K1>K2>K3 via sort-key)
+      'places-label','places-village-label',             // 3 Orte K1>K2>K3>village (via sort-key/minzoom)
       'osm-huts-club','osm-huts-wild','osm-huts-other',  // 4 Hütten
       'osm-passes-famous','osm-passes',                  // 5 Pässe
       'osm-landmarks','cable-icon','country-labels'      // 6 Rest (niedrigste)
@@ -1964,7 +1979,7 @@ map.on('load',()=>{
   map.on('click','sts-hit',e=>{
     if(TOUR_LAYERS.length && map.queryRenderedFeatures(e.point,{layers:TOUR_LAYERS}).length) return;
     if(map.queryRenderedFeatures(e.point,{layers:HUT_LAYERS}).length) return;  // Hütte hat Vorrang
-    if(map.queryRenderedFeatures(e.point,{layers:['places-sq','places-dot','places-label','cable-icon']}).length) return;  // Ort/Seilbahn hat Vorrang
+    if(map.queryRenderedFeatures(e.point,{layers:['places-sq','places-dot','places-label','places-village','places-village-label','cable-icon']}).length) return;  // Ort/Seilbahn hat Vorrang
     clearTimeout(_hoverTimer); hoverPop.remove(); stsPopup.remove(); hutPopup.remove();  // B: keine klebende Box
     openSts(e.features[0]);                                                   // Steckbrief für JEDE Gruppe
   });
@@ -1990,7 +2005,7 @@ map.on('load',()=>{
     // W1c: Klick ohne Gruppen-/Linien-/Punkt-Feature -> Steckbrief schliessen + Auswahl-Rand weg.
     const feats=map.queryRenderedFeatures(e.point,{layers:
       ['sts-hit','hl-line','osm-peaks','osm-peaks-gold','osm-landmarks','osm-passes','osm-passes-famous',
-       'places-sq','places-dot','places-label','cable-icon']
+       'places-sq','places-dot','places-label','places-village','places-village-label','cable-icon']
         .concat(HUT_LAYERS).concat(TOUR_LAYERS)});
     if(!feats.length) closePanel();
   });
@@ -2588,7 +2603,7 @@ function _syncPointToggles(){
   _setVis(['osm-peaks','osm-landmark-glow','osm-landmarks'], _peaksOn?'visible':'none');
   _setVis(['osm-huts-club','osm-huts-other','osm-huts-wild'], _hutsOn?'visible':'none');
   _setVis(['osm-passes','osm-passes-famous'], _passesOn?'visible':'none');
-  _setVis(['places-sq','places-dot','places-label'], _placesOn?'visible':'none');
+  _setVis(['places-sq','places-dot','places-label','places-village','places-village-label'], _placesOn?'visible':'none');
   _setVis(['cable-line-halo','cable-line','cable-icon'], _cableOn?'visible':'none');
 }
 let _peaksOn=false;
@@ -2617,7 +2632,7 @@ function togglePasses(){
 let _placesOn=false;
 function togglePlaces(){
   _placesOn=!_placesOn; const v=_placesOn?'visible':'none';
-  _setVis(['places-sq','places-dot','places-label'], v);
+  _setVis(['places-sq','places-dot','places-label','places-village','places-village-label'], v);
   document.getElementById('tglPlaces').classList.toggle('on',_placesOn);
   persistToggles();
 }

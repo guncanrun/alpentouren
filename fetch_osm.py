@@ -473,6 +473,38 @@ if "--cable-lines" in _ARGS:
     save("soiusa_osm_cableways_lines.geojson", lf, f"Seilbahn-Linien (von {before} nach Maske-Clip)")
     sys.exit(0)
 
+# Anreise-Workorder B: Sessellift-ZAEHL-Report — NUR zaehlen, KEIN Layer/Persist der Geometrie.
+# Eine Overpass-Query (Server schonen), Clip wie die W4-Linien (line_mask_filter).
+if "--count-chairlifts" in _ARGS:
+    print("Overpass: Sessellifte (aerialway=chair_lift, out geom) — nur Zaehl-Report...")
+    CHAIR_Q = (f'[out:json][timeout:300];'
+               f'(way["aerialway"="chair_lift"]({BBOX}););out geom;')
+    cl = cableway_lines_geojson(query(CHAIR_Q).get("elements", []))
+    raw = len(cl)
+    clipped = line_mask_filter(cl, 0.02)   # Linie behalten, wenn ein Vertex in SOIUSA-Maske (+~2 km)
+    size_kb = len(json.dumps({"type": "FeatureCollection", "features": clipped},
+                             ensure_ascii=False, separators=(",", ":")).encode("utf-8")) // 1024
+    named = sum(1 for f in clipped if f["properties"].get("name"))
+    invis = None
+    try:
+        from shapely.geometry import Point, shape
+        from shapely.ops import unary_union
+        from shapely.prepared import prep
+        _fc = json.loads((HERE / "soiusa_sts_colored.geojson").read_text(encoding="utf-8"))
+        _vg = [shape(f["geometry"]) for f in _fc["features"] if f["properties"].get("visited") == 1]
+        if _vg:
+            _vu = prep(unary_union(_vg))
+            invis = sum(1 for f in clipped
+                        if any(_vu.contains(Point(xy)) for xy in f["geometry"]["coordinates"]))
+    except ImportError:
+        print("  (shapely fehlt -> 'in besuchten Gruppen' nicht bestimmbar)")
+    rep = {"raw": raw, "after_clip": len(clipped), "est_kb": size_kb,
+           "named": named, "in_visited_groups": invis}
+    print(f"   Sessellifte roh: {raw} · nach SOIUSA-Clip: {len(clipped)} · ~{size_kb} KB "
+          f"(vgl. cable/gondola-Linien) · benannt: {named} · in besuchten Gruppen: {invis}")
+    (HERE / "chairlift_report.json").write_text(json.dumps(rep, ensure_ascii=False, indent=1), encoding="utf-8")
+    sys.exit(0)
+
 RUN_CORE = "--anreise" not in _ARGS
 RUN_ANREISE = True
 

@@ -45,8 +45,9 @@ index_privat_standalone.html
 # Papa-Mitgabe-Kopie des Standalone (W7 §6b) — gitignored wie der Standalone
 Alpentouren.html
 
-# Parkplatz-Zaehl-Report (Arbeitsartefakt, Zahlen stehen in der Spec)
+# Parkplatz-/Sessellift-Zaehl-Reports (Arbeitsartefakte, Zahlen stehen in der Spec)
 parking_report.json
+chairlift_report.json
 
 # Playwright + node_modules (nur lokales Render-/Gesten-Testtooling, nicht Teil der Pipeline)
 node_modules/
