@@ -319,13 +319,14 @@ if _sa.exists():
     else:
         print("FAIL standalone: Glyphs nicht inline (glyphs://-Protokoll/GLYPHS_DATA fehlt)")
         errors.append("standalone: glyphs not inlined")
-    if _samb > 20:
-        print(f"FAIL standalone {_samb:.1f} MB > 20 MB")
-        errors.append("standalone >20MB")
-    elif _samb > 15:
-        print(f"WARN standalone {_samb:.1f} MB > 15 MB (E-Mail-Grenze)")
+    # Roadmap M0: Ziel ist die Mitgabe-Datei. FAIL > 15 MB, WARN > 14 MB.
+    if _samb > 15:
+        print(f"FAIL standalone {_samb:.1f} MB > 15 MB (Mitgabe-Ziel)")
+        errors.append("standalone >15MB")
+    elif _samb > 14:
+        print(f"WARN standalone {_samb:.1f} MB > 14 MB (Mitgabe-Ziel)")
     else:
-        print(f"OK   standalone Groesse {_samb:.1f} MB (<=15 MB)")
+        print(f"OK   standalone Groesse {_samb:.1f} MB (<=14 MB)")
 else:
     print("SKIP standalone-Checks (index_privat_standalone.html nicht gebaut)")
 

@@ -4128,8 +4128,8 @@ size_kb = out.stat().st_size / 1024
 mode = "STANDALONE" if STANDALONE else ("public" if PUBLIC else "PRIVAT")
 size_str = f"{size_kb/1024:.1f} MB" if size_kb > 1024 else f"{size_kb:.0f} KB"
 print(f"{OUT} [{mode}]: {len(data['touren'])} Touren · {hl_count}/{sts_count} Untergruppen · {size_str}")
-if STANDALONE and size_kb > 15 * 1024:
-    print(f"WARN Standalone {size_str} > 15 MB (E-Mail-Grenze) -- Fotos/Daten pruefen.")
+if STANDALONE and size_kb > 14 * 1024:   # Roadmap M0: Mitgabe-Ziel (WARN >14, FAIL >15 in check.py)
+    print(f"WARN Standalone {size_str} > 14 MB (Mitgabe-Ziel) -- Fotos/Daten pruefen.")
 
 # W7 (§6b): Standalone zusätzlich als „Alpentouren.html" ablegen — die file://-taugliche
 # Mitgabe-Datei (gitignored). Erspart das manuelle Umbenennen vor der Mitgabe.
