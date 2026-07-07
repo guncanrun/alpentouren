@@ -1239,6 +1239,7 @@ const OSM_PLACES = __OSM_PLACES__;
 const OSM_CABLE  = __OSM_CABLE__;
 const OSM_CABLE_LINES = __OSM_CABLE_LINES__;   // W4: Seilbahn-Linien (voller Verlauf)
 const OSM_CHAIRLIFTS  = __OSM_CHAIRLIFTS__;    // Anreise-Folgepaket: Sessellift-Linien (chair_lift)
+const WATER_LABELS    = __WATER_LABELS__;      // Teil W: Wasser-Namen (Punkte: Seen-Zentroide + Fluss-Label-Punkte)
 const BORDERS_GJ = __BORDERS__;
 const GROUP_PEAKS = __GROUP_PEAKS__;   // N3: STS -> [lon,lat] des höchsten Gipfels (Build-time, eindeutig)
 const PRIV = __PRIV__;
@@ -1731,6 +1732,7 @@ map.on('load',()=>{
   map.addSource('osm-cable', {type:'geojson', data:OSM_CABLE  || './soiusa_osm_cableways.geojson'});   // Anreise: Seilbahn-Talstationen
   map.addSource('osm-cable-lines', {type:'geojson', data:OSM_CABLE_LINES || './soiusa_osm_cableways_lines.geojson'});  // W4: Seilbahn-Linien
   map.addSource('osm-chairlifts', {type:'geojson', data:OSM_CHAIRLIFTS || './soiusa_osm_chairlifts.geojson'});  // Sessellift-Linien (Standalone inline)
+  map.addSource('water-labels', {type:'geojson', data:WATER_LABELS || './soiusa_water_labels.geojson'});  // Teil W: Wasser-Namen
 
   // ── Non-Alpine mask — always on ───────────────────────────────────────────
   map.addLayer({id:'mask-fill', type:'fill', source:'mask',
@@ -1895,6 +1897,19 @@ map.on('load',()=>{
     filter:['all',['>=',_POP,100000],['!=',['get','place'],'village']],
     layout:{visibility:'none','icon-image':'citysq','icon-allow-overlap':true,'icon-ignore-placement':true,
       'icon-size':['interpolate',['linear'],['zoom'], 6,1.4, 9,1.8, 12,2.3]}});  // Kante ~10,6 / 13,7 / 17,5 px
+  // Teil W: Wasser-Namen (dezent wasserblau; nur Bold/Regular verfügbar -> Regular statt Kursiv).
+  // Vor places/peaks eingefügt -> zeichnen darunter; text-optional + hoher sort-key = verlieren
+  // in der Kollision gegen Gipfel/Orte (Wasser-Namen weichen).
+  map.addLayer({id:'water-see', type:'symbol', source:'water-labels', minzoom:8,
+    filter:['==',['get','typ'],'see'],
+    layout:{'text-field':['get','name'],'text-font':['Noto Sans Regular'],'text-size':11.5,
+      'text-anchor':'center','text-allow-overlap':false,'text-optional':true,'symbol-sort-key':200},
+    paint:{'text-color':'#8ec6ec','text-halo-color':'#05121d','text-halo-width':1.3,'text-opacity':0.92}});
+  map.addLayer({id:'water-fluss', type:'symbol', source:'water-labels', minzoom:9,
+    filter:['==',['get','typ'],'fluss'],
+    layout:{'text-field':['get','name'],'text-font':['Noto Sans Regular'],'text-size':11,
+      'text-anchor':'center','text-allow-overlap':false,'text-optional':true,'symbol-sort-key':210},
+    paint:{'text-color':'#7fb8e0','text-halo-color':'#05121d','text-halo-width':1.3,'text-opacity':0.9}});
   map.addLayer({id:'places-label', type:'symbol', source:'osm-places', minzoom:6,
     filter:['!=',['get','place'],'village'],
     layout:{visibility:'none',
@@ -4175,6 +4190,7 @@ if STANDALONE:
     osm_cable  = load_compact("soiusa_osm_cableways.geojson")
     osm_cable_lines = load_compact("soiusa_osm_cableways_lines.geojson")
     osm_chairlifts = load_compact("soiusa_osm_chairlifts.geojson")   # Sessellifte inline (file://-Pflicht)
+    water_labels = load_compact("soiusa_water_labels.geojson") if (HERE / "soiusa_water_labels.geojson").exists() else "null"
     borders_gj = load_compact("soiusa_borders.geojson")
 else:
     head_libs = ('<link href="./vendor/maplibre-gl-4.7.1.min.css" rel="stylesheet" />\n'
@@ -4184,6 +4200,7 @@ else:
     glyphs_data = "null"
     osm_peaks = osm_huts = osm_passes = osm_places = osm_cable = borders_gj = "null"
     osm_cable_lines = "null"
+    water_labels = "null"
     osm_chairlifts = "null"
 html = html.replace("__GLYPHS_DATA__", glyphs_data)
 html = html.replace("__GLYPHS__", glyphs)
@@ -4194,6 +4211,7 @@ html = html.replace("__OSM_PLACES__", osm_places)
 html = html.replace("__OSM_CABLE__",  osm_cable)
 html = html.replace("__OSM_CABLE_LINES__", osm_cable_lines)
 html = html.replace("__OSM_CHAIRLIFTS__", osm_chairlifts)
+html = html.replace("__WATER_LABELS__", water_labels)
 html = html.replace("__BORDERS__",    borders_gj)
 html = html.replace("__GROUP_PEAKS__", group_peaks_json)
 html = html.replace("__HUT_VISITS__", hut_visits_json)   # §1: Besuchsjahre je OSM-Hütte (Privat)
