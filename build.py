@@ -208,26 +208,68 @@ highlights_json = load_compact("soiusa_highlights_clean.geojson") if (HERE / "so
 lp_json         = load_compact("soiusa_sts_label_points.geojson")
 mask_json       = load_compact("soiusa_mask.geojson")
 
-# ── Nachtjob P1: Besuchsmuster-Overlay (gitignored) NUR im Privat-Build mergen ──────
+# ── Nachtjob P1 / Fliessband v2 (N1): Besuchsmuster-Overlay NUR im Privat-Build ─────
 # Die getrackten colored/label_points sind neutral (visited:0, tour_ids:"[]"). Das
 # Besuchsmuster liegt in der gitignorierten visited_overlay.json (Quelle der Wahrheit,
-# {CODICE:{visited,tour_ids}}) und wird hier in-memory zurueckgemerged -> Privat-Render
-# identisch wie zuvor. Public bleibt uniform (zeichnet ohnehin visited:0).
+# {CODICE:{tour_ids[,visited]}}) und wird hier in-memory zurueckgemerged. Public bleibt
+# uniform (zeichnet ohnehin visited:0).
+# N1: "visited" ist aus tour_ids ableitbar -- neue Overlay-Eintraege brauchen nur noch
+# {"tour_ids":[...]}; ein explizit gesetztes "visited" gewinnt weiterhin (Sonderfall
+# "besucht ohne erfasste Tour").
 if not PUBLIC:
     _ovp = HERE / "visited_overlay.json"
     if _ovp.exists():
         _ov = json.loads(_ovp.read_text(encoding="utf-8"))
+        def _ov_visited(_e):
+            return _e.get("visited", 1 if _e.get("tour_ids") else 0)
         def _merge_visited(_js):
             _d = json.loads(_js)
             for _f in _d["features"]:
                 _c = _f["properties"].get("CODICE")
                 if _c in _ov:
-                    _f["properties"]["visited"] = _ov[_c].get("visited", 1)
+                    _f["properties"]["visited"] = _ov_visited(_ov[_c])
                     _f["properties"]["tour_ids"] = json.dumps(_ov[_c].get("tour_ids", []))
             return json.dumps(_d, ensure_ascii=False, separators=(",", ":"))
         sts_json = _merge_visited(sts_json)
         lp_json  = _merge_visited(lp_json)
-        print(f"  P1-Overlay: {len(_ov)} Gruppen visited/tour_ids gemerged (Privat)")
+        # N1: Konsistenz-Guard Overlay <-> touren.json (WARN, kein Abbruch): jede
+        # overlay-tour_id muss existieren; jede Tour sollte >=1 Gruppe zugeordnet sein.
+        _tids_all = {t["id"] for t in data["touren"]}
+        _tids_ov = [i for _e in _ov.values() for i in _e.get("tour_ids", [])]
+        for _i in sorted(set(_tids_ov) - _tids_all):
+            print(f"[overlay] WARN tour_id {_i} im Overlay, aber nicht in touren.json")
+        for _i in sorted(_tids_all - set(_tids_ov)):
+            print(f"[overlay] WARN Tour {_i} keiner Gruppe zugeordnet (kein Overlay-Eintrag)")
+        # N1 Fliessband v2: Highlight-Polygone werden nicht mehr als Datei gepflegt,
+        # sondern aus Overlay + STS-Geometrie abgeleitet (deckungsgleich mit der bis-
+        # herigen soiusa_highlights_clean.geojson: Geometrie = simplifiziertes STS-
+        # Polygon, name_de/parent_sts aus sts_colored; Sortierung nach kleinster
+        # tour_id wie die Bestandsdatei). match_field ist einheitlich 'STS' -- das
+        # historische 'GR' (Dolomiten) war vestigial, der Klick-Handler landet ueber
+        # parent_sts beim selben STS-Feature. Datei-Load oben bleibt nur als Fallback
+        # fuer den Privat-Build OHNE Overlay.
+        _stsc_m = json.loads(sts_json)
+        _by_code = {f["properties"].get("CODICE"): f for f in _stsc_m["features"]}
+        _hl_feats = []
+        for _c, _e in _ov.items():
+            if not _ov_visited(_e):
+                continue
+            _sf = _by_code.get(_c)
+            if _sf is None:
+                print(f"[overlay] WARN CODICE '{_c}' nicht in soiusa_sts_colored -- kein Highlight")
+                continue
+            _hl_feats.append({"type": "Feature", "properties": {
+                "name_de": _sf["properties"].get("name_de", _sf["properties"]["STS"]),
+                "soiusa_name": _sf["properties"]["STS"],
+                "tour_ids": sorted(_e.get("tour_ids", [])),
+                "match_field": "STS",
+                "parent_sts": _sf["properties"]["STS"]},
+                "geometry": _sf["geometry"]})
+        _hl_feats.sort(key=lambda f: min(f["properties"]["tour_ids"], default=10**9))
+        highlights_json = json.dumps({"type": "FeatureCollection", "features": _hl_feats},
+                                     ensure_ascii=False, separators=(",", ":"))
+        print(f"  P1-Overlay: {len(_ov)} Gruppen visited/tour_ids gemerged · "
+              f"N1: {len(_hl_feats)} Highlights buildseitig abgeleitet (Privat)")
     else:
         print("[overlay] WARN visited_overlay.json fehlt -- Privat-Build ohne Besuchsmuster")
 
