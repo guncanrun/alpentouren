@@ -550,6 +550,7 @@
     <div class="grp" title="Wie komme ich hin? Talorte + Personen-Seilbahnen">Anreise</div>
     <div id="tglPlaces" class="tgl" onclick="togglePlaces()"><span>Orte</span><span class="sw"></span></div>
     <div id="tglCable" class="tgl" onclick="toggleCable()"><span>Seilbahnen</span><span class="sw"></span></div>
+    <div id="tglParking" class="tgl" onclick="toggleParking()"><span>Wanderparkpl&auml;tze</span><span class="sw"></span></div>
   </div></div>
 </div>
 
@@ -579,6 +580,7 @@ const OSM_CABLE  = null;
 const OSM_CABLE_LINES = null;   // W4: Seilbahn-Linien (voller Verlauf)
 const OSM_CHAIRLIFTS  = null;    // Anreise-Folgepaket: Sessellift-Linien (chair_lift)
 const WATER_LABELS    = null;      // Teil W: Wasser-Namen (Punkte: Seen-Zentroide + Fluss-Label-Punkte)
+const WANDERPARK      = null;        // Teil W: Wanderparkplaetze (Standalone = Subset inline; online = alle 385 via URL)
 const BORDERS_GJ = null;
 const GROUP_PEAKS = {"Alpi Bernesi p.d.":[8.12611,46.53735],"Alpi Biellesi e Cusiane":[7.91528,45.63322],"Alpi Carniche":[12.8832,46.60732],"Alpi Giulie":[13.83658,46.3783],"Alpi Glaronesi p,d,":[8.91486,46.81115],"Alpi Marittime":[7.3054,44.17772],"Alpi Nord-orientali di Stiria":[15.14245,47.61824],"Alpi Orobie":[10.01096,46.07268],"Alpi Pusteresi (Defereggen Alpen)":[12.14025,46.91085],"Alpi Sarentine (Sarntaler Alpen)":[11.2766,46.73725],"Alpi Scistose Salisburghesi":[12.91115,47.33818],"Alpi Ticinesi e del Verbano":[8.46843,46.4116],"Alpi Urane":[8.42109,46.64345],"Alpi Urano-Glaronesi":[8.76953,46.74268],"Alpi Venoste (Ötztaler Alpen)":[10.86728,46.88524],"Alpi del Beaufortain":[6.68872,45.6431],"Alpi del Bernina":[9.90805,46.38243],"Alpi del Gran Paradiso":[7.2672,45.51782],"Alpi del Grand Combin":[7.29922,45.93758],"Alpi del Marguareis":[7.68448,44.17394],"Alpi del Mischabel e del Weissmies":[7.85887,46.09391],"Alpi del Moncenisio":[6.7682,45.15975],"Alpi del Monginevro":[6.78751,44.82229],"Alpi del Monte Bianco":[6.86517,45.83271],"Alpi del Monte Leone e del San Gottardo":[8.11019,46.24947],"Alpi del Monte Rosa":[7.86676,45.93692],"Alpi del Monviso":[7.08999,44.66744],"Alpi del Platta":[9.56167,46.48722],"Alpi del Plessur":[9.6139,46.73783],"Alpi del Silvretta, del Samnaun e del Verwall":[10.07144,46.79897],"Alpi del Wallgau":[11.19143,47.54438],"Alpi del Weisshorn e del Cervino":[7.71607,46.10125],"Alpi dell'Adamello e della Presanella":[10.66412,46.21993],"Alpi dell'Adula":[9.04021,46.49375],"Alpi dell'Albula":[9.87279,46.6213],"Alpi dell'Algovia":[10.35566,47.31155],"Alpi dell'Ammergau":[10.88023,47.43265],"Alpi dell'Ennstal":[14.63261,47.56185],"Alpi dell'Ortles":[10.54493,46.5091],"Alpi della Grande Sassière e del Rutor":[6.99984,45.505],"Alpi della Gurktal":[13.92818,46.95204],"Alpi della Lavanttal":[14.56722,47.06362],"Alpi della Lechtal":[10.47823,47.17427],"Alpi della Val Müstair":[10.40329,46.70553],"Alpi della Val di Non":[10.8521,46.4393],"Alpi della Vanoise e del Grand Arc":[6.82756,45.40514],"Alpi della Zillertal":[11.72759,46.9724],"Alpi delle Grandes Rousses e Aiguilles d'Arves":[6.13559,45.13777],"Alpi dello Stubai":[11.1538,46.96431],"Alpi di Berchtesgaden":[13.06245,47.42033],"Alpi di Brandenberg":[11.76481,47.45845],"Alpi di Kamnik e della Savinja":[14.5354,46.35713],"Alpi di Kitzbühel":[11.9826,47.25149],"Alpi di Lanzo e dell'Alta Moriana":[7.14504,45.32816],"Alpi di Livigno":[10.28508,46.41695],"Alpi di Provenza":[6.50461,44.28622],"Alpi di Vaud":[7.19037,46.30442],"Alti Tauri (Hohe Tauern)":[12.69388,47.07455],"Caravanche":[14.17398,46.434],"Catena delle Aiguilles Rouges":[6.87382,45.98759],"Catena di Belledonne":[5.99129,45.17096],"Dolomiti Feltrine e delle Pale di San Martino":[11.82974,46.28991],"Dolomiti di Brenta":[10.89991,46.17946],"Dolomiti di Fiemme":[11.68399,46.26076],"Dolomiti di Gardena e di Fassa":[11.85135,46.43455],"Dolomiti di Sesto, di Braies e d'Ampezzo":[12.3176,46.66797],"Dolomiti di Zoldo":[12.13473,46.41998],"Gailtaler Alpen (Alpi della Gail)":[12.81159,46.76672],"Kreuzeckgruppe":[13.15829,46.89499],"Massiccio degli Écrins":[6.35955,44.92216],"Massiccio del Champsaur":[6.18982,44.73587],"Massiccio del Taillefer":[5.92424,45.03936],"Massiccio dell'Embrunais":[6.4143,44.76246],"Monti Totes":[14.06325,47.71694],"Monti del Dachstein":[13.60567,47.47519],"Monti del Kaiser":[12.30253,47.56164],"Monti del Karwendel":[11.43756,47.41132],"Monti del Salzkammergut":[13.48066,47.62332],"Monti delle Lechquellen":[10.12644,47.16498],"Monti dello Stein":[12.73383,47.47504],"Monti di Mieming e del Wetterstein":[10.9863,47.42121],"Monti di Tennen":[13.22638,47.49913],"Monti orientali di Gap":[6.3661,44.64942],"Prealpi Appenzellesi e Sangallesi":[9.34324,47.24944],"Prealpi Bellunesi":[12.40334,46.22743],"Prealpi Bergamasche":[9.81582,45.93459],"Prealpi Bernesi":[7.83517,46.55728],"Prealpi Bresciane":[10.39298,45.86036],"Prealpi Carniche":[12.42106,46.34232],"Prealpi Comasche":[9.14466,46.12361],"Prealpi Gardesane":[10.69833,45.93859],"Prealpi Lucernesi e Untervaldesi":[8.47089,46.85636],"Prealpi Svittesi e Urane":[8.79173,46.88798],"Prealpi dei Bauges":[6.22815,45.68171],"Prealpi dei Bornes":[6.55595,45.95576],"Prealpi del Devoluy":[5.83946,44.77528],"Prealpi del Giffre":[6.85253,46.02483],"Prealpi del Tux":[11.63059,47.14398],"Prealpi del Vercors":[5.5267,44.86974],"Prealpi della Chartreuse":[5.78815,45.28768],"Prealpi dello Chablais":[6.77747,46.16849],"Prealpi di Bregenz":[9.87995,47.26527],"Prealpi di Digne":[6.1942,44.26285],"Prealpi di Vaud e Friburgo":[7.14837,46.5285],"Prealpi nord-occidentali di Stiria":[14.80775,47.0728],"Prealpi occidentali di Gap":[5.96171,44.50855],"Prealpi sud-occidentali di Stiria":[14.97195,46.78692],"Prealpi vicentine":[11.46803,45.99769],"Rätikon":[9.70736,47.05385],"Tauri di Radstadt":[13.39364,47.16248],"Tauri di Schladming e di Murau":[13.76064,47.26627],"Tauri di Seckau":[14.63608,47.37475],"Tauri di Wölz e di Rottenmann":[14.12728,47.25995]};   // N3: STS -> [lon,lat] des höchsten Gipfels (Build-time, eindeutig)
 const PRIV = false;
@@ -1022,6 +1024,14 @@ map.on('load',()=>{
   map.addSource('osm-cable-lines', {type:'geojson', data:OSM_CABLE_LINES || './soiusa_osm_cableways_lines.geojson'});  // W4: Seilbahn-Linien
   map.addSource('osm-chairlifts', {type:'geojson', data:OSM_CHAIRLIFTS || './soiusa_osm_chairlifts.geojson'});  // Sessellift-Linien (Standalone inline)
   map.addSource('water-labels', {type:'geojson', data:WATER_LABELS || './soiusa_water_labels.geojson'});  // Teil W: Wasser-Namen
+  map.addSource('parking', {type:'geojson', data:WANDERPARK || './soiusa_wanderparkplaetze.geojson'});  // Teil W: Wanderparkplaetze
+  map.addLayer({id:'parking-dot', type:'circle', source:'parking', minzoom:11,
+    layout:{visibility:'none'},
+    paint:{'circle-radius':7,'circle-color':'#2f6fb0','circle-stroke-color':'#eaf1f5','circle-stroke-width':1.2,'circle-opacity':0.9}});
+  map.addLayer({id:'parking-p', type:'symbol', source:'parking', minzoom:11,
+    layout:{visibility:'none','text-field':'P','text-font':['Noto Sans Bold'],'text-size':10,
+      'text-allow-overlap':true,'text-ignore-placement':true},
+    paint:{'text-color':'#ffffff'}});
 
   // ── Non-Alpine mask — always on ───────────────────────────────────────────
   map.addLayer({id:'mask-fill', type:'fill', source:'mask',
@@ -1494,6 +1504,12 @@ map.on('load',()=>{
     closeAllPopups();
     peakPopup.setLngLat(e.lngLat).setHTML('<div class="pk-pop"><div class="pk-name">'+_e(n||'Sessellift')+
       '</div><div class="pk-ele">Sessellift</div></div>').addTo(map); });
+  // Teil W: Wanderparkplatz-Klick -> Name + Stellplaetze.
+  map.on('mouseenter','parking-dot',()=>map.getCanvas().style.cursor='pointer');
+  map.on('mouseleave','parking-dot',()=>map.getCanvas().style.cursor='');
+  map.on('click','parking-dot',e=>{ const p=e.features[0].properties||{}; closeAllPopups();
+    peakPopup.setLngLat(e.features[0].geometry.coordinates.slice()).setHTML('<div class="pk-pop"><div class="pk-name">'+
+      _e(p.name||'Wanderparkplatz')+'</div><div class="pk-ele">'+(p.cap>0?p.cap+' Stellpl&auml;tze':'Wanderparkplatz')+'</div></div>').addTo(map); });
 
   // ── STS fill click — popup always; panel only for visited groups ─────────
   map.on('mouseenter','sts-hit',()=>map.getCanvas().style.cursor='pointer');
@@ -1577,10 +1593,10 @@ map.on('load',()=>{
   // ── Click on empty map (no feature) closes popup + selection ──────────────
   map.on('click', e=>{
     if(!map.queryRenderedFeatures(e.point,{layers:HUT_LAYERS}).length) hutPopup.remove();
-    if(!map.queryRenderedFeatures(e.point,{layers:PEAK_LAYERS.concat(['chairlift-line'])}).length) peakPopup.remove();  // Befund 3/N4: Gipfel-/Lift-Popup
+    if(!map.queryRenderedFeatures(e.point,{layers:PEAK_LAYERS.concat(['chairlift-line','parking-dot'])}).length) peakPopup.remove();  // Befund 3/N4/W: Gipfel-/Lift-/Parkplatz-Popup
     // W1c: Klick ohne Gruppen-/Linien-/Punkt-Feature -> Steckbrief schliessen + Auswahl-Rand weg.
     const feats=map.queryRenderedFeatures(e.point,{layers:
-      ['sts-hit','hl-line','osm-passes','osm-passes-famous','chairlift-line',
+      ['sts-hit','hl-line','osm-passes','osm-passes-famous','chairlift-line','parking-dot',
        'places-sq','places-dot','places-label','places-village','places-village-label','cable-icon']
         .concat(PEAK_LAYERS).concat(HUT_LAYERS).concat(TOUR_LAYERS)});
     if(!feats.length) closePanel();
@@ -2036,7 +2052,7 @@ let _restoring=false;
 function persistToggles(){
   if(_restoring) return;
   _haptic();   // P2: Layer-Toggle-Feedback (Restore ist durch _restoring ausgenommen)
-  try{ const _st={f:_farbungOn,n:_layersOn,b:_bordersOn,p:_peaksOn,h:_hutsOn,s:_passesOn,o:_placesOn,c:_cableOn};
+  try{ const _st={f:_farbungOn,n:_layersOn,b:_bordersOn,p:_peaksOn,h:_hutsOn,s:_passesOn,o:_placesOn,c:_cableOn,k:_parkOn};
     if(typeof _tracksOn!=='undefined') _st.t=_tracksOn;   // nur Privat (PRIV-Strip laesst _tracksOn im Public weg)
     localStorage.setItem('alpen_toggles', JSON.stringify(_st)); }catch(_){}
 }
@@ -2053,6 +2069,7 @@ function restoreToggles(){
     if(st.s===true  && !_passesOn) togglePasses();
     if(st.o===true  && !_placesOn) togglePlaces();
     if(st.c===true  && !_cableOn)  toggleCable();
+    if(st.k===true  && !_parkOn)   toggleParking();
     if(typeof _tracksOn!=='undefined' && st.t===false && _tracksOn) toggleTracks();
   } finally { _restoring=false; }
 }
@@ -2116,6 +2133,7 @@ function _syncPointToggles(){
   _setVis(['osm-passes','osm-passes-famous'], _passesOn?'visible':'none');
   _setVis(['places-sq','places-dot','places-label','places-village','places-village-label'], _placesOn?'visible':'none');
   _setVis(['cable-line-halo','cable-line','cable-icon'], _cableOn?'visible':'none');
+  _setVis(['parking-dot','parking-p'], _parkOn?'visible':'none');
 }
 let _peaksOn=false;
 function togglePeaks(){
@@ -2156,6 +2174,14 @@ function toggleCable(){
   _cableOn=!_cableOn; const v=_cableOn?'visible':'none';
   _setVis(['cable-line-halo','cable-line','cable-icon','chairlift-line','chairlift-ticks'], v);   // ein Toggle: Gondeln + Sessellifte
   document.getElementById('tglCable').classList.toggle('on',_cableOn);
+  persistToggles();
+}
+// Teil W: Wanderparkplaetze (z>=11). Online = alle 385 (URL); Standalone = Subset inline (Budget).
+let _parkOn=false;
+function toggleParking(){
+  _parkOn=!_parkOn; const v=_parkOn?'visible':'none';
+  _setVis(['parking-dot','parking-p'], v);
+  document.getElementById('tglParking').classList.toggle('on',_parkOn);
   persistToggles();
 }
 

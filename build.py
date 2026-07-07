@@ -1211,6 +1211,7 @@ Touren ansehen <span id="covCount"></span>
     <div class="grp" title="Wie komme ich hin? Talorte + Personen-Seilbahnen">Anreise</div>
     <div id="tglPlaces" class="tgl" onclick="togglePlaces()"><span>Orte</span><span class="sw"></span></div>
     <div id="tglCable" class="tgl" onclick="toggleCable()"><span>Seilbahnen</span><span class="sw"></span></div>
+    <div id="tglParking" class="tgl" onclick="toggleParking()"><span>Wanderparkpl&auml;tze</span><span class="sw"></span></div>
   </div></div>
 </div>
 
@@ -1240,6 +1241,7 @@ const OSM_CABLE  = __OSM_CABLE__;
 const OSM_CABLE_LINES = __OSM_CABLE_LINES__;   // W4: Seilbahn-Linien (voller Verlauf)
 const OSM_CHAIRLIFTS  = __OSM_CHAIRLIFTS__;    // Anreise-Folgepaket: Sessellift-Linien (chair_lift)
 const WATER_LABELS    = __WATER_LABELS__;      // Teil W: Wasser-Namen (Punkte: Seen-Zentroide + Fluss-Label-Punkte)
+const WANDERPARK      = __WANDERPARK__;        // Teil W: Wanderparkplaetze (Standalone = Subset inline; online = alle 385 via URL)
 const BORDERS_GJ = __BORDERS__;
 const GROUP_PEAKS = __GROUP_PEAKS__;   // N3: STS -> [lon,lat] des höchsten Gipfels (Build-time, eindeutig)
 const PRIV = __PRIV__;
@@ -1733,6 +1735,14 @@ map.on('load',()=>{
   map.addSource('osm-cable-lines', {type:'geojson', data:OSM_CABLE_LINES || './soiusa_osm_cableways_lines.geojson'});  // W4: Seilbahn-Linien
   map.addSource('osm-chairlifts', {type:'geojson', data:OSM_CHAIRLIFTS || './soiusa_osm_chairlifts.geojson'});  // Sessellift-Linien (Standalone inline)
   map.addSource('water-labels', {type:'geojson', data:WATER_LABELS || './soiusa_water_labels.geojson'});  // Teil W: Wasser-Namen
+  map.addSource('parking', {type:'geojson', data:WANDERPARK || './soiusa_wanderparkplaetze.geojson'});  // Teil W: Wanderparkplaetze
+  map.addLayer({id:'parking-dot', type:'circle', source:'parking', minzoom:11,
+    layout:{visibility:'none'},
+    paint:{'circle-radius':7,'circle-color':'#2f6fb0','circle-stroke-color':'#eaf1f5','circle-stroke-width':1.2,'circle-opacity':0.9}});
+  map.addLayer({id:'parking-p', type:'symbol', source:'parking', minzoom:11,
+    layout:{visibility:'none','text-field':'P','text-font':['Noto Sans Bold'],'text-size':10,
+      'text-allow-overlap':true,'text-ignore-placement':true},
+    paint:{'text-color':'#ffffff'}});
 
   // ── Non-Alpine mask — always on ───────────────────────────────────────────
   map.addLayer({id:'mask-fill', type:'fill', source:'mask',
@@ -2318,6 +2328,12 @@ map.on('load',()=>{
     closeAllPopups();
     peakPopup.setLngLat(e.lngLat).setHTML('<div class="pk-pop"><div class="pk-name">'+_e(n||'Sessellift')+
       '</div><div class="pk-ele">Sessellift</div></div>').addTo(map); });
+  // Teil W: Wanderparkplatz-Klick -> Name + Stellplaetze.
+  map.on('mouseenter','parking-dot',()=>map.getCanvas().style.cursor='pointer');
+  map.on('mouseleave','parking-dot',()=>map.getCanvas().style.cursor='');
+  map.on('click','parking-dot',e=>{ const p=e.features[0].properties||{}; closeAllPopups();
+    peakPopup.setLngLat(e.features[0].geometry.coordinates.slice()).setHTML('<div class="pk-pop"><div class="pk-name">'+
+      _e(p.name||'Wanderparkplatz')+'</div><div class="pk-ele">'+(p.cap>0?p.cap+' Stellpl&auml;tze':'Wanderparkplatz')+'</div></div>').addTo(map); });
 
   // ── STS fill click — popup always; panel only for visited groups ─────────
   map.on('mouseenter','sts-hit',()=>map.getCanvas().style.cursor='pointer');
@@ -2410,10 +2426,10 @@ map.on('load',()=>{
   // ── Click on empty map (no feature) closes popup + selection ──────────────
   map.on('click', e=>{
     if(!map.queryRenderedFeatures(e.point,{layers:HUT_LAYERS}).length) hutPopup.remove();
-    if(!map.queryRenderedFeatures(e.point,{layers:PEAK_LAYERS.concat(['chairlift-line'])}).length) peakPopup.remove();  // Befund 3/N4: Gipfel-/Lift-Popup
+    if(!map.queryRenderedFeatures(e.point,{layers:PEAK_LAYERS.concat(['chairlift-line','parking-dot'])}).length) peakPopup.remove();  // Befund 3/N4/W: Gipfel-/Lift-/Parkplatz-Popup
     // W1c: Klick ohne Gruppen-/Linien-/Punkt-Feature -> Steckbrief schliessen + Auswahl-Rand weg.
     const feats=map.queryRenderedFeatures(e.point,{layers:
-      ['sts-hit','hl-line','osm-passes','osm-passes-famous','chairlift-line',
+      ['sts-hit','hl-line','osm-passes','osm-passes-famous','chairlift-line','parking-dot',
        'places-sq','places-dot','places-label','places-village','places-village-label','cable-icon']
         .concat(PEAK_LAYERS).concat(HUT_LAYERS).concat(TOUR_LAYERS)});
     if(!feats.length) closePanel();
@@ -3096,7 +3112,7 @@ let _restoring=false;
 function persistToggles(){
   if(_restoring) return;
   _haptic();   // P2: Layer-Toggle-Feedback (Restore ist durch _restoring ausgenommen)
-  try{ const _st={f:_farbungOn,n:_layersOn,b:_bordersOn,p:_peaksOn,h:_hutsOn,s:_passesOn,o:_placesOn,c:_cableOn};
+  try{ const _st={f:_farbungOn,n:_layersOn,b:_bordersOn,p:_peaksOn,h:_hutsOn,s:_passesOn,o:_placesOn,c:_cableOn,k:_parkOn};
     if(typeof _tracksOn!=='undefined') _st.t=_tracksOn;   // nur Privat (PRIV-Strip laesst _tracksOn im Public weg)
     localStorage.setItem('alpen_toggles', JSON.stringify(_st)); }catch(_){}
 }
@@ -3113,6 +3129,7 @@ function restoreToggles(){
     if(st.s===true  && !_passesOn) togglePasses();
     if(st.o===true  && !_placesOn) togglePlaces();
     if(st.c===true  && !_cableOn)  toggleCable();
+    if(st.k===true  && !_parkOn)   toggleParking();
     if(typeof _tracksOn!=='undefined' && st.t===false && _tracksOn) toggleTracks();
   } finally { _restoring=false; }
 }
@@ -3179,6 +3196,7 @@ function _syncPointToggles(){
   _setVis(['osm-passes','osm-passes-famous'], _passesOn?'visible':'none');
   _setVis(['places-sq','places-dot','places-label','places-village','places-village-label'], _placesOn?'visible':'none');
   _setVis(['cable-line-halo','cable-line','cable-icon'], _cableOn?'visible':'none');
+  _setVis(['parking-dot','parking-p'], _parkOn?'visible':'none');
 }
 let _peaksOn=false;
 function togglePeaks(){
@@ -3219,6 +3237,14 @@ function toggleCable(){
   _cableOn=!_cableOn; const v=_cableOn?'visible':'none';
   _setVis(['cable-line-halo','cable-line','cable-icon','chairlift-line','chairlift-ticks'], v);   // ein Toggle: Gondeln + Sessellifte
   document.getElementById('tglCable').classList.toggle('on',_cableOn);
+  persistToggles();
+}
+// Teil W: Wanderparkplaetze (z>=11). Online = alle 385 (URL); Standalone = Subset inline (Budget).
+let _parkOn=false;
+function toggleParking(){
+  _parkOn=!_parkOn; const v=_parkOn?'visible':'none';
+  _setVis(['parking-dot','parking-p'], v);
+  document.getElementById('tglParking').classList.toggle('on',_parkOn);
   persistToggles();
 }
 /* PRIV:START */
@@ -4159,6 +4185,30 @@ html = html.replace("__KPI_GRUPPEN__",  str(kpi_gruppen))
 html = html.replace("__KPI_SETTORI__",  str(kpi_settori))
 html = html.replace("__KPI_HUETTEN__",  str(kpi_huetten))
 
+# Teil W: Wanderparkplaetze — Standalone bekommt NUR die in besuchten Gruppen (Budget),
+# berechnet aus der neutralen 385er-Datei + dem visited_overlay (Containment). Online = URL (alle).
+def _park_in_visited():
+    try:
+        _pj = HERE / "soiusa_wanderparkplaetze.geojson"
+        if not _pj.exists():
+            return "null"
+        from shapely.geometry import shape as _sh, Point as _Pt
+        from shapely.prepared import prep as _pp
+        from shapely.ops import unary_union as _uu
+        _pk = json.loads(_pj.read_text(encoding="utf-8"))
+        _ov = json.loads((HERE / "visited_overlay.json").read_text(encoding="utf-8")) if (HERE / "visited_overlay.json").exists() else {}
+        _col = json.loads((HERE / "soiusa_sts_colored.geojson").read_text(encoding="utf-8"))
+        _vg = [_sh(f["geometry"]) for f in _col["features"] if f["properties"].get("CODICE") in _ov]
+        if not _vg:
+            return "null"
+        _U = _pp(_uu(_vg))
+        _sub = [f for f in _pk["features"] if _U.contains(_Pt(f["geometry"]["coordinates"]))]
+        print(f"  W: {len(_sub)} Wanderparkplaetze in besuchten Gruppen (Standalone-Subset von {len(_pk['features'])})")
+        return json.dumps({"type": "FeatureCollection", "features": _sub}, ensure_ascii=False, separators=(",", ":"))
+    except Exception as _e:  # noqa: BLE001
+        print(f"[parking] WARN {_e}")
+        return "null"
+
 # ── Modusabhaengig: Vendor-Libs, Glyphs, Inline-GeoJSONs (Standalone) ─────────
 if STANDALONE:
     def _vend(p): return (HERE / "vendor" / p).read_text(encoding="utf-8")
@@ -4191,6 +4241,7 @@ if STANDALONE:
     osm_cable_lines = load_compact("soiusa_osm_cableways_lines.geojson")
     osm_chairlifts = load_compact("soiusa_osm_chairlifts.geojson")   # Sessellifte inline (file://-Pflicht)
     water_labels = load_compact("soiusa_water_labels.geojson") if (HERE / "soiusa_water_labels.geojson").exists() else "null"
+    wanderpark = _park_in_visited()   # W.3: Standalone nur besuchte Gruppen (inline)
     borders_gj = load_compact("soiusa_borders.geojson")
 else:
     head_libs = ('<link href="./vendor/maplibre-gl-4.7.1.min.css" rel="stylesheet" />\n'
@@ -4201,6 +4252,7 @@ else:
     osm_peaks = osm_huts = osm_passes = osm_places = osm_cable = borders_gj = "null"
     osm_cable_lines = "null"
     water_labels = "null"
+    wanderpark = "null"   # online: alle 385 via URL
     osm_chairlifts = "null"
 html = html.replace("__GLYPHS_DATA__", glyphs_data)
 html = html.replace("__GLYPHS__", glyphs)
@@ -4212,6 +4264,7 @@ html = html.replace("__OSM_CABLE__",  osm_cable)
 html = html.replace("__OSM_CABLE_LINES__", osm_cable_lines)
 html = html.replace("__OSM_CHAIRLIFTS__", osm_chairlifts)
 html = html.replace("__WATER_LABELS__", water_labels)
+html = html.replace("__WANDERPARK__", wanderpark)
 html = html.replace("__BORDERS__",    borders_gj)
 html = html.replace("__GROUP_PEAKS__", group_peaks_json)
 html = html.replace("__HUT_VISITS__", hut_visits_json)   # §1: Besuchsjahre je OSM-Hütte (Privat)
