@@ -586,10 +586,15 @@ __HEAD_LIBS__
     font-family:inherit;touch-action:manipulation;white-space:nowrap;text-align:center;line-height:1.25}
   .tf-sbtn b{font-weight:700;font-variant-numeric:tabular-nums}
   .tf-sbtn.on{background:rgba(95,208,197,.16);border-color:var(--accent2);color:var(--txt)}
+  /* Befund 7: Personen-Aufklapper (Ebene 2) klar aufklappbar — Akzent2 + Chevron + Button. */
   .tf-perstoggle{display:flex;align-items:center;justify-content:space-between;gap:8px;
-    padding:4px 2px;cursor:pointer;font-size:12px;color:var(--muted);min-height:28px;
-    touch-action:manipulation;user-select:none}
-  .tf-perstoggle .tf-caret{transition:transform .25s;font-size:.85em}
+    padding:5px 8px;margin:4px 0 2px;cursor:pointer;font-size:11.5px;font-weight:600;color:var(--accent2);
+    background:rgba(95,208,197,.09);border:1px solid rgba(95,208,197,.30);border-radius:7px;
+    min-height:28px;touch-action:manipulation;user-select:none}
+  .tf-perstoggle:hover{background:rgba(95,208,197,.16)}
+  .tf-perstoggle .tf-picon{width:14px;height:14px;fill:none;stroke:var(--accent2);stroke-width:1.5;flex:0 0 auto}
+  .tf-perstoggle .tf-pt-l{display:inline-flex;align-items:center;gap:6px}
+  .tf-perstoggle .tf-caret{transition:transform .25s;font-size:.9em;color:var(--accent2)}
   #cov.pers-open .tf-perstoggle .tf-caret{transform:rotate(180deg)}
   #cov:not(.pers-open) .tf-chips{display:none}
   /* Politur P1.4: Filter-Block als Ganzes einklappbar („Filter ▾"); Bilanzzeile bleibt sichtbar */
@@ -651,9 +656,12 @@ __HEAD_LIBS__
     #filterBadges .tf-reset{min-height:var(--row-h);min-width:40px;justify-content:center} }
   /* Chronik-Sync: Auswahl-Rahmen (Gebiet offen) — teal Ring, klar vom Play-Cursor (orange) getrennt */
   #chronoChips .chip.chsel{box-shadow:inset 0 0 0 2px var(--accent2)}
-  /* Touren-Tracks-Toggle im Kopf des Touren-Panels (P2: aus Ebenen umgezogen) */
-  #tourFilter .tf-tracks{padding:5px 2px 1px;min-height:30px;font-size:12px;color:var(--muted);margin-top:2px;
-    border-top:1px solid rgba(255,255,255,.06)}
+  /* Touren-Tracks-Toggle — Befund 8: klar als EBENE (Darstellung), nicht als Filter.
+     Deutlicher Separator + Abstand + Auge-Icon, gedämpftes Layer-Styling. */
+  #tourFilter .tf-tracks{padding:6px 8px;min-height:32px;font-size:12px;color:var(--muted);margin-top:9px;
+    border-top:1px solid rgba(255,255,255,.14)}
+  #tourFilter .tf-tracks .tf-tl{display:inline-flex;align-items:center;gap:6px}
+  #tourFilter .tf-tracks .tf-eye{width:15px;height:15px;fill:none;stroke:var(--muted);stroke-width:1.3;flex:0 0 auto}
   @media (pointer: coarse){ #tourFilter .tf-tracks{min-height:var(--row-h)} }
   /* ── P2: Master-Detail — Steckbrief nutzt (Desktop, privat) die Tourenlisten-Position ── */
   #panel.as-cov{top:auto;bottom:calc(var(--row-h) + 54px);left:16px;width:288px;
@@ -903,6 +911,12 @@ __HEAD_LIBS__
     border:1px solid var(--line);border-radius:14px;padding:9px 13px;
     box-shadow:0 8px 30px rgba(0,0,0,.45)}
   #chronoCap.open{display:block}
+  /* Befund 10: aktive Filter-Zeile über dem Jahr, dezent + zentriert, ✕ wie Bilanzzeile. */
+  .cc-filter{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;
+    font-size:11px;color:var(--accent2);margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid var(--line)}
+  .cc-filter .cc-fx{background:transparent;border:1px solid var(--line);color:var(--muted);
+    border-radius:5px;cursor:pointer;font-size:12px;line-height:1;padding:1px 6px;min-height:22px;touch-action:manipulation}
+  .cc-filter .cc-fx:hover{color:var(--txt);border-color:var(--accent2)}
   .cc-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
   .cc-y{font-size:22px;font-weight:700;color:var(--accent);line-height:1.1}
   .cc-d{font-size:12px;color:var(--muted)}
@@ -1095,7 +1109,7 @@ Touren ansehen <span id="covCount"></span>
   </div>
   <div class="cl">
     <div id="tourFilter">
-      <div class="tf-filterhead" id="tfFilterHead" onclick="toggleFilterBlock()"><span class="tf-fh-l"><svg class="tf-picon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="5" r="3"/><path d="M2.5 14c0-3.2 2.5-5 5.5-5s5.5 1.8 5.5 5"/></svg>Personen &amp; Jahre filtern</span><span class="tf-caret">&#9662;</span></div>
+      <div class="tf-filterhead" id="tfFilterHead" onclick="toggleFilterBlock()"><span class="tf-fh-l"><svg class="tf-picon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="5" r="3"/><path d="M2.5 14c0-3.2 2.5-5 5.5-5s5.5 1.8 5.5 5"/></svg>Personen · Jahre · Tourentyp filtern</span><span class="tf-caret">&#9662;</span></div>
       <div class="tf-filterbody">
         <div class="tf-seg" id="strangSeg">
           <button class="tf-sbtn on" data-strang="alle" onclick="setStrang('alle')">Alle (<b id="cntAlle">18</b>)</button>
@@ -1110,11 +1124,11 @@ Touren ansehen <span id="covCount"></span>
             <input type="range" id="tfJahrBis" min="1993" max="2023" step="1" value="2023" aria-label="Jahr bis">
           </div>
         </div>
-        <div class="tf-perstoggle" id="tfPersToggle" onclick="togglePersGrid()"><span>__PT_LBL_PERSFILTER__</span><span class="tf-caret">&#9662;</span></div>
+        <div class="tf-perstoggle" id="tfPersToggle" onclick="togglePersGrid()"><span class="tf-pt-l"><svg class="tf-picon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="5" r="3"/><path d="M2.5 14c0-3.2 2.5-5 5.5-5s5.5 1.8 5.5 5"/></svg>__PT_LBL_PERSFILTER__</span><span class="tf-caret">&#9662;</span></div>
         <div class="tf-chips" id="personChips"></div>
       </div>
       <div class="tf-badges" id="filterBadges"></div>
-      <div id="tglTracks" class="tgl on tf-tracks" onclick="toggleTracks()" title="Rekonstruierte Routen aus dem __PT_LBL_BOOKSRC__"><span>Touren-Tracks</span><span class="sw"></span></div>
+      <div id="tglTracks" class="tgl on tf-tracks" onclick="toggleTracks()" title="Ebene ein-/ausblenden: Routen der Touren"><span class="tf-tl"><svg class="tf-eye" viewBox="0 0 16 16" aria-hidden="true"><path d="M1 8s2.6-4.3 7-4.3S15 8 15 8s-2.6 4.3-7 4.3S1 8 1 8z"/><circle cx="8" cy="8" r="2.1"/></svg>Touren-Tracks</span><span class="sw"></span></div>
     </div>
     <div id="covList"></div>
     <div id="covEmpty" class="tf-empty" style="display:none"></div>
@@ -1308,6 +1322,14 @@ const map = new maplibregl.Map({
   },
   attributionControl:false   // eigenes Kartenquellen-Control (#btnAttrib/#attribPop, setAttrib)
 });
+// Befund 6: das linke Touren-Panel auf großen Desktop-Viewports aus dem Kartenbild
+// „herausrechnen" (persistentes Kamera-Padding) — Home/Initial/Suche zeigen den
+// Alpenbogen RECHTS vom Panel. Nur Desktop (Maus + breit); Tablet/Mobile (Bottom-Sheet)
+// unverändert. flyTo/fitBounds mit eigenem padding überschreiben dies pro Operation.
+function _panelPadPx(){ return (window.innerWidth > 900 && window.matchMedia('(pointer: fine)').matches) ? 340 : 0; }
+function _applyPanelPad(){ try{ map.setPadding({left:_panelPadPx(), top:0, right:0, bottom:0}); }catch(_){ } }
+_applyPanelPad();
+window.addEventListener('resize', _applyPanelPad);
 // ── Attribution (dynamic per basemap) ─────────────────────────────────────────
 const ATTRIB = {
   sat:'Imagery © Esri, Maxar, Earthstar · Höhen: Mapzen/AWS · SOIUSA © Arpa Piemonte · '+
@@ -2791,8 +2813,13 @@ function groupTourHtml(props){
     if(t.teilnehmer) b+='<div class="tc-row"><span class="tc-k">Teilnehmer</span>'+_teilnehmerHtml(t)+'</div>';
     if(t.gipfel&&t.gipfel.length) b+='<div class="tc-row"><span class="tc-k">Gipfel</span>'+gipfelUl(t.gipfel)+'</div>';
     if(t.huetten) b+='<div class="tc-row"><span class="tc-k">Hütten / Stationen</span>'+_e(t.huetten)+'</div>';
-    if(t.track_km){ b+='<div class="tc-row"><span class="tc-k">Track</span>'+String(t.track_km).replace('.',',')+
-      ' km · +'+t.track_hm+' hm'+(t.gpx_rekonstruiert?' · <i>rekonstruiert (__PT_LBL_BOOKSRC__)</i>':'')+'</div>';
+    if(t.track_km){
+      // Befund 9: Quelle je nach gpx_quelle (aufgezeichnet vs. rekonstruiert), Fallback altes Flag.
+      const _q=t.gpx_quelle||(t.gpx_rekonstruiert?'rekonstruiert':'');
+      const _qs=_q==='aufgezeichnet'?' · <i>GPS-Aufzeichnung (gemerged)</i>'
+               :_q==='rekonstruiert'?' · <i>rekonstruiert (__PT_LBL_BOOKSRC__)</i>':'';
+      b+='<div class="tc-row"><span class="tc-k">Track</span>'+String(t.track_km).replace('.',',')+
+        ' km · +'+t.track_hm+' hm'+_qs+'</div>';
       b+=_trackSparkline(t.id); }   // P5: Mini-Höhenprofil
     if(t.bemerkung) b+='<div class="tc-row">'+_e(t.bemerkung)+'</div>';
     if(t.memo&&t.memo.trim()) b+='<div class="tour-memo">'+_esc(t.memo.trim()).replace(/\n/g,'<br>')+'</div>';
@@ -3465,16 +3492,21 @@ function renderChips(){
   }).join('');
 }
 // P3a: Filter-Bilanzzeile (Strang · Personen · Jahr-Range -> N Touren ✕); ✕ resettet F komplett.
+// Beschreibung des aktiven Filters (Tourentyp · Personen · Jahre) — für Bilanzzeile
+// UND die Chronik-Filter-Zeile (Befund 10).
+function _filterLabelText(){
+  const parts=[];
+  if(FILTER.strang==='brueder') parts.push('Br&uuml;dertouren');
+  else if(FILTER.strang==='weitere') parts.push('Weitere Touren');
+  FILTER.personen.map(id=>PERSON_BY_ID[id]).filter(Boolean).forEach(p=>parts.push(_e(p.name)));
+  if(!jahrDefault()) parts.push(FILTER.jahrVon===FILTER.jahrBis?String(FILTER.jahrVon):FILTER.jahrVon+'&ndash;'+FILTER.jahrBis);
+  return parts.join(' &middot; ');
+}
 function renderBilanz(){
   const el=document.getElementById('filterBadges'); if(!el) return;
   if(!filterActive()){ el.innerHTML=''; return; }
-  const parts=[];
-  if(FILTER.strang==='brueder') parts.push('Br&uuml;dertouren');
-  else if(FILTER.strang==='weitere') parts.push('Weitere');
-  FILTER.personen.map(id=>PERSON_BY_ID[id]).filter(Boolean).forEach(p=>parts.push(_e(p.name)));
-  if(!jahrDefault()) parts.push(FILTER.jahrVon===FILTER.jahrBis?String(FILTER.jahrVon):FILTER.jahrVon+'&ndash;'+FILTER.jahrBis);
   const n=matchedTours().length;
-  el.innerHTML='<span class="tf-bilanz-txt">'+parts.join(' &middot; ')+' &rarr; '+n+(n===1?' Tour':' Touren')+'</span>'+
+  el.innerHTML='<span class="tf-bilanz-txt">'+_filterLabelText()+' &rarr; '+n+(n===1?' Tour':' Touren')+'</span>'+
     '<button class="tf-reset" onclick="resetFilter()" title="Filter zur&uuml;cksetzen" aria-label="Zur&uuml;cksetzen">&times;</button>';
 }
 // ── Jahr-Range-Slider (Doppelgriff, YEAR_MIN..YEAR_MAX aus Daten, von=bis erlaubt) ──
@@ -3761,7 +3793,12 @@ function chronoCaption(Y){
   const cap=document.getElementById('chronoCap'); if(!cap) return;
   const meta=CHRONO.yearMeta[Y]||{}, ts=CHRONO.yearTours[Y]||[];
   const datums=[...new Set(ts.map(t=>t.datum).filter(Boolean))];
-  let h='<div class="cc-h"><span class="cc-y">'+_esc(meta.label||Y)+'</span>'+
+  let h='';
+  // Befund 10: aktiver Filter dezent an der Caption (Mitte, ✕ wie Bilanzzeile).
+  try{ if(typeof filterActive==='function' && filterActive())
+    h+='<div class="cc-filter">Filter: '+_filterLabelText()+
+       ' <button class="cc-fx" onclick="event.stopPropagation();resetFilter()" title="Filter zur&uuml;cksetzen" aria-label="Filter zur&uuml;cksetzen">&times;</button></div>'; }catch(_){}
+  h+='<div class="cc-h"><span class="cc-y">'+_esc(meta.label||Y)+'</span>'+
         (datums.length?'<span class="cc-d">'+_esc(datums.join(' · '))+'</span>':'')+'</div>';
   h+=ts.map(t=>{
     const loc=_esc(t.ort||t.gegend||'');

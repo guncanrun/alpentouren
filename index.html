@@ -627,6 +627,14 @@ const map = new maplibregl.Map({
   },
   attributionControl:false   // eigenes Kartenquellen-Control (#btnAttrib/#attribPop, setAttrib)
 });
+// Befund 6: das linke Touren-Panel auf großen Desktop-Viewports aus dem Kartenbild
+// „herausrechnen" (persistentes Kamera-Padding) — Home/Initial/Suche zeigen den
+// Alpenbogen RECHTS vom Panel. Nur Desktop (Maus + breit); Tablet/Mobile (Bottom-Sheet)
+// unverändert. flyTo/fitBounds mit eigenem padding überschreiben dies pro Operation.
+function _panelPadPx(){ return (window.innerWidth > 900 && window.matchMedia('(pointer: fine)').matches) ? 340 : 0; }
+function _applyPanelPad(){ try{ map.setPadding({left:_panelPadPx(), top:0, right:0, bottom:0}); }catch(_){ } }
+_applyPanelPad();
+window.addEventListener('resize', _applyPanelPad);
 // ── Attribution (dynamic per basemap) ─────────────────────────────────────────
 const ATTRIB = {
   sat:'Imagery © Esri, Maxar, Earthstar · Höhen: Mapzen/AWS · SOIUSA © Arpa Piemonte · '+
