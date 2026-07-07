@@ -769,6 +769,9 @@ __HEAD_LIBS__
     border-top:1px solid rgba(255,255,255,.14)}
   #tourFilter .tf-tracks .tf-tl{display:inline-flex;align-items:center;gap:6px}
   #tourFilter .tf-tracks .tf-eye{width:15px;height:15px;fill:none;stroke:var(--muted);stroke-width:1.3;flex:0 0 auto}
+  /* N2: Master-Schalter "Erinnerungen" im Ebenen-Panel (Auge-Konvention wie Tracks) */
+  #ebenen .mem-tl{display:inline-flex;align-items:center;gap:6px}
+  #ebenen .mem-eye{width:15px;height:15px;fill:none;stroke:var(--muted);stroke-width:1.3;flex:0 0 auto}
   @media (pointer: coarse){ #tourFilter .tf-tracks{min-height:var(--row-h)} }
   /* ── P2: Master-Detail — Steckbrief nutzt (Desktop, privat) die Tourenlisten-Position ── */
   #panel.as-cov{top:auto;bottom:calc(var(--row-h) + 54px);left:16px;width:var(--panel-w);
@@ -1263,6 +1266,10 @@ Touren ansehen <span id="covCount"></span>
 <div id="ebenen" class="open">
   <div class="eh" onclick="document.getElementById('ebenen').classList.toggle('open');_applyPanelPad&&_applyPanelPad()">Ebenen</div>
   <div class="eb"><div class="eb-in">
+    <!-- PRIV:START -->
+    <div class="grp">Erinnerungen</div>
+    <div id="tglMem" class="tgl on" onclick="toggleMemories()" title="Alles Pers&ouml;nliche ein-/ausblenden: Touren, Routen, besuchte Gebiete, Chronik"><span class="mem-tl"><svg class="mem-eye" viewBox="0 0 16 16" aria-hidden="true"><path d="M1 8s2.6-4.3 7-4.3S15 8 15 8s-2.6 4.3-7 4.3S1 8 1 8z"/><circle cx="8" cy="8" r="2.1"/></svg>Erinnerungen</span><span class="sw"></span></div>
+    <!-- PRIV:END -->
     <div class="grp">Karte</div>
     <div class="seg">
       <button id="bmSat" class="on" onclick="setBasemap('sat')">Satellit</button>
@@ -2547,6 +2554,9 @@ map.on('load',()=>{
   map.on('zoom', updateTopoGate);
   restoreToggles();   // UX(1): gespeicherte Ebenen-Zustaende wiederherstellen (nach Layer+Basemap)
   _syncPointToggles();   // W1.1: Wunsch-Zustand (auch aus Klick vor Layer-Init) auf die Layer nachziehen
+  /* PRIV:START */
+  if(!_memOn) _memApply();   // N2 (W1.1-Muster): Master-Klick vor Layer-Init nachziehen
+  /* PRIV:END */
 
   // ── Build the search index (groups now; OSM points fetched async) ──────────
   buildSearchIndex();
@@ -3082,8 +3092,10 @@ document.addEventListener('keydown',e=>{
 let _selSts='';
 function updateStsLabelFilter(){
   try{
-    map.setFilter('sts-label',   ['all',['==',['get','visited'],0],['!=',['get','STS'],_selSts]]);
-    map.setFilter('sts-label-hl', ['all',['==',['get','visited'],1],['!=',['get','STS'],_selSts]]);
+    // N2: Master-Layer AUS -> alle Gruppen uniform (Label-Filter neutralisiert).
+    const memOff = (typeof _memOn!=='undefined' && !_memOn);
+    map.setFilter('sts-label',   ['all', memOff?['>=',['get','visited'],0]:['==',['get','visited'],0], ['!=',['get','STS'],_selSts]]);
+    map.setFilter('sts-label-hl', ['all',['==',['get','visited'],memOff?-1:1],['!=',['get','STS'],_selSts]]);
   }catch(_){}
 }
 
@@ -3225,7 +3237,8 @@ function toggleLayers(){
   _layersOn=!_layersOn;
   const v=_layersOn?'visible':'none';
   map.setLayoutProperty('sts-label',   'visibility',v);
-  map.setLayoutProperty('sts-label-hl','visibility',v);
+  // N2: hl-Labels zusaetzlich an den Master-Schalter gekoppelt (nur Privat relevant).
+  map.setLayoutProperty('sts-label-hl','visibility',(_layersOn && (typeof _memOn==='undefined'||_memOn))?'visible':'none');
   document.getElementById('tglNamen').classList.toggle('on',_layersOn);
   persistToggles();
 }
@@ -3318,10 +3331,38 @@ function toggleParking(){
 // Touren-Tracks (rekonstruierte GPX-Linien) — default AN im Privat-Build.
 let _tracksOn=true;
 function toggleTracks(){
-  _tracksOn=!_tracksOn; const v=_tracksOn?'visible':'none';
-  _setVis(['trk-casing','trk-line'], v);
+  _tracksOn=!_tracksOn;
+  _setVis(['trk-casing','trk-line'], (_tracksOn&&_memOn)?'visible':'none');   // N2: Master gewinnt
   document.getElementById('tglTracks').classList.toggle('on',_tracksOn);
   persistToggles();
+}
+
+// ── N2: Master-Schalter „Erinnerungen" (Konvention 07.07.) ────────────────────
+// EIN Schalter, default AN, schaltet die persoenliche DARSTELLUNG gemeinsam:
+// Tour-Icons (+Cluster), Tracks, Besucht-Kontur/-Labels, Chronoleiste. AUS =
+// neutraler Atlas-Blick (duenne Gruppen-Grenzen/Labels dann fuer ALLE Gruppen).
+// Darstellung != Filter: FILTER/localStorage bleiben unberuehrt (Session-only,
+// bewusst KEIN persistToggles — file://-localStorage-Falle).
+let _memOn=true;
+function _memApply(){
+  const v=_memOn?'visible':'none';
+  _setVis(['t-halo','t-badge','t-hit','t-dot','t-label',
+           't-cluster-halo','t-cluster-badge','t-cluster-icon','t-cluster-count'], v);
+  _setVis(['trk-casing','trk-line'], (_memOn&&_tracksOn)?'visible':'none');   // Einzel-Toggle bleibt untergeordnet
+  _setVis(['trk-hit'], v);                                                     // AUS: auch keine unsichtbaren Klickziele
+  _setVis(['hl-line'], v);
+  try{ map.setFilter('sts-line', _memOn?['==',['get','visited'],0]:null); }catch(_){}   // AUS: Kontur fuer alle
+  try{ updateStsLabelFilter(); }catch(_){}
+  try{ map.setLayoutProperty('sts-label-hl','visibility',(_memOn&&_layersOn)?'visible':'none'); }catch(_){}
+}
+function toggleMemories(){
+  _memOn=!_memOn;
+  if(!_memOn && _chronoOn) chronoExit();       // Chronik-Modus sauber verlassen (restauriert selbst)
+  _memApply();
+  const btn=document.getElementById('chronoBtn');
+  if(btn) btn.style.display=(_memOn && CHRONO.years.length)?'':'none';
+  document.getElementById('tglMem').classList.toggle('on',_memOn);
+  _haptic();
 }
 /* PRIV:END */
 
@@ -4166,7 +4207,7 @@ function chronoFinale(){
 }
 
 function chronoEnter(){
-  if(_chronoOn || !CHRONO.years.length) return;
+  if(_chronoOn || !CHRONO.years.length || !_memOn) return;   // N2: keine Chronik bei Erinnerungen AUS
   _chronoOn=true;
   _chronoSaved={p:_peaksOn,h:_hutsOn,s:_passesOn,o:_placesOn,c:_cableOn};  // Punkt-Toggles merken + dezent aus
   if(_peaksOn) togglePeaks(); if(_hutsOn) toggleHuts(); if(_passesOn) togglePasses();
@@ -4193,8 +4234,8 @@ function chronoExit(){
   if(_pulseRAF){ cancelAnimationFrame(_pulseRAF); _pulseRAF=null; }
   map.setPaintProperty('chrono-cur','fill-opacity',CHRONO_CUR_OP);
   ['chrono-past','chrono-cur','chrono-cur-line','chrono-cur-name'].forEach(l=>map.setLayoutProperty(l,'visibility','none'));  // W3 mit aus
-  map.setLayoutProperty('hl-line','visibility','visible');
-  map.setLayoutProperty('sts-label-hl','visibility', _layersOn?'visible':'none');   // Zustand restaurieren
+  map.setLayoutProperty('hl-line','visibility', _memOn?'visible':'none');            // N2: Master respektieren
+  map.setLayoutProperty('sts-label-hl','visibility', (_layersOn&&_memOn)?'visible':'none');   // Zustand restaurieren
   if(_chronoSaved){
     if(_chronoSaved.p && !_peaksOn) togglePeaks();
     if(_chronoSaved.h && !_hutsOn) toggleHuts();
