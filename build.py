@@ -404,6 +404,13 @@ __HEAD_LIBS__
   #title.mini{padding:9px 13px}
   #title.mini > *:not(#titleMini){display:none}
   #title:not(.mini) #titleMini{display:none}
+  #title:not(.mini) h1{cursor:pointer}   /* Befund 5: Titel-Klick klappt ein */
+  /* Befund 3: Gipfel-Popup light */
+  .pk-pop{font-size:12px;min-width:118px}
+  .pk-pop .pk-name{font-weight:700;font-size:13px;color:var(--txt)}
+  .pk-pop .pk-ele{color:var(--muted);font-size:11px;margin-top:1px}
+  .pk-pop .pk-grp{margin-top:6px;padding-top:5px;border-top:1px solid var(--line);color:var(--accent2);cursor:pointer;font-size:11.5px}
+  .pk-pop .pk-grp:hover{text-decoration:underline}
   #titleMini{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;max-width:calc(100vw - 60px)}
   #titleMini .tm-logo{color:var(--accent);font-size:13px;flex:0 0 auto}
   #titleMini .tm-name{font-weight:700;font-size:14px;white-space:nowrap;flex:0 0 auto}
@@ -619,10 +626,24 @@ __HEAD_LIBS__
   .tcs-area{fill:var(--accent);opacity:.10}
   .tcs-lbl{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:1px}
   .tcs-lbl .tcs-max{color:var(--accent)}
-  /* P6: klickbare Teilnehmer-Chips in der Tour-Karte (nur filterbar). */
-  .tc-pers{color:var(--accent);cursor:pointer;border-bottom:1px dotted var(--accent);touch-action:manipulation;white-space:nowrap}
-  .tc-pers.on{background:var(--accent);color:#1a1200;border-radius:4px;padding:0 4px;border-bottom:0}
-  .tc-pers-plain{color:var(--txt);white-space:nowrap}
+  /* P6/Befund 4: Teilnehmer als Chips (Pill + Filter-Icon) + Bestätigungs-Popover. */
+  .tc-pers{display:inline-flex;align-items:center;gap:3px;padding:1px 8px;margin:1px 1px;border-radius:11px;
+    background:rgba(255,178,77,.13);border:1px solid rgba(255,178,77,.42);color:var(--accent);
+    cursor:pointer;font-size:11.5px;line-height:1.55;touch-action:manipulation;white-space:nowrap}
+  .tc-pers:hover{background:rgba(255,178,77,.22)}
+  .tc-pers.on{background:var(--accent);color:#1a1200;border-color:var(--accent)}
+  .tc-pers .tc-pico{width:10px;height:10px;fill:currentColor;flex:0 0 auto;opacity:.8}
+  .tc-pers-plain{color:var(--muted);white-space:nowrap;margin:0 2px}
+  #persPopover{position:fixed;z-index:60;display:none;max-width:232px;background:var(--panel);
+    backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:10px;padding:10px 11px;
+    box-shadow:0 10px 28px rgba(0,0,0,.5)}
+  #persPopover.open{display:block}
+  #persPopover .pp-q{font-size:12.5px;color:var(--txt);margin-bottom:9px;line-height:1.35}
+  #persPopover .pp-btns{display:flex;gap:7px;justify-content:flex-end}
+  #persPopover button{font:inherit;font-size:12px;padding:6px 13px;border-radius:7px;cursor:pointer;
+    border:1px solid var(--line);min-height:38px;touch-action:manipulation}
+  #persPopover .pp-ok{background:var(--accent);color:#1a1200;border-color:var(--accent);font-weight:700}
+  #persPopover .pp-cancel{background:transparent;color:var(--muted)}
   .tcard-b .tc-chrono{display:inline-block;margin-top:6px;font-size:11.5px;color:var(--accent2);cursor:pointer}
   .tcard-b .tc-chrono:hover{text-decoration:underline}
   /* PRIV:END */
@@ -909,7 +930,7 @@ __HEAD_LIBS__
     <span class="tm-kpi" id="tmKpi"></span>
     <span class="tm-caret">&#9662;</span>
   </div>
-  <h1>__TITEL__</h1>
+  <h1 onclick="collapseTitle()" title="Einklappen">__TITEL__</h1>
   <p>__UNTER__</p>
   <div class="kpi">
     <!-- PUB:START --><div><b>__KPI_GRUPPEN__</b><span>Gruppen</span></div><div><b>__KPI_SETTORI__</b><span>Sektoren</span></div><div><b>__KPI_HUETTEN__</b><span>Vereinsh&uuml;tten</span></div><!-- PUB:END -->
@@ -995,6 +1016,7 @@ __HEAD_LIBS__
      &middot; Esri World Imagery.</p>
 </div>
 
+<!-- PRIV:START --><div id="persPopover"></div><!-- PRIV:END -->
 <div id="panel">
   <div class="x" onclick="closePanel()">&times;</div>
   <!-- PRIV:START --><div class="pback" id="pBack" onclick="backToList()">&#8592; Touren</div><!-- PRIV:END -->
@@ -1504,7 +1526,15 @@ function expandTitle(){
 }
 let _titleAuto=false, _titleChoice=null;
 try{ _titleChoice=localStorage.getItem('alpen_title_mini'); }catch(_){}
-function _autoCollapseTitle(){ if(_titleAuto || _titleChoice) return; _titleAuto=true; collapseTitle(true); }
+// Abnahme-Befund 5: Auto-Kollaps feuert bei erster echter Interaktion, sofern die Card
+// nicht schon eingeklappt ist. Der persistierte Wert steuert nur noch den STARTZUSTAND
+// (mini bei '1') — er sperrt den Auto-Kollaps NICHT mehr dauerhaft (das war Michaels
+// „greift nicht": ein altes '0' unter file:// deaktivierte ihn für immer).
+function _autoCollapseTitle(){
+  if(_titleAuto) return;
+  const t=document.getElementById('title'); if(!t || t.classList.contains('mini')) return;
+  _titleAuto=true; collapseTitle(true);
+}
 if(_titleChoice==='1'){ const _t=document.getElementById('title'); if(_t){ _fillTmKpi(); _t.classList.add('mini'); } }  // Restore ohne Re-Persist
 // T4: Legende (Sektoren) auf-/zuklappen.
 function toggleLegend(){ document.getElementById('legend').classList.toggle('open');
@@ -2144,9 +2174,30 @@ map.on('load',()=>{
   });
   map.on('mouseleave','sts-hit',()=>{map.getCanvas().style.cursor='';clearTimeout(_hoverTimer);hoverPop.remove();
     if(_hoverId!=null){ map.setFeatureState({source:'sts',id:_hoverId},{hover:false}); _hoverId=null; }});
+  // ── Abnahme-Befund 3: Gipfel-Klick -> „Gipfel-Popup light" (Name · Höhe ·
+  // „<Gruppe> öffnen →"), NICHT direkt der Gruppen-Steckbrief. Erst der Klick auf
+  // die Zeile öffnet die Gebirgsgruppe. Beide Builds (Gipfel = neutrale Geodaten). ─
+  const PEAK_LAYERS = ['osm-peaks','osm-peaks-gold','osm-landmarks','osm-landhigh','peaks-in-group','peaks-highest'];
+  const peakPopup = new maplibregl.Popup({closeButton:true, closeOnClick:false, offset:12});
+  map.on('click', PEAK_LAYERS, e=>{
+    const f=e.features[0], p=f.properties||{};
+    const name=p.name||'Gipfel';
+    const ele=(p.ele!=null && p.ele!=='')?(Math.round(+p.ele)+' m'):'';
+    let sts='', gname='';
+    const grp=map.queryRenderedFeatures(e.point,{layers:['sts-hit']});
+    if(grp.length){ sts=grp[0].properties.STS||''; gname=grp[0].properties.name_de||sts; }
+    closeAllPopups();
+    peakPopup.setLngLat(f.geometry.coordinates.slice()).setHTML(peakPopupHtml(name, ele, sts, gname)).addTo(map);
+  });
+  PEAK_LAYERS.forEach(l=>{
+    map.on('mouseenter',l,()=>map.getCanvas().style.cursor='pointer');
+    map.on('mouseleave',l,()=>map.getCanvas().style.cursor='');
+  });
+
   map.on('click','sts-hit',e=>{
     if(TOUR_LAYERS.length && map.queryRenderedFeatures(e.point,{layers:TOUR_LAYERS}).length) return;
     if(map.queryRenderedFeatures(e.point,{layers:HUT_LAYERS}).length) return;  // Hütte hat Vorrang
+    if(map.queryRenderedFeatures(e.point,{layers:PEAK_LAYERS}).length) return;  // Befund 3: Gipfel-Popup hat Vorrang
     if(map.queryRenderedFeatures(e.point,{layers:['places-sq','places-dot','places-label','places-village','places-village-label','cable-icon']}).length) return;  // Ort/Seilbahn hat Vorrang
     if(map.getLayer('t-cluster-halo') && map.queryRenderedFeatures(e.point,{layers:['t-cluster-halo']}).length) return;  // P2.7: Cluster hat Vorrang
     clearTimeout(_hoverTimer); hoverPop.remove(); stsPopup.remove(); hutPopup.remove();  // B: keine klebende Box
@@ -2171,11 +2222,12 @@ map.on('load',()=>{
   // ── Click on empty map (no feature) closes popup + selection ──────────────
   map.on('click', e=>{
     if(!map.queryRenderedFeatures(e.point,{layers:HUT_LAYERS}).length) hutPopup.remove();
+    if(!map.queryRenderedFeatures(e.point,{layers:PEAK_LAYERS}).length) peakPopup.remove();  // Befund 3: Außenklick schließt Gipfel-Popup
     // W1c: Klick ohne Gruppen-/Linien-/Punkt-Feature -> Steckbrief schliessen + Auswahl-Rand weg.
     const feats=map.queryRenderedFeatures(e.point,{layers:
-      ['sts-hit','hl-line','osm-peaks','osm-peaks-gold','osm-landmarks','osm-landhigh','osm-passes','osm-passes-famous',
+      ['sts-hit','hl-line','osm-passes','osm-passes-famous',
        'places-sq','places-dot','places-label','places-village','places-village-label','cable-icon']
-        .concat(HUT_LAYERS).concat(TOUR_LAYERS)});
+        .concat(PEAK_LAYERS).concat(HUT_LAYERS).concat(TOUR_LAYERS)});
     if(!feats.length) closePanel();
   });
 
@@ -2576,26 +2628,51 @@ function _trackSparkline(tid){
         '<span>'+Math.round(es[es.length-1])+' m</span></div></div>';
   }catch(_){ return ''; }
 }
-// P6: Teilnehmer-Namen in der Tour-Karte als klickbare Chips (nur filterbar!=false).
-// Klick setzt/entfernt den Personen-Filter-Chip (UND-Logik) und wechselt zur
-// gefilterten Liste. Nicht-filterbare Personen (z. B. der Betrachter) bleiben Klartext.
+// P6/Befund 4: Teilnehmer-Namen als optische Chips (Pill + Filter-Icon, nur
+// filterbar!=false). Klick öffnet ein BESTÄTIGUNGS-Popover statt sofort zu filtern
+// und den Steckbrief still zu schließen. Nicht-filterbare Personen = Klartext.
 function _teilnehmerHtml(t){
   const ids=(t&&t.teilnehmer_ids)||[];
   if(!ids.length) return _e((t&&t.teilnehmer)||'');
+  const ico='<svg class="tc-pico" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 2h10l-4 4.2V11L5 9.7V6.2z"/></svg>';
   const parts=ids.map(id=>{
     const p=PERSON_BY_ID[id]; if(!p) return null;
     const nm=_e(p.name);
     if(p.filterbar===false) return '<span class="tc-pers-plain">'+nm+'</span>';
     const on=FILTER.personen.indexOf(id)>=0?' on':'';
-    return '<span class="tc-pers'+on+'" onclick="event.stopPropagation();togglePersonFromCard(\''+id+'\')" '+
-           'title="Touren mit '+nm+'">'+nm+'</span>';
+    const n=_personFreq[id]||0;
+    return '<span class="tc-pers'+on+'" onclick="event.stopPropagation();openPersPopover(event,\''+id+'\','+n+')" '+
+           'title="Touren mit '+nm+' filtern">'+ico+nm+'</span>';
   }).filter(Boolean);
-  return parts.length ? parts.join(', ') : _e(t.teilnehmer||'');
+  return parts.length ? parts.join(' ') : _e(t.teilnehmer||'');
 }
-function togglePersonFromCard(id){
-  togglePerson(id);   // setzt/entfernt Chip + applyTourFilter (Liste + Karte folgen F)
-  closePanel();       // Detail-Steckbrief schliessen -> gefilterte Liste im #cov sichtbar
+// Befund 4: Bestätigungs-Popover „Alle Touren mit X anzeigen (n)?" [Filtern] [Abbrechen].
+// Kein Sofort-Filter, kein stilles closePanel. Schließen via Abbrechen/Esc/Außenklick.
+let _persPopId=null;
+function openPersPopover(ev, id, n){
+  ev=ev||window.event; if(ev&&ev.stopPropagation) ev.stopPropagation();
+  const p=PERSON_BY_ID[id]; if(!p) return;
+  _persPopId=id;
+  const el=document.getElementById('persPopover'); if(!el) return;
+  el.innerHTML='<div class="pp-q">Alle Touren mit <b>'+_e(p.name)+'</b> anzeigen ('+n+')?</div>'+
+    '<div class="pp-btns"><button class="pp-ok" onclick="event.stopPropagation();persPopoverConfirm()">Filtern</button>'+
+    '<button class="pp-cancel" onclick="event.stopPropagation();closePersPopover()">Abbrechen</button></div>';
+  el.classList.add('open');
+  const pad=8, w=el.offsetWidth||212, h=el.offsetHeight||74;
+  let x=(ev&&ev.clientX||120), y=((ev&&ev.clientY||120)+12);
+  x=Math.min(Math.max(pad,x), window.innerWidth-w-pad);
+  y=Math.min(Math.max(pad,y), window.innerHeight-h-pad);
+  el.style.left=x+'px'; el.style.top=y+'px';
 }
+function closePersPopover(){ const el=document.getElementById('persPopover'); if(el) el.classList.remove('open'); _persPopId=null; }
+function persPopoverConfirm(){
+  const id=_persPopId; closePersPopover(); if(id==null) return;
+  if(FILTER.personen.indexOf(id)<0){ FILTER.personen.push(id); applyTourFilter(); }  // UND-Logik, kein Toggle
+  closePanel();   // erst JETZT: Steckbrief zu -> gefilterte Liste sichtbar
+}
+document.addEventListener('click', e=>{ const el=document.getElementById('persPopover');
+  if(el && el.classList.contains('open') && !el.contains(e.target)) closePersPopover(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closePersPopover(); });
 // P2: Tab „Touren (n)" = Accordion, eine Karte pro Tour (chronologisch aufsteigend).
 // Beim Einstieg über eine Listen-Zeile/Marker ist _pendingTour aufgeklappt.
 function groupTourHtml(props){
@@ -3193,6 +3270,14 @@ map.on('click', ()=>_autoCollapseTitle());
 // Kopf-Bilanz · Chronik konsistent. Kein localStorage, Default Alle/leer.
 const _e = s => String(s==null?'':s).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
 function openGroup(sts){ const f=SOIUSA_STS.features.find(x=>x.properties.STS===sts); if(f) openSts(f); }
+// Befund 3: Gipfel-Popup light (Name · Höhe · Zeile „<Gruppe> öffnen →").
+function peakPopupHtml(name, ele, sts, gname){
+  let h='<div class="pk-pop"><div class="pk-name">'+_e(name)+'</div>';
+  if(ele) h+='<div class="pk-ele">'+_e(ele)+'</div>';
+  if(sts) h+='<div class="pk-grp" onclick="peakOpenGroup(\''+sts+'\')">'+_e(gname||'Gebirgsgruppe')+' öffnen &rarr;</div>';
+  return h+'</div>';
+}
+function peakOpenGroup(sts){ try{ document.querySelectorAll('.maplibregl-popup').forEach(el=>el.remove()); }catch(_){ } openGroup(sts); }
 function _groupTourIds(g){ return typeof g.tour_ids==='string'?JSON.parse(g.tour_ids||'[]'):(g.tour_ids||[]); }
 
 // Register-Lookup + Personen-Häufigkeit (alle teilnehmer_ids). Chip-Liste: nur

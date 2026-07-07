@@ -73,6 +73,13 @@
   #title.mini{padding:9px 13px}
   #title.mini > *:not(#titleMini){display:none}
   #title:not(.mini) #titleMini{display:none}
+  #title:not(.mini) h1{cursor:pointer}   /* Befund 5: Titel-Klick klappt ein */
+  /* Befund 3: Gipfel-Popup light */
+  .pk-pop{font-size:12px;min-width:118px}
+  .pk-pop .pk-name{font-weight:700;font-size:13px;color:var(--txt)}
+  .pk-pop .pk-ele{color:var(--muted);font-size:11px;margin-top:1px}
+  .pk-pop .pk-grp{margin-top:6px;padding-top:5px;border-top:1px solid var(--line);color:var(--accent2);cursor:pointer;font-size:11.5px}
+  .pk-pop .pk-grp:hover{text-decoration:underline}
   #titleMini{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;max-width:calc(100vw - 60px)}
   #titleMini .tm-logo{color:var(--accent);font-size:13px;flex:0 0 auto}
   #titleMini .tm-name{font-weight:700;font-size:14px;white-space:nowrap;flex:0 0 auto}
@@ -394,7 +401,7 @@
     <span class="tm-kpi" id="tmKpi"></span>
     <span class="tm-caret">&#9662;</span>
   </div>
-  <h1>Alpen-Atlas</h1>
+  <h1 onclick="collapseTitle()" title="Einklappen">Alpen-Atlas</h1>
   <p>Die Alpen nach SOIUSA, der internationalen Alpen-Gliederung — Gruppen, Gipfel, Hütten & Pässe interaktiv. Fläche anklicken für Steckbrief.</p>
   <div class="kpi">
     <div><b>131</b><span>Gruppen</span></div><div><b>5</b><span>Sektoren</span></div><div><b>909</b><span>Vereinsh&uuml;tten</span></div>
@@ -476,6 +483,7 @@
      &middot; Wikipedia/Wikidata &ndash; Steckbriefe (CC BY-SA) &middot; Natural Earth
      &middot; Esri World Imagery.</p>
 </div>
+
 
 <div id="panel">
   <div class="x" onclick="closePanel()">&times;</div>
@@ -892,7 +900,15 @@ function expandTitle(){
 }
 let _titleAuto=false, _titleChoice=null;
 try{ _titleChoice=localStorage.getItem('alpen_title_mini'); }catch(_){}
-function _autoCollapseTitle(){ if(_titleAuto || _titleChoice) return; _titleAuto=true; collapseTitle(true); }
+// Abnahme-Befund 5: Auto-Kollaps feuert bei erster echter Interaktion, sofern die Card
+// nicht schon eingeklappt ist. Der persistierte Wert steuert nur noch den STARTZUSTAND
+// (mini bei '1') — er sperrt den Auto-Kollaps NICHT mehr dauerhaft (das war Michaels
+// „greift nicht": ein altes '0' unter file:// deaktivierte ihn für immer).
+function _autoCollapseTitle(){
+  if(_titleAuto) return;
+  const t=document.getElementById('title'); if(!t || t.classList.contains('mini')) return;
+  _titleAuto=true; collapseTitle(true);
+}
 if(_titleChoice==='1'){ const _t=document.getElementById('title'); if(_t){ _fillTmKpi(); _t.classList.add('mini'); } }  // Restore ohne Re-Persist
 // T4: Legende (Sektoren) auf-/zuklappen.
 function toggleLegend(){ document.getElementById('legend').classList.toggle('open');
@@ -1407,9 +1423,30 @@ map.on('load',()=>{
   });
   map.on('mouseleave','sts-hit',()=>{map.getCanvas().style.cursor='';clearTimeout(_hoverTimer);hoverPop.remove();
     if(_hoverId!=null){ map.setFeatureState({source:'sts',id:_hoverId},{hover:false}); _hoverId=null; }});
+  // ── Abnahme-Befund 3: Gipfel-Klick -> „Gipfel-Popup light" (Name · Höhe ·
+  // „<Gruppe> öffnen →"), NICHT direkt der Gruppen-Steckbrief. Erst der Klick auf
+  // die Zeile öffnet die Gebirgsgruppe. Beide Builds (Gipfel = neutrale Geodaten). ─
+  const PEAK_LAYERS = ['osm-peaks','osm-peaks-gold','osm-landmarks','osm-landhigh','peaks-in-group','peaks-highest'];
+  const peakPopup = new maplibregl.Popup({closeButton:true, closeOnClick:false, offset:12});
+  map.on('click', PEAK_LAYERS, e=>{
+    const f=e.features[0], p=f.properties||{};
+    const name=p.name||'Gipfel';
+    const ele=(p.ele!=null && p.ele!=='')?(Math.round(+p.ele)+' m'):'';
+    let sts='', gname='';
+    const grp=map.queryRenderedFeatures(e.point,{layers:['sts-hit']});
+    if(grp.length){ sts=grp[0].properties.STS||''; gname=grp[0].properties.name_de||sts; }
+    closeAllPopups();
+    peakPopup.setLngLat(f.geometry.coordinates.slice()).setHTML(peakPopupHtml(name, ele, sts, gname)).addTo(map);
+  });
+  PEAK_LAYERS.forEach(l=>{
+    map.on('mouseenter',l,()=>map.getCanvas().style.cursor='pointer');
+    map.on('mouseleave',l,()=>map.getCanvas().style.cursor='');
+  });
+
   map.on('click','sts-hit',e=>{
     if(TOUR_LAYERS.length && map.queryRenderedFeatures(e.point,{layers:TOUR_LAYERS}).length) return;
     if(map.queryRenderedFeatures(e.point,{layers:HUT_LAYERS}).length) return;  // Hütte hat Vorrang
+    if(map.queryRenderedFeatures(e.point,{layers:PEAK_LAYERS}).length) return;  // Befund 3: Gipfel-Popup hat Vorrang
     if(map.queryRenderedFeatures(e.point,{layers:['places-sq','places-dot','places-label','places-village','places-village-label','cable-icon']}).length) return;  // Ort/Seilbahn hat Vorrang
     if(map.getLayer('t-cluster-halo') && map.queryRenderedFeatures(e.point,{layers:['t-cluster-halo']}).length) return;  // P2.7: Cluster hat Vorrang
     clearTimeout(_hoverTimer); hoverPop.remove(); stsPopup.remove(); hutPopup.remove();  // B: keine klebende Box
@@ -1434,11 +1471,12 @@ map.on('load',()=>{
   // ── Click on empty map (no feature) closes popup + selection ──────────────
   map.on('click', e=>{
     if(!map.queryRenderedFeatures(e.point,{layers:HUT_LAYERS}).length) hutPopup.remove();
+    if(!map.queryRenderedFeatures(e.point,{layers:PEAK_LAYERS}).length) peakPopup.remove();  // Befund 3: Außenklick schließt Gipfel-Popup
     // W1c: Klick ohne Gruppen-/Linien-/Punkt-Feature -> Steckbrief schliessen + Auswahl-Rand weg.
     const feats=map.queryRenderedFeatures(e.point,{layers:
-      ['sts-hit','hl-line','osm-peaks','osm-peaks-gold','osm-landmarks','osm-landhigh','osm-passes','osm-passes-famous',
+      ['sts-hit','hl-line','osm-passes','osm-passes-famous',
        'places-sq','places-dot','places-label','places-village','places-village-label','cable-icon']
-        .concat(HUT_LAYERS).concat(TOUR_LAYERS)});
+        .concat(PEAK_LAYERS).concat(HUT_LAYERS).concat(TOUR_LAYERS)});
     if(!feats.length) closePanel();
   });
 
