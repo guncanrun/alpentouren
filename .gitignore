@@ -42,7 +42,7 @@ tracks/
 
 # Standalone-Privat-Build (file://-Versand, base64-Fotos) — nie committen
 index_privat_standalone.html
-# Papa-Mitgabe-Kopie des Standalone (W7 §6b) — gitignored wie der Standalone
+# Mitgabe-Kopie des Standalone (W7 §6b) — gitignored wie der Standalone
 Alpentouren.html
 
 # Parkplatz-/Sessellift-Zaehl-Reports (Arbeitsartefakte, Zahlen stehen in der Spec)

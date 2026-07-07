@@ -865,7 +865,7 @@ __HEAD_LIBS__
     #title{max-width:calc(100vw - 90px)}
     #panel{width:auto;left:16px;right:16px;top:auto;bottom:16px;z-index:9}
     #ebenen{max-width:calc(100vw - 32px)}
-    /* P1: Tourenliste auch auf dem Handy als Bottom-Sheet (Papas 10-Zoll ist Zielgerät).
+    /* P1: Tourenliste auch auf dem Handy als Bottom-Sheet (Zielgerät: 10-Zoll-Tablet).
        #panel (z9) öffnet darüber; openSts klappt #cov ein -> kein Overlap-Konflikt. */
     #cov{left:16px;right:16px;width:auto;bottom:16px;z-index:8;max-height:72vh}
   }
@@ -3893,11 +3893,11 @@ if STANDALONE and size_kb > 15 * 1024:
     print(f"WARN Standalone {size_str} > 15 MB (E-Mail-Grenze) -- Fotos/Daten pruefen.")
 
 # W7 (§6b): Standalone zusätzlich als „Alpentouren.html" ablegen — die file://-taugliche
-# Papa-Mitgabe-Datei (gitignored). Erspart das manuelle Umbenennen vor der Mitgabe.
+# Mitgabe-Datei (gitignored). Erspart das manuelle Umbenennen vor der Mitgabe.
 if STANDALONE:
     _mitgabe = HERE / "Alpentouren.html"
     _mitgabe.write_text(html, encoding="utf-8")
-    print(f"  -> Kopie fuer Papa-Mitgabe: Alpentouren.html ({_mitgabe.stat().st_size//1024//1024} MB)")
+    print(f"  -> Mitgabe-Kopie: Alpentouren.html ({_mitgabe.stat().st_size//1024//1024} MB)")
 
 # ── Backup-Hook (nur Privat-Build): sichert den gitignorierten Privat-Kanon ───
 # (touren.json + _cowork_specs) nach OneDrive. Fehler brechen den Build nie ab.

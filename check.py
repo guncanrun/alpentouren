@@ -481,6 +481,10 @@ else:
         return fn.rsplit(".", 1)[-1].lower() in (
             "py", "js", "html", "css", "json", "geojson", "md", "txt", "svg", "gitignore")
 
+    # Zusatz-Begriffe mit Personenbezug (aus privat_template.SCAN_EXTRA, KEINE Literale
+    # hier — sonst schlaegt der Scan auf sich selbst an). Word-boundary, case-insensitive;
+    # nur Nicht-Daten-Dateien, damit neutrale Huetten-/Attributions-Namen NICHT anschlagen.
+    _extra_terms = list(getattr(_PTC, "SCAN_EXTRA", []))
     _pfail = 0
     for _fn in _trackedf:
         if not _is_text_file(_fn):
@@ -500,9 +504,15 @@ else:
                     print(f"FAIL privacy-scan: Vorname '{_nm}' in Code-Datei '{_fn}'")
                     errors.append(f"privacy-scan: name {_nm} in {_fn}")
                     _pfail += 1
+            for _xt in _extra_terms:
+                if _rescan2.search(r'(?<![A-Za-zäöüßÄÖÜ])' + _rescan2.escape(_xt) + r'(?![A-Za-zäöüßÄÖÜ])', _t, _rescan2.IGNORECASE):
+                    print(f"FAIL privacy-scan: '{_xt}' in Code-Datei '{_fn}'")
+                    errors.append(f"privacy-scan: {_xt} in {_fn}")
+                    _pfail += 1
     if _pfail == 0:
         print(f"OK   privacy-scan: 0 Treffer ({len(_strict)} Begriffe + {len(_pnames)} Namen "
-              f"ueber {sum(1 for f in _trackedf if _is_text_file(f))} getrackte Text-Dateien)")
+              f"+ {len(_extra_terms)} Zusatz ueber "
+              f"{sum(1 for f in _trackedf if _is_text_file(f))} getrackte Text-Dateien)")
 
 print()
 if errors:
