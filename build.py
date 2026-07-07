@@ -2558,6 +2558,7 @@ function _focusPeakAt(c){
 }
 function focusGipfel(name){
   if(!name) return;
+  _ensurePeaksOn();   // Befund 13: Gipfel-Layer AN, damit am Ziel Icon/Label steht
   let feat=null;
   try{ const fs=map.querySourceFeatures('osm-peaks',{filter:['==',['get','name'],name]}); if(fs&&fs.length) feat=fs[0]; }catch(_){}
   if(!feat && typeof OSM_PEAKS!=='undefined' && OSM_PEAKS && OSM_PEAKS.features)
@@ -2569,6 +2570,7 @@ function focusGipfel(name){
 // Peak×Polygon-Containment). Funktioniert für ALLE Gruppen; Gruppen ohne Gipfel ≥2000 m
 // (z. B. Sonntagshorn 1961) fallen auf fitBounds der Gruppe zurück.
 function focusGroupPeak(sts){
+  _ensurePeaksOn();   // Befund 13: Gipfel-Layer AN (höchster Berg sichtbar am Ziel)
   const c = (typeof GROUP_PEAKS!=='undefined' && GROUP_PEAKS) ? GROUP_PEAKS[sts] : null;
   if(c && c.length===2){ _focusPeakAt(c); return; }
   const f=SOIUSA_STS.features.find(x=>x.properties.STS===sts);
@@ -2968,6 +2970,9 @@ function updateStsLabelFilter(){
 // ── Open: STS polygon (visited or not) ───────────────────────────────────────
 function openSts(feat, camMode){   // camMode: undef=Gate(§6a), 'force'=immer fliegen (Suche), 'nofly'=nie (Chronik)
   closeAllPopups();   // Review-Befund 2: Steckbrief-Öffnen räumt offene schwarze Popups (Hütte/Gipfel/Pass/Treffer)
+  // P3 Overlap-Pass: linke Spalte = EIN Stapel. Steckbrief-Öffnung klappt die Title-Card auf
+  // die schmale Zeile (kein Überlappen, v. a. Public); ohne Re-Persist der Nutzer-Wahl.
+  try{ const _t=document.getElementById('title'); if(_t && !_t.classList.contains('mini')) collapseTitle(false); }catch(_){ }
   const props = feat.properties || {};
   const stsName = String(props.STS || '').trim();
   // Harden: use '__none__' sentinel so empty-string filter doesn't accidentally match
@@ -3014,11 +3019,34 @@ function openSts(feat, camMode){   // camMode: undef=Gate(§6a), 'force'=immer f
   /* PRIV:END */
   // §6a (W4)/Fix2: 'nofly' -> nie fliegen (Chronik fliegt selbst); sonst ab z>=11 kein
   // Auto-flyTo bei Klick (Fehlklick-Schutz), 'force' (Suche) springt immer.
+  // Befund 14: Panel-Auswahl ZENTRIERT das Gebiet (fitBounds aufs Gruppen-Polygon) —
+  // außer die Gruppe liegt schon überwiegend im Viewport (Ruhe-Regel: kein Sprung).
+  // Persistentes Kamera-Padding (B6/B11) + Breathing-Room; Zoom-Deckel wie Gipfel-flyTo.
   if(camMode==='nofly') return;
-  if(map.getZoom()>=11 && camMode!=='force') return;
   const bb=featBbox(feat);
-  if(bb){ saveUndo(); map.fitBounds(bb,{padding:{top:80,bottom:80,left:320,right:80},
-    pitch:18,bearing:0,maxZoom:10,duration:1200,essential:true}); showUndoChip(); }
+  if(!bb) return;
+  if(camMode!=='force' && _mostlyVisible(bb)) return;
+  saveUndo();
+  map.fitBounds(bb,{padding:_selPad(), pitch:Math.min(map.getPitch(),18), bearing:0,
+    maxZoom:13.5, duration:900, essential:true});
+  showUndoChip();
+}
+// Befund 14: Gruppe „überwiegend sichtbar"? (≥60% der Gruppen-Bbox im aktuellen Viewport).
+function _mostlyVisible(bb){
+  try{
+    const vb=map.getBounds();
+    const ax0=bb[0][0],ay0=bb[0][1],ax1=bb[1][0],ay1=bb[1][1];
+    const ix0=Math.max(ax0,vb.getWest()), iy0=Math.max(ay0,vb.getSouth());
+    const ix1=Math.min(ax1,vb.getEast()), iy1=Math.min(ay1,vb.getNorth());
+    if(ix1<=ix0||iy1<=iy0) return false;
+    const iA=(ix1-ix0)*(iy1-iy0), bA=(ax1-ax0)*(ay1-ay0);
+    return bA>0 && iA/bA>=0.6;
+  }catch(_){ return false; }
+}
+// Padding fürs Gebiets-fitBounds = persistentes Panel-Padding (B6/B11) + Breathing-Room.
+function _selPad(){
+  const l=(typeof _panelPadPx==='function'?_panelPadPx():0), r=(typeof _ebenenPadPx==='function'?_ebenenPadPx():0);
+  return {left:l+30, right:r+30, top:70, bottom:70};
 }
 
 // ── Toggle: group labels (fills always on) ────────────────────────────────────
@@ -3123,6 +3151,10 @@ function togglePeaks(){
   document.getElementById('tglPeaks').classList.toggle('on',_peaksOn);
   persistToggles();
 }
+// Befund 13: Gipfel-Klick aus der Tour-Karte schaltet den Gipfel-Toggle AN (falls aus),
+// synchron im Ebenen-Panel sichtbar; bleibt an (kein Auto-Rückschalten). Sonst stünde am
+// Ziel kein Icon/Label. togglePeaks() setzt Layer + Button + Persist.
+function _ensurePeaksOn(){ try{ if(typeof _peaksOn!=='undefined' && !_peaksOn) togglePeaks(); }catch(_){ } }
 let _hutsOn=false;
 function toggleHuts(){
   _hutsOn=!_hutsOn; const v=_hutsOn?'visible':'none';

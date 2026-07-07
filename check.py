@@ -127,7 +127,7 @@ checks = [
     ("fitBounds in openSts",          "map.fitBounds"),
     ("hl-line click handler",         "'click','hl-line'"),
     ("openSts sentinel __none__",     "__none__"),
-    ("featBbox null guard",           "if(bb)"),
+    ("featBbox null guard",           "if(!bb) return"),   # P3/Befund 14: openSts prüft bb weiterhin auf null
     # Instrumentation
     ("labels use Noto Sans Bold",       "'text-font':['Noto Sans Bold']"),
     ("local glyph path",               "glyphs:'./fonts/{fontstack}/{range}.pbf'"),
