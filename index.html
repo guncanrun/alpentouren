@@ -4,6 +4,17 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Alpen-Atlas</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a0e14'/%3E%3Cpath d='M4 25 L12 11 L17 19 L21 13 L28 25 Z' fill='%23ffb24d'/%3E%3Cpath d='M10.4 14.5 L12 11 L13.6 14.5 L12 15.4 Z' fill='%23eaf1f5'/%3E%3C/svg%3E" />
+<!-- P4.1: Splash (Inline, im <head> VOR dem großen Daten-Parse; file://-tauglich, kein Netz). -->
+<style>
+  #splash{position:fixed;inset:0;z-index:99999;background:#0a0e14;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:16px;transition:opacity .5s ease}
+  #splash.hide{opacity:0;pointer-events:none}
+  #splash .sp-sig{width:96px;height:96px;animation:sp-pulse 1.6s ease-in-out infinite}
+  #splash .sp-txt{color:#9fb0c0;font:600 15px/1 system-ui,-apple-system,sans-serif;letter-spacing:.5px}
+  @keyframes sp-pulse{0%,100%{opacity:.55;transform:scale(.97)}50%{opacity:1;transform:scale(1)}}
+  @media (prefers-reduced-motion: reduce){ #splash .sp-sig{animation:none} }
+</style>
 <link href="./vendor/maplibre-gl-4.7.1.min.css" rel="stylesheet" />
 <script src="./vendor/maplibre-gl-4.7.1.min.js"></script>
 <script src="./vendor/maplibre-contour-0.0.5.min.js"></script>
@@ -405,6 +416,8 @@
 </style>
 </head>
 <body>
+<!-- P4.1: Splash — sofort sichtbar (neutrales Berg-Signet); blendet nach map 'load'+idle aus. -->
+<div id="splash"><svg class="sp-sig" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#0f1620"/><path d="M4 25 L12 11 L17 19 L21 13 L28 25 Z" fill="#ffb24d"/><path d="M10.4 14.5 L12 11 L13.6 14.5 L12 15.4 Z" fill="#eaf1f5"/></svg><div class="sp-txt">&#8230; l&auml;dt</div></div>
 <div id="map"></div>
 <div id="mapfoot"><div id="coords" title="WGS84 (Grad-Dezimal)"></div></div>
 <div id="toast"></div>
@@ -669,6 +682,15 @@ function _ebenenPadPx(){
 function _applyPanelPad(){ try{ map.setPadding({left:_panelPadPx(), top:0, right:_ebenenPadPx(), bottom:0}); }catch(_){ } }
 _applyPanelPad();
 window.addEventListener('resize', _applyPanelPad);
+// P4.1: Splash ausblenden, sobald die Karte den ersten Frame hat (load -> idle). Fallbacks,
+// falls unter file:// ohne Netz die Tiles fehlen und 'idle' verzögert -> Splash MUSS weg.
+(function(){
+  const s=document.getElementById('splash'); if(!s) return;
+  let done=false;
+  const hide=()=>{ if(done) return; done=true; s.classList.add('hide'); setTimeout(()=>{ try{ s.remove(); }catch(_){ } }, 600); };
+  try{ map.on('load', ()=>{ try{ map.once('idle', hide); }catch(_){ } setTimeout(hide, 2500); }); }catch(_){ }
+  setTimeout(hide, 8000);   // harter Fallback (Netz aus)
+})();
 // ── Attribution (dynamic per basemap) ─────────────────────────────────────────
 const ATTRIB = {
   sat:'Imagery © Esri, Maxar, Earthstar · Höhen: Mapzen/AWS · SOIUSA © Arpa Piemonte · '+
