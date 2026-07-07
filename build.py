@@ -381,6 +381,15 @@ try:
 except FileNotFoundError:
     huts_wiki_json = '{"huetten":{}}'
 
+# N3 Gipfel-Enrichment (fetch_peaks_wiki.py) — rein enzyklopädisch, beide Builds.
+# Key = "lon,lat" (5 Dezimalen) der OSM-Gipfel-Koordinate (eindeutig, Dubletten-
+# Falle); Popup-Lookup läuft über Name + nächsten Nachbarn (peaksWikiLookup),
+# weil gerenderte Feature-Koordinaten tile-quantisiert sind.
+try:
+    peaks_wiki_json = load_compact("soiusa_peaks_wiki.json")
+except FileNotFoundError:
+    peaks_wiki_json = '{"gipfel":{}}'
+
 # N3: Höchster-Gipfel-Koordinate je SOIUSA-Gruppe (Peak×Polygon-Containment + Namensabgleich).
 # Eindeutig statt Namens-String (Dubletten „Krottenkopf" 2x). Beide Builds (neutrale Geodaten).
 # Das Containment (131 Polygone × ~13k Peaks) ist teuer -> Ergebnis in soiusa_group_peaks.json
@@ -431,6 +440,42 @@ else:
     except Exception as _e:  # noqa: BLE001
         print(f"[group_peaks] WARN {_e} -- Höchster-Berg-Link nutzt Fallback")
 group_peaks_json = json.dumps(group_peaks, ensure_ascii=False, separators=(",", ":"))
+
+# N3 Budget (Standalone 13,9-MB-Stop): inline nur die Teilmenge Gruppen-Hoechste +
+# Landmarks + Top-Tiers + Gipfel in Gruppen aus dem Overlay (Muster Wanderpark-
+# plaetze-Subset). Online-Builds tragen den vollen Datensatz inline (kein Budget);
+# die getrackte Datei bleibt immer vollstaendig.
+if STANDALONE:
+    _pw = json.loads(peaks_wiki_json)
+    _keep = {f"{c[0]:.5f},{c[1]:.5f}" for c in group_peaks.values()}
+    try:
+        for _f in json.loads((HERE / "soiusa_osm_peaks.geojson").read_text(encoding="utf-8"))["features"]:
+            _p = _f["properties"]
+            if _p.get("landmark") == 1 or (_p.get("tier") is not None and _p.get("tier") <= 2):
+                _c = _f["geometry"]["coordinates"]
+                _keep.add(f"{_c[0]:.5f},{_c[1]:.5f}")
+    except Exception as _e:  # noqa: BLE001
+        print(f"[peaks_wiki] WARN Landmark-Subset: {_e}")
+    try:
+        from shapely.geometry import shape as _n3sh, Point as _n3pt
+        from shapely.prepared import prep as _n3pp
+        from shapely.ops import unary_union as _n3uu
+        _n3ov = json.loads((HERE / "visited_overlay.json").read_text(encoding="utf-8")) if (HERE / "visited_overlay.json").exists() else {}
+        _n3col = json.loads((HERE / "soiusa_sts_colored.geojson").read_text(encoding="utf-8"))
+        _n3geo = [_n3sh(f["geometry"]) for f in _n3col["features"] if f["properties"].get("CODICE") in _n3ov]
+        if _n3geo:
+            _n3U = _n3pp(_n3uu(_n3geo))
+            for _k in list(_pw.get("gipfel", {})):
+                _lon, _lat = map(float, _k.split(","))
+                if _n3U.contains(_n3pt(_lon, _lat)):
+                    _keep.add(_k)
+    except Exception as _e:  # noqa: BLE001
+        print(f"[peaks_wiki] WARN Overlay-Subset: {_e}")
+    _n_full = len(_pw.get("gipfel", {}))
+    _pw["gipfel"] = {k: v for k, v in _pw.get("gipfel", {}).items() if k in _keep}
+    peaks_wiki_json = json.dumps(_pw, ensure_ascii=False, separators=(",", ":"))
+    print(f"  N3: Standalone-Subset {len(_pw['gipfel'])} von {_n_full} Gipfel-Steckbriefen inline "
+          f"({len(peaks_wiki_json)//1024} KB)")
 
 sts_count = len(json.loads(sts_json)["features"])
 hl_count  = len(json.loads(highlights_json)["features"])
@@ -554,6 +599,7 @@ __HEAD_LIBS__
   .pk-pop .pk-ele{color:var(--muted);font-size:11px;margin-top:1px}
   .pk-pop .pk-grp{margin-top:6px;padding-top:5px;border-top:1px solid var(--line);color:var(--accent2);cursor:pointer;font-size:11.5px}
   .pk-pop .pk-grp:hover{text-decoration:underline}
+  .pk-pop.pk-rich{min-width:200px;max-width:230px}   /* N3: Popup mit Bild/Wiki-Link */
   .lift-pop{font-size:11.5px;font-weight:600;color:var(--txt)}   /* N4: Sessellift-Name */
   #titleMini{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;max-width:calc(100vw - 60px)}
   #titleMini .tm-logo{color:var(--accent);font-size:13px;flex:0 0 auto}
@@ -1306,6 +1352,7 @@ const COUNTRY_LABELS = {type:'FeatureCollection',features:[
 ]};
 const WIKI = __SOIUSA_WIKI_JSON__;
 const HUTS_WIKI = __SOIUSA_HUTS_WIKI_JSON__;   // Hütten-Steckbriefe, Key = OSM-Name
+const PEAKS_WIKI = __SOIUSA_PEAKS_WIKI_JSON__; // N3: Gipfel-Steckbriefe, Key = "lon,lat" (5 Dez.)
 // Standalone: inline-GeoJSONs (sonst null -> relative URL/Fetch wie im Normal-Build).
 const OSM_PEAKS  = __OSM_PEAKS__;
 const OSM_HUTS   = __OSM_HUTS__;
@@ -2458,7 +2505,8 @@ map.on('load',()=>{
     const grp=map.queryRenderedFeatures(e.point,{layers:['sts-hit']});
     if(grp.length){ sts=grp[0].properties.STS||''; gname=grp[0].properties.name_de||sts; }
     closeAllPopups();
-    peakPopup.setLngLat(f.geometry.coordinates.slice()).setHTML(peakPopupHtml(name, ele, sts, gname)).addTo(map);
+    const c=f.geometry.coordinates;
+    peakPopup.setLngLat(c.slice()).setHTML(peakPopupHtml(name, ele, sts, gname, c[0], c[1])).addTo(map);   // N3
   });
   // N6: Custom-Cursor über Gipfeln (vereinfachtes Bergsymbol + „?"), Fallback pointer.
   const _peakCurSvg="<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'>"+
@@ -3665,21 +3713,51 @@ function restoreUndo(e){
 map.on('movestart', e=>{ if(e && e.originalEvent){ _hideUndoChip(); _autoCollapseTitle(); } });   // P1.2: erste Interaktion klappt Title-Card ein
 map.on('click', ()=>_autoCollapseTitle());
 
+// ── Gipfel-Popup (BEIDE Builds) — Befund 3 light + N3-Enrichment ──────────────
+// N3-Fund: Diese Funktionen (+_e/openGroup) lagen bisher INNERHALB des privaten
+// Filter-Blocks -> im Public-Build gestrippt, Gipfel-Klick lief dort auf
+// ReferenceError (Popup blieb aus). Jetzt vor dem Block = beide Builds.
+const _e = s => String(s==null?'':s).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+function openGroup(sts){ const f=SOIUSA_STS.features.find(x=>x.properties.STS===sts); if(f) openSts(f); }
+// Befund 3: Gipfel-Popup light (Name · Höhe · Zeile „<Gruppe> öffnen →").
+// N3: Enrichment-Lookup Name + naechster Nachbar. Gerenderte Feature-Koordinaten
+// sind tile-quantisiert (bis ~300 m bei z5) -> exakter Koordinaten-Key traefe nicht.
+// Namens-Dubletten (2x Krottenkopf) loest die Distanz; Toleranz ~1 km.
+let _pkwByName=null;
+function peaksWikiLookup(name, lon, lat){
+  if(!_pkwByName){
+    _pkwByName={};
+    Object.keys(PEAKS_WIKI.gipfel||{}).forEach(k=>{
+      const v=PEAKS_WIKI.gipfel[k], c=k.split(',');
+      (_pkwByName[v.name]=_pkwByName[v.name]||[]).push({lon:+c[0], lat:+c[1], e:v});
+    });
+  }
+  const arr=_pkwByName[name]; if(!arr || lon==null) return null;
+  const cs=Math.cos(lat*Math.PI/180);
+  let best=null, bd=Infinity;
+  arr.forEach(o=>{ const dx=(o.lon-lon)*cs, dy=o.lat-lat, d=dx*dx+dy*dy; if(d<bd){bd=d; best=o;} });
+  return (best && bd < 8.1e-5) ? best.e : null;   // (0.009 Grad)^2 ~ 1 km
+}
+function peakPopupHtml(name, ele, sts, gname, lon, lat){
+  const w = peaksWikiLookup(name, lon, lat);
+  let h='<div class="pk-pop'+(w?' pk-rich':'')+'"><div class="pk-name">'+_e(name)+'</div>';
+  if(!ele && w && w.ele_wd!=null) ele=w.ele_wd+' m';   // OSM-ele bevorzugen, Wikidata als Fallback
+  if(ele) h+='<div class="pk-ele">'+_e(ele)+'</div>';
+  if(w && w.img && w.img_attr){                        // Bild NUR mit Attribution (CC-Pflicht)
+    h+='<img class="hut-img" src="'+w.img+'" alt="" loading="lazy">'+
+       '<div class="hut-attr">'+_e(w.img_attr)+'</div>';
+  }
+  if(w && w.wiki) h+='<div class="hut-links"><a href="'+w.wiki+'" target="_blank" rel="noopener">Auf Wikipedia &rarr;</a></div>';
+  if(sts) h+='<div class="pk-grp" onclick="peakOpenGroup(\''+sts+'\')">'+_e(gname||'Gebirgsgruppe')+' öffnen &rarr;</div>';
+  return h+'</div>';
+}
+function peakOpenGroup(sts){ try{ document.querySelectorAll('.maplibregl-popup').forEach(el=>el.remove()); }catch(_){ } openGroup(sts); }
+
 // ── Coverage list + Tour-Filter (private build only) ──────────────────────────
 /* PRIV:START */
 // SPEC_Personenfilter: EIN Zustand FILTER + EINE Filter-Funktion schaltet
 // Liste (filtern, Jahre auf Treffer reduzieren) · Karte (Marker/Tracks dimmen) ·
 // Kopf-Bilanz · Chronik konsistent. Kein localStorage, Default Alle/leer.
-const _e = s => String(s==null?'':s).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
-function openGroup(sts){ const f=SOIUSA_STS.features.find(x=>x.properties.STS===sts); if(f) openSts(f); }
-// Befund 3: Gipfel-Popup light (Name · Höhe · Zeile „<Gruppe> öffnen →").
-function peakPopupHtml(name, ele, sts, gname){
-  let h='<div class="pk-pop"><div class="pk-name">'+_e(name)+'</div>';
-  if(ele) h+='<div class="pk-ele">'+_e(ele)+'</div>';
-  if(sts) h+='<div class="pk-grp" onclick="peakOpenGroup(\''+sts+'\')">'+_e(gname||'Gebirgsgruppe')+' öffnen &rarr;</div>';
-  return h+'</div>';
-}
-function peakOpenGroup(sts){ try{ document.querySelectorAll('.maplibregl-popup').forEach(el=>el.remove()); }catch(_){ } openGroup(sts); }
 function _groupTourIds(g){ return typeof g.tour_ids==='string'?JSON.parse(g.tour_ids||'[]'):(g.tour_ids||[]); }
 
 // Register-Lookup + Personen-Häufigkeit (alle teilnehmer_ids). Chip-Liste: nur
@@ -4289,6 +4367,7 @@ html = html.replace("__MASK_GEOJSON__",               mask_json)
 html = html.replace("__SOIUSA_LBL_PTS_GEOJSON__",    lp_json)
 html = html.replace("__SOIUSA_WIKI_JSON__",          wiki_json)
 html = html.replace("__SOIUSA_HUTS_WIKI_JSON__",     huts_wiki_json)
+html = html.replace("__SOIUSA_PEAKS_WIKI_JSON__",    peaks_wiki_json)
 html = html.replace("__TITEL__", TITEL).replace("__UNTER__", UNTER)
 html = html.replace("__RIDGE__", RIDGE)   # P4.2: Signet-Pfade (neutral)
 html = html.replace("__PRIV__", "false" if PUBLIC else "true")
