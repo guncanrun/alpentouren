@@ -33,6 +33,14 @@ if not PUBLIC and _PT is None:
                      "aufloesen. Der oeffentliche Build (python build.py) laeuft ohne die Datei.")
 
 TITEL = "Alpen-Atlas" if PUBLIC else _PT.TITLE
+
+# P4.2 Logo-Signet: gestaffelte Grate FLAT (4 Pfade, Teal/Orange aus der Palette, keine
+# Verläufe/Glanz). Neutral (nur Berge) -> als Token in beide Builds ersetzbar; genutzt wird es
+# aber nur in den PRIV-Logo-Bloecken (Public bleibt logolos).
+RIDGE = ('<path d="M4 96 L52 44 L92 82 L110 60 L128 82 L168 44 L216 96 Z" fill="#295f5b"/>'
+         '<path d="M26 96 L70 50 L110 18 L150 50 L194 96 Z" fill="#5fd0c5"/>'
+         '<path d="M50 96 L92 54 L110 34 L150 78 L176 54 L206 96 Z" fill="#d98a35"/>'
+         '<path d="M64 96 L110 42 L134 70 L156 50 L188 96 Z" fill="#ffb24d"/>')
 UNTER = ("Die Alpen nach SOIUSA, der internationalen Alpen-Gliederung — Gruppen, Gipfel, "
          "Hütten & Pässe interaktiv. Fläche anklicken für Steckbrief."
          if PUBLIC else
@@ -481,6 +489,23 @@ __HEAD_LIBS__
   #title.mini > *:not(#titleMini){display:none}
   #title:not(.mini) #titleMini{display:none}
   #title:not(.mini) h1{cursor:pointer}   /* Befund 5: Titel-Klick klappt ein */
+  /* P4.2: Logo (flat, klassisch). Stacked (Splash/Abspann) + horizontal (Title-Card). */
+  .gc-logo{text-align:center}
+  .gc-logo svg{display:block;margin:0 auto}
+  .gc-logo .gc-wm-g{font-family:Georgia,'Cambria','Times New Roman',serif;color:#e9b866;line-height:.92}
+  .gc-logo .gc-wm-a{letter-spacing:5px;color:#aeb9c0;font-weight:600}
+  #splash .gc-logo .gc-ssig{width:150px;height:auto;animation:sp-pulse 1.8s ease-in-out infinite}
+  #splash .gc-logo .gc-wm-g{font-size:40px;margin-top:7px}
+  #splash .gc-logo .gc-wm-a{font-size:13.5px;margin-top:3px}
+  #chronoCap .gc-logo .gc-ssig{width:110px;height:auto}
+  @media (prefers-reduced-motion: reduce){ #splash .gc-logo .gc-ssig{animation:none} }
+  #title h1 .gc-hlogo{display:inline-flex;align-items:center;gap:9px;line-height:1}
+  #title h1 .gc-hlogo .gc-hwm{font-family:Georgia,'Cambria',serif;color:#e9b866;font-weight:400;
+    font-size:19px;white-space:nowrap}
+  @media (min-width:2200px) and (pointer:fine){ #title h1 .gc-hlogo .gc-hwm{font-size:23px} }
+  #chronoCap .gc-logo{margin:2px auto 8px}
+  #chronoCap .gc-logo .gc-wm-g{font-size:30px}
+  #chronoCap .gc-logo .gc-wm-a{font-size:11px}
   /* Befund 3: Gipfel-Popup light */
   .pk-pop{font-size:12px;min-width:118px}
   .pk-pop .pk-name{font-weight:700;font-size:13px;color:var(--txt)}
@@ -1029,7 +1054,7 @@ __HEAD_LIBS__
 </head>
 <body>
 <!-- P4.1: Splash — sofort sichtbar (neutrales Berg-Signet); blendet nach map 'load'+idle aus. -->
-<div id="splash"><svg class="sp-sig" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#0f1620"/><path d="M4 25 L12 11 L17 19 L21 13 L28 25 Z" fill="#ffb24d"/><path d="M10.4 14.5 L12 11 L13.6 14.5 L12 15.4 Z" fill="#eaf1f5"/></svg><div class="sp-txt">&#8230; l&auml;dt</div></div>
+<div id="splash"><!-- PRIV:START --><div class="gc-logo"><svg class="gc-ssig" viewBox="0 0 220 96" aria-hidden="true">__RIDGE__</svg><div class="gc-wm-g">__WM_SERIF__</div><div class="gc-wm-a">__WM_SPACED__</div></div><!-- PRIV:END --><!-- PUB:START --><svg class="sp-sig" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#0f1620"/><path d="M4 25 L12 11 L17 19 L21 13 L28 25 Z" fill="#ffb24d"/><path d="M10.4 14.5 L12 11 L13.6 14.5 L12 15.4 Z" fill="#eaf1f5"/></svg><!-- PUB:END --><div class="sp-txt">&#8230; l&auml;dt</div></div>
 <div id="map"></div>
 <div id="mapfoot"><div id="coords" title="WGS84 (Grad-Dezimal)"></div></div>
 <div id="toast"></div>
@@ -1043,7 +1068,7 @@ __HEAD_LIBS__
     <span class="tm-kpi" id="tmKpi"></span>
     <span class="tm-caret">&#9662;</span>
   </div>
-  <h1 onclick="collapseTitle()" title="Einklappen">__TITEL__</h1>
+  <h1 onclick="collapseTitle()" title="Einklappen"><!-- PRIV:START --><span class="gc-hlogo"><svg class="gc-hsig" viewBox="0 0 220 96" style="width:44px;height:auto;flex:0 0 auto" aria-hidden="true">__RIDGE__</svg><span class="gc-hwm">__WM_LINE__</span></span><!-- PRIV:END --><!-- PUB:START -->__TITEL__<!-- PUB:END --></h1>
   <p>__UNTER__</p>
   <div class="kpi">
     <!-- PUB:START --><div><b>__KPI_GRUPPEN__</b><span>Gruppen</span></div><div><b>__KPI_SETTORI__</b><span>Sektoren</span></div><div><b>__KPI_HUETTEN__</b><span>Vereinsh&uuml;tten</span></div><!-- PUB:END -->
@@ -4090,6 +4115,8 @@ function chronoFinale(){
   const word={brueder:'__PT_LBL_BRUEDER__', weitere:'__PT_LBL_WEITERE_L__'}[FILTER.strang] || 'Touren';
   const cap=document.getElementById('chronoCap');
   if(cap) cap.innerHTML =
+    '<div class="gc-logo"><svg class="gc-ssig" viewBox="0 0 220 96" aria-hidden="true">__RIDGE__</svg>'+
+      '<div class="gc-wm-g">__WM_SERIF__</div><div class="gc-wm-a">__WM_SPACED__</div></div>'+
     '<div class="cc-h"><span class="cc-y">'+minY+'&ndash;'+maxY+'</span>'+
     '<span class="cc-d">R&uuml;ckblick</span></div>'+
     '<div class="cc-t">'+spanY+' Jahre &middot; '+nT+' '+word+' &middot; '+
@@ -4180,6 +4207,7 @@ html = html.replace("__SOIUSA_LBL_PTS_GEOJSON__",    lp_json)
 html = html.replace("__SOIUSA_WIKI_JSON__",          wiki_json)
 html = html.replace("__SOIUSA_HUTS_WIKI_JSON__",     huts_wiki_json)
 html = html.replace("__TITEL__", TITEL).replace("__UNTER__", UNTER)
+html = html.replace("__RIDGE__", RIDGE)   # P4.2: Signet-Pfade (neutral)
 html = html.replace("__PRIV__", "false" if PUBLIC else "true")
 html = html.replace("__KPI_GRUPPEN__",  str(kpi_gruppen))
 html = html.replace("__KPI_SETTORI__",  str(kpi_settori))
@@ -4304,6 +4332,9 @@ if not PUBLIC and _PT is not None:
     html = html.replace("__PT_LBL_PERSFILTER__", _PT.LBL["persfilter"])
     html = html.replace("__PT_LBL_BOOKSRC__",    _PT.LBL["book_source"])
     html = html.replace("__PT_ABOUT_INTRO__",    _PT.ABOUT_INTRO)   # N2
+    html = html.replace("__WM_SERIF__",  _PT.WORDMARK["serif"])     # P4.2 Wortmarke
+    html = html.replace("__WM_SPACED__", _PT.WORDMARK["spaced"])
+    html = html.replace("__WM_LINE__",   _PT.WORDMARK["line"])
 
 out = HERE / OUT
 out.write_text(html, encoding="utf-8")

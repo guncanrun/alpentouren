@@ -86,6 +86,23 @@
   #title.mini > *:not(#titleMini){display:none}
   #title:not(.mini) #titleMini{display:none}
   #title:not(.mini) h1{cursor:pointer}   /* Befund 5: Titel-Klick klappt ein */
+  /* P4.2: Logo (flat, klassisch). Stacked (Splash/Abspann) + horizontal (Title-Card). */
+  .gc-logo{text-align:center}
+  .gc-logo svg{display:block;margin:0 auto}
+  .gc-logo .gc-wm-g{font-family:Georgia,'Cambria','Times New Roman',serif;color:#e9b866;line-height:.92}
+  .gc-logo .gc-wm-a{letter-spacing:5px;color:#aeb9c0;font-weight:600}
+  #splash .gc-logo .gc-ssig{width:150px;height:auto;animation:sp-pulse 1.8s ease-in-out infinite}
+  #splash .gc-logo .gc-wm-g{font-size:40px;margin-top:7px}
+  #splash .gc-logo .gc-wm-a{font-size:13.5px;margin-top:3px}
+  #chronoCap .gc-logo .gc-ssig{width:110px;height:auto}
+  @media (prefers-reduced-motion: reduce){ #splash .gc-logo .gc-ssig{animation:none} }
+  #title h1 .gc-hlogo{display:inline-flex;align-items:center;gap:9px;line-height:1}
+  #title h1 .gc-hlogo .gc-hwm{font-family:Georgia,'Cambria',serif;color:#e9b866;font-weight:400;
+    font-size:19px;white-space:nowrap}
+  @media (min-width:2200px) and (pointer:fine){ #title h1 .gc-hlogo .gc-hwm{font-size:23px} }
+  #chronoCap .gc-logo{margin:2px auto 8px}
+  #chronoCap .gc-logo .gc-wm-g{font-size:30px}
+  #chronoCap .gc-logo .gc-wm-a{font-size:11px}
   /* Befund 3: Gipfel-Popup light */
   .pk-pop{font-size:12px;min-width:118px}
   .pk-pop .pk-name{font-weight:700;font-size:13px;color:var(--txt)}
