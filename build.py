@@ -1165,7 +1165,7 @@ Touren ansehen <span id="covCount"></span>
 <!-- PRIV:END -->
 
 <div id="ebenen" class="open">
-  <div class="eh" onclick="document.getElementById('ebenen').classList.toggle('open')">Ebenen</div>
+  <div class="eh" onclick="document.getElementById('ebenen').classList.toggle('open');_applyPanelPad&&_applyPanelPad()">Ebenen</div>
   <div class="eb"><div class="eb-in">
     <div class="grp">Karte</div>
     <div class="seg">
@@ -1335,12 +1335,25 @@ const map = new maplibregl.Map({
   },
   attributionControl:false   // eigenes Kartenquellen-Control (#btnAttrib/#attribPop, setAttrib)
 });
-// Befund 6: das linke Touren-Panel auf großen Desktop-Viewports aus dem Kartenbild
-// „herausrechnen" (persistentes Kamera-Padding) — Home/Initial/Suche zeigen den
-// Alpenbogen RECHTS vom Panel. Nur Desktop (Maus + breit); Tablet/Mobile (Bottom-Sheet)
-// unverändert. flyTo/fitBounds mit eigenem padding überschreiben dies pro Operation.
-function _panelPadPx(){ return (window.innerWidth > 900 && window.matchMedia('(pointer: fine)').matches) ? 340 : 0; }
-function _applyPanelPad(){ try{ map.setPadding({left:_panelPadPx(), top:0, right:0, bottom:0}); }catch(_){ } }
+// Befund 6/11: beide Seiten-Panels aus dem Kartenbild „herausrechnen" (persistentes
+// Kamera-Padding) — Home/Initial/Suche zeigen den Alpenbogen MITTIG zwischen dem linken
+// Touren-Panel (left) und dem rechten Ebenen-Panel (right). Nur Desktop (Maus + breit);
+// Tablet/Mobile (Bottom-Sheet) unverändert. flyTo/fitBounds mit eigenem padding überschreiben.
+function _padGate(){ return window.innerWidth > 900 && window.matchMedia('(pointer: fine)').matches; }
+function _panelPadPx(){ return _padGate() ? 340 : 0; }
+// B11: rechtes Padding = Footprint des Ebenen-Panels, AM DOM GEMESSEN (nicht hardcoden) und
+// dynamisch: nur wenn aufgeklappt (dann steht die Box im Kartenbild); eingeklappt = nur der
+// schmale Header oben rechts -> 0 (Bogen darf die Fläche nutzen).
+function _ebenenPadPx(){
+  if(!_padGate()) return 0;
+  try{
+    const el=document.getElementById('ebenen');
+    if(!el || !el.classList.contains('open')) return 0;
+    const r=el.getBoundingClientRect();
+    return r.width>0 ? Math.round(Math.max(0, window.innerWidth - r.left)) : 0;
+  }catch(_){ return 0; }
+}
+function _applyPanelPad(){ try{ map.setPadding({left:_panelPadPx(), top:0, right:_ebenenPadPx(), bottom:0}); }catch(_){ } }
 _applyPanelPad();
 window.addEventListener('resize', _applyPanelPad);
 // ── Attribution (dynamic per basemap) ─────────────────────────────────────────
