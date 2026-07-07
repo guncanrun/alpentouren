@@ -65,3 +65,6 @@ privat_template.py
 # Einmalige Delta-Merge-Skripte (haben soiusa_wiki.json befuellt, nicht Teil der Pipeline)
 apply_2c_delta.py
 apply_delta_unbesucht.py
+
+# agent onboarding, local only
+AGENTS.md
