@@ -485,6 +485,27 @@ if "--chairlifts" in _ARGS:
     save("soiusa_osm_chairlifts.geojson", lf, f"Sessellift-Linien (von {before} nach Maske-Clip)")
     sys.exit(0)
 
+# N8: Landesgrenzen EINBAUEN — OSM admin_level=2 (Alpen), Clip +5 km, DP ~20 m; ersetzt
+# die zu grobe NE-10m-soiusa_borders.geojson. Eine Overpass-Query. Persistiert.
+if "--borders" in _ARGS:
+    print("Overpass: Landesgrenzen (admin_level=2, out geom) -> OSM-Ersatz fuer NE-10m...")
+    BORD_Q = (f'[out:json][timeout:300];'
+              f'(way["boundary"="administrative"]["admin_level"="2"]({BBOX}););out geom;')
+    bl = cableway_lines_geojson(query(BORD_Q).get("elements", []))
+    before = len(bl)
+    bl = line_mask_filter(bl, 0.05)   # nur Grenzsegmente nahe der SOIUSA-Region (+~5 km)
+    from shapely.geometry import LineString, mapping
+    simp = []
+    for f in bl:
+        ls = LineString(f["geometry"]["coordinates"]).simplify(0.0002, preserve_topology=False)  # ~20 m
+        if ls.is_empty or len(ls.coords) < 2:
+            continue
+        gj = mapping(ls)
+        gj["coordinates"] = [[round(x, 5), round(y, 5)] for x, y in gj["coordinates"]]
+        simp.append({"type": "Feature", "geometry": gj, "properties": {}})   # Linien tragen keine Props
+    save("soiusa_borders.geojson", simp, f"OSM admin_level=2 (von {before} roh nach Clip+DP)")
+    sys.exit(0)
+
 # Anreise-Workorder B: Sessellift-ZAEHL-Report — NUR zaehlen, KEIN Layer/Persist der Geometrie.
 # Eine Overpass-Query (Server schonen), Clip wie die W4-Linien (line_mask_filter).
 if "--count-chairlifts" in _ARGS:
