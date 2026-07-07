@@ -580,6 +580,21 @@ __HEAD_LIBS__
   #cov .ch span{color:var(--muted);font-weight:400;font-size:11px}
   #cov .cl{max-height:0;overflow-y:auto;transition:max-height .3s ease}
   #cov.open .cl{max-height:var(--cov-max,46vh)}
+  /* P2: dezente Scrollbars + Panel-Scroll darf NIE die Karte zoomen/pannen (contain). */
+  #cov .cl, #panel .body, #ebenen .eb, #about{overscroll-behavior:contain;scroll-behavior:smooth;
+    scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.28) transparent}
+  #cov .cl::-webkit-scrollbar, #panel .body::-webkit-scrollbar, #ebenen .eb::-webkit-scrollbar,
+  #about::-webkit-scrollbar{width:7px;height:7px}
+  #cov .cl::-webkit-scrollbar-thumb, #panel .body::-webkit-scrollbar-thumb,
+  #ebenen .eb::-webkit-scrollbar-thumb, #about::-webkit-scrollbar-thumb{
+    background:rgba(255,255,255,.22);border-radius:4px}
+  #cov .cl::-webkit-scrollbar-thumb:hover, #panel .body::-webkit-scrollbar-thumb:hover,
+  #ebenen .eb::-webkit-scrollbar-thumb:hover, #about::-webkit-scrollbar-thumb:hover{
+    background:rgba(255,255,255,.36)}
+  #cov .cl::-webkit-scrollbar-track, #panel .body::-webkit-scrollbar-track,
+  #ebenen .eb::-webkit-scrollbar-track, #about::-webkit-scrollbar-track{background:transparent}
+  /* P2: Overscroll-Bounce (Feder) — kleine translateY-Auslenkung am Anschlag. */
+  .osb-bounce{transition:transform .2s cubic-bezier(.22,1,.36,1)}
   /* PRIV:START */
   /* ── Tourenliste: eine Zeile pro Tour (Jahr · Gegend · Kategorie-Badge) ── */
   .trow{padding:7px 14px;font-size:var(--fs-ui);cursor:pointer;min-height:var(--row-h);box-sizing:border-box;
@@ -3009,9 +3024,13 @@ function openSts(feat, camMode){   // camMode: undef=Gate(§6a), 'force'=immer f
 // ── Toggle: group labels (fills always on) ────────────────────────────────────
 // sts-fill / sts-line always visible; button toggles only the text labels.
 // UX(1): Ebenen-Zustaende via localStorage persistieren (ueberleben Reload; auch Standalone).
+// P2: dezente Haptik bei Schaltern (nur Android/Chrome mit vibrate; iOS/Desktop = No-op).
+// NUR bei Toggles/Segmenten, NIE bei Karten-Interaktion.
+function _haptic(){ try{ if('vibrate' in navigator) navigator.vibrate(8); }catch(_){ } }
 let _restoring=false;
 function persistToggles(){
   if(_restoring) return;
+  _haptic();   // P2: Layer-Toggle-Feedback (Restore ist durch _restoring ausgenommen)
   try{ const _st={f:_farbungOn,n:_layersOn,b:_bordersOn,p:_peaksOn,h:_hutsOn,s:_passesOn,o:_placesOn,c:_cableOn};
     if(typeof _tracksOn!=='undefined') _st.t=_tracksOn;   // nur Privat (PRIV-Strip laesst _tracksOn im Public weg)
     localStorage.setItem('alpen_toggles', JSON.stringify(_st)); }catch(_){}
@@ -3032,6 +3051,25 @@ function restoreToggles(){
     if(typeof _tracksOn!=='undefined' && st.t===false && _tracksOn) toggleTracks();
   } finally { _restoring=false; }
 }
+// P2: Overscroll-Bounce (Apple-mäßig) am Listenende — dezente Feder, einmal pro Anschlag,
+// kein Scroll-Hijacking, keine Lib. Nur pointer:fine (Touch nutzt natives Overscroll).
+(function(){
+  if(window.matchMedia && !window.matchMedia('(pointer: fine)').matches) return;
+  const SEL='#cov .cl, #panel .body, #ebenen .eb';
+  function bounce(el, dir){
+    if(el._osb) return; el._osb=true;
+    el.classList.add('osb-bounce'); el.style.transform='translateY('+(dir*9)+'px)';
+    setTimeout(()=>{ el.style.transform='translateY(0)';
+      setTimeout(()=>{ el.classList.remove('osb-bounce'); el.style.transform=''; el._osb=false; }, 220); }, 20);
+  }
+  document.addEventListener('wheel', e=>{
+    const el=e.target.closest && e.target.closest(SEL); if(!el) return;
+    if(el.scrollHeight<=el.clientHeight) return;   // nichts zu scrollen -> kein Bounce
+    const atTop=el.scrollTop<=0, atBot=el.scrollTop+el.clientHeight>=el.scrollHeight-1;
+    if(e.deltaY<0 && atTop) bounce(el, 1);
+    else if(e.deltaY>0 && atBot) bounce(el, -1);
+  }, {passive:true});
+})();
 
 let _layersOn=false;
 function toggleLayers(){
@@ -3745,8 +3783,9 @@ function applyTourFilter(){
   _chronoRefilter();                 // Chronik-Jahresleiste/Play folgt F (inkl. Jahr)
   persistFilter();
 }
-function setStrang(s){ FILTER.strang=s; applyTourFilter(); }
+function setStrang(s){ _haptic(); FILTER.strang=s; applyTourFilter(); }
 function togglePerson(id){
+  _haptic();
   const i=FILTER.personen.indexOf(id);
   if(i>=0) FILTER.personen.splice(i,1); else FILTER.personen.push(id);
   applyTourFilter();
