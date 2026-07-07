@@ -150,6 +150,19 @@ else:
         simp = _dp(pts, 1e-4)
         t["track_km"] = round(km, 1)
         t["track_hm"] = int(round(hm / 10) * 10)
+        # Gap-Guard (Fliessband-Warnung): grosser Nachbarpunkt-Sprung in den ROHPUNKTEN deutet
+        # auf einen GPS-Ausreisser/Teleport (Luftlinien-Diagonale im Render). WARN ab > 500 m;
+        # es wird NICHTS automatisch entfernt -- der Track ist dann von Hand zu pruefen/ersetzen.
+        # (Auf den ROHPUNKTEN, nicht dem DP-Ergebnis: DP laesst auf geraden Passagen bewusst
+        #  groessere, legitime Abstaende zwischen zwei Stuetzpunkten.)
+        _gapmax, _gapidx = 0.0, -1
+        for _gi in range(len(pts) - 1):
+            _gd = _hav_m(pts[_gi], pts[_gi + 1])
+            if _gd > _gapmax:
+                _gapmax, _gapidx = _gd, _gi
+        if _gapmax > 500:
+            print(f"[tracks] WARN Tour {t['id']}: Rohpunkt-Sprung {_gapmax:.0f} m bei Punkt "
+                  f"{_gapidx} ({pts[_gapidx][1]:.4f},{pts[_gapidx][0]:.4f}) -> moegl. GPS-Ausreisser")
         # P5: ele (ganze Meter) als 3. Koordinatenwert behalten -> Hoehenprofil-Sparkline.
         # MapLibre nutzt fuer die 2D-Linie nur x/y; der z-Wert wird ignoriert (nur Daten).
         _tfeats.append({"type": "Feature",
