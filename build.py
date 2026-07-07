@@ -998,8 +998,7 @@ __HEAD_LIBS__
 <div id="aboutCard">
   <div class="x" onclick="toggleAboutCard()">&times;</div>
   <h3>&Uuml;ber diese Karte</h3>
-  <!-- PRIV:START --><p>Interaktive 3D-Karte der Alpen: welche <b>Gebirgsgruppen</b> ich besucht habe,
-     eingebettet in die Gesamtstruktur des Gebirges (SOIUSA).</p><!-- PRIV:END -->
+  <!-- PRIV:START --><p>__PT_ABOUT_INTRO__</p><!-- PRIV:END -->
   <p>Die <b>Suddivisione Orografica Internazionale Unificata del Sistema Alpino</b> (SOIUSA)
      ist ein geographisches Klassifizierungssystem der Alpen, entwickelt von
      <b>Sergio Marazzi</b> (Standard 2005).</p>
@@ -3967,6 +3966,7 @@ if not PUBLIC and _PT is not None:
     html = html.replace("__PT_LBL_WEITERE_L__",  _PT.LBL["weitere_long"])
     html = html.replace("__PT_LBL_PERSFILTER__", _PT.LBL["persfilter"])
     html = html.replace("__PT_LBL_BOOKSRC__",    _PT.LBL["book_source"])
+    html = html.replace("__PT_ABOUT_INTRO__",    _PT.ABOUT_INTRO)   # N2
 
 out = HERE / OUT
 out.write_text(html, encoding="utf-8")
