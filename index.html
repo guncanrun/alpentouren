@@ -549,6 +549,7 @@ const OSM_CABLE  = null;
 const OSM_CABLE_LINES = null;   // W4: Seilbahn-Linien (voller Verlauf)
 const OSM_CHAIRLIFTS  = null;    // Anreise-Folgepaket: Sessellift-Linien (chair_lift)
 const BORDERS_GJ = null;
+const GROUP_PEAKS = {"Alpi Bernesi p.d.":[8.12611,46.53735],"Alpi Biellesi e Cusiane":[7.91528,45.63322],"Alpi Carniche":[12.8832,46.60732],"Alpi Giulie":[13.83658,46.3783],"Alpi Glaronesi p,d,":[8.91486,46.81115],"Alpi Marittime":[7.3054,44.17772],"Alpi Nord-orientali di Stiria":[15.14245,47.61824],"Alpi Orobie":[10.01096,46.07268],"Alpi Pusteresi (Defereggen Alpen)":[12.14025,46.91085],"Alpi Sarentine (Sarntaler Alpen)":[11.2766,46.73725],"Alpi Scistose Salisburghesi":[12.91115,47.33818],"Alpi Ticinesi e del Verbano":[8.46843,46.4116],"Alpi Urane":[8.42109,46.64345],"Alpi Urano-Glaronesi":[8.76953,46.74268],"Alpi Venoste (Ötztaler Alpen)":[10.86728,46.88524],"Alpi del Beaufortain":[6.68872,45.6431],"Alpi del Bernina":[9.90805,46.38243],"Alpi del Gran Paradiso":[7.2672,45.51782],"Alpi del Grand Combin":[7.29922,45.93758],"Alpi del Marguareis":[7.68448,44.17394],"Alpi del Mischabel e del Weissmies":[7.85887,46.09391],"Alpi del Moncenisio":[6.7682,45.15975],"Alpi del Monginevro":[6.78751,44.82229],"Alpi del Monte Bianco":[6.86517,45.83271],"Alpi del Monte Leone e del San Gottardo":[8.11019,46.24947],"Alpi del Monte Rosa":[7.86676,45.93692],"Alpi del Monviso":[7.08999,44.66744],"Alpi del Platta":[9.56167,46.48722],"Alpi del Plessur":[9.6139,46.73783],"Alpi del Silvretta, del Samnaun e del Verwall":[10.07144,46.79897],"Alpi del Wallgau":[11.19143,47.54438],"Alpi del Weisshorn e del Cervino":[7.71607,46.10125],"Alpi dell'Adamello e della Presanella":[10.66412,46.21993],"Alpi dell'Adula":[9.04021,46.49375],"Alpi dell'Albula":[9.87279,46.6213],"Alpi dell'Algovia":[10.35566,47.31155],"Alpi dell'Ammergau":[10.88023,47.43265],"Alpi dell'Ennstal":[14.63261,47.56185],"Alpi dell'Ortles":[10.54493,46.5091],"Alpi della Grande Sassière e del Rutor":[6.99984,45.505],"Alpi della Gurktal":[13.92818,46.95204],"Alpi della Lavanttal":[14.56722,47.06362],"Alpi della Lechtal":[10.47823,47.17427],"Alpi della Val Müstair":[10.40329,46.70553],"Alpi della Val di Non":[10.8521,46.4393],"Alpi della Vanoise e del Grand Arc":[6.82756,45.40514],"Alpi della Zillertal":[11.72759,46.9724],"Alpi delle Grandes Rousses e Aiguilles d'Arves":[6.13559,45.13777],"Alpi dello Stubai":[11.1538,46.96431],"Alpi di Berchtesgaden":[13.06245,47.42033],"Alpi di Brandenberg":[11.76481,47.45845],"Alpi di Kamnik e della Savinja":[14.5354,46.35713],"Alpi di Kitzbühel":[11.9826,47.25149],"Alpi di Lanzo e dell'Alta Moriana":[7.14504,45.32816],"Alpi di Livigno":[10.28508,46.41695],"Alpi di Provenza":[6.50461,44.28622],"Alpi di Vaud":[7.19037,46.30442],"Alti Tauri (Hohe Tauern)":[12.69388,47.07455],"Caravanche":[14.17398,46.434],"Catena delle Aiguilles Rouges":[6.87382,45.98759],"Catena di Belledonne":[5.99129,45.17096],"Dolomiti Feltrine e delle Pale di San Martino":[11.82974,46.28991],"Dolomiti di Brenta":[10.89991,46.17946],"Dolomiti di Fiemme":[11.68399,46.26076],"Dolomiti di Gardena e di Fassa":[11.85135,46.43455],"Dolomiti di Sesto, di Braies e d'Ampezzo":[12.3176,46.66797],"Dolomiti di Zoldo":[12.13473,46.41998],"Gailtaler Alpen (Alpi della Gail)":[12.81159,46.76672],"Kreuzeckgruppe":[13.15829,46.89499],"Massiccio degli Écrins":[6.35955,44.92216],"Massiccio del Champsaur":[6.18982,44.73587],"Massiccio del Taillefer":[5.92424,45.03936],"Massiccio dell'Embrunais":[6.4143,44.76246],"Monti Totes":[14.06325,47.71694],"Monti del Dachstein":[13.60567,47.47519],"Monti del Kaiser":[12.30253,47.56164],"Monti del Karwendel":[11.43756,47.41132],"Monti del Salzkammergut":[13.48066,47.62332],"Monti delle Lechquellen":[10.12644,47.16498],"Monti dello Stein":[12.73383,47.47504],"Monti di Mieming e del Wetterstein":[10.9863,47.42121],"Monti di Tennen":[13.22638,47.49913],"Monti orientali di Gap":[6.3661,44.64942],"Prealpi Appenzellesi e Sangallesi":[9.34324,47.24944],"Prealpi Bellunesi":[12.40334,46.22743],"Prealpi Bergamasche":[9.81582,45.93459],"Prealpi Bernesi":[7.83517,46.55728],"Prealpi Bresciane":[10.39298,45.86036],"Prealpi Carniche":[12.42106,46.34232],"Prealpi Comasche":[9.14466,46.12361],"Prealpi Gardesane":[10.69833,45.93859],"Prealpi Lucernesi e Untervaldesi":[8.47089,46.85636],"Prealpi Svittesi e Urane":[8.79173,46.88798],"Prealpi dei Bauges":[6.22815,45.68171],"Prealpi dei Bornes":[6.55595,45.95576],"Prealpi del Devoluy":[5.83946,44.77528],"Prealpi del Giffre":[6.85253,46.02483],"Prealpi del Tux":[11.63059,47.14398],"Prealpi del Vercors":[5.5267,44.86974],"Prealpi della Chartreuse":[5.78815,45.28768],"Prealpi dello Chablais":[6.77747,46.16849],"Prealpi di Bregenz":[9.87995,47.26527],"Prealpi di Digne":[6.1942,44.26285],"Prealpi di Vaud e Friburgo":[7.14837,46.5285],"Prealpi nord-occidentali di Stiria":[14.80775,47.0728],"Prealpi occidentali di Gap":[5.96171,44.50855],"Prealpi sud-occidentali di Stiria":[14.97195,46.78692],"Prealpi vicentine":[11.46803,45.99769],"Rätikon":[9.70736,47.05385],"Tauri di Radstadt":[13.39364,47.16248],"Tauri di Schladming e di Murau":[13.76064,47.26627],"Tauri di Seckau":[14.63608,47.37475],"Tauri di Wölz e di Rottenmann":[14.12728,47.25995]};   // N3: STS -> [lon,lat] des höchsten Gipfels (Build-time, eindeutig)
 const PRIV = false;
 const TOUR_LAYERS = PRIV ? ['t-hit','t-cluster-halo'] : [];   // tour markers only exist in the private build (Hit-Kreis + Cluster)
 const CNAMES = {AT:'Österreich',CH:'Schweiz',DE:'Deutschland',
@@ -1637,6 +1638,23 @@ function resetGroupPeaks(){
 }
 // P3b §10a: Gipfel-Eintrag im Steckbrief anklicken -> flyTo + kurzer Puls auf dem Punkt.
 // Koordinate aus der geladenen osm-peaks-Quelle (Viewport) oder dem Inline-OSM_PEAKS (Standalone).
+// Abnahme-Fix Befund 1: Zoom-Deckel ~13,5 (Gipfel im Gebirgskontext, Track/Marker sichtbar) —
+// nie darüber reinzoomen; wer schon näher dran ist, behält den Zoom (Math.max). Panel-Offset
+// via padding. Pitch moderat (≤30). Puls-Marker erst NACH Ankunft (moveend). Ein Kern für alle.
+function _peakPad(){
+  const panelOpen=document.getElementById('panel').classList.contains('open');
+  const mobile=window.innerWidth<=640;
+  return !panelOpen ? {left:60,right:60,top:70,bottom:90}
+    : mobile ? {left:40,right:40,top:70,bottom:Math.round(window.innerHeight*0.5)}
+             : {left:320,right:70,top:80,bottom:90};
+}
+function _focusPeakAt(c){
+  if(!c || c.length<2) return;
+  saveUndo();
+  map.once('moveend', ()=>{ pulseGipfel(c); });
+  map.flyTo({center:c, zoom:Math.max(map.getZoom(),13.5), pitch:Math.min(map.getPitch(),30), padding:_peakPad(), essential:true});
+  showUndoChip();
+}
 function focusGipfel(name){
   if(!name) return;
   let feat=null;
@@ -1644,20 +1662,20 @@ function focusGipfel(name){
   if(!feat && typeof OSM_PEAKS!=='undefined' && OSM_PEAKS && OSM_PEAKS.features)
     feat=OSM_PEAKS.features.find(f=>f.properties && f.properties.name===name);
   if(!feat||!feat.geometry) return;
-  const c=feat.geometry.coordinates.slice(0,2);
-  // Abnahme-Fix Befund 1: Zoom-Deckel ~13,5 (Gipfel im Gebirgskontext, Track/Marker sichtbar) —
-  // nie darüber reinzoomen; wer schon näher dran ist, behält den Zoom (Math.max). Panel-Offset
-  // via padding (Gipfel im sichtbaren Bereich rechts vom offenen Panel bzw. über dem Bottom-Sheet).
-  // Pitch moderat (≤30, nicht eskalieren). Puls-Marker erst NACH Ankunft (moveend) -> im Blick.
-  const tz=Math.max(map.getZoom(), 13.5);
-  const panelOpen=document.getElementById('panel').classList.contains('open');
-  const mobile=window.innerWidth<=640;
-  const pad = !panelOpen ? {left:60,right:60,top:70,bottom:90}
-    : mobile ? {left:40,right:40,top:70,bottom:Math.round(window.innerHeight*0.5)}
-             : {left:320,right:70,top:80,bottom:90};
+  _focusPeakAt(feat.geometry.coordinates.slice(0,2));
+}
+// N3: „Höchster Berg" einer Gruppe — eindeutige Koordinate (GROUP_PEAKS, Build-time via
+// Peak×Polygon-Containment). Funktioniert für ALLE Gruppen; Gruppen ohne Gipfel ≥2000 m
+// (z. B. Sonntagshorn 1961) fallen auf fitBounds der Gruppe zurück.
+function focusGroupPeak(sts){
+  const c = (typeof GROUP_PEAKS!=='undefined' && GROUP_PEAKS) ? GROUP_PEAKS[sts] : null;
+  if(c && c.length===2){ _focusPeakAt(c); return; }
+  const f=SOIUSA_STS.features.find(x=>x.properties.STS===sts);
+  if(!f||!f.geometry) return;
+  let minx=180,miny=90,maxx=-180,maxy=-90;
+  (function walk(a){ if(typeof a[0]==='number'){ if(a[0]<minx)minx=a[0]; if(a[0]>maxx)maxx=a[0]; if(a[1]<miny)miny=a[1]; if(a[1]>maxy)maxy=a[1]; } else a.forEach(walk); })(f.geometry.coordinates);
   saveUndo();
-  map.once('moveend', ()=>{ pulseGipfel(c); });
-  map.flyTo({center:c, zoom:tz, pitch:Math.min(map.getPitch(),30), padding:pad, essential:true});
+  map.fitBounds([[minx,miny],[maxx,maxy]], {padding:_peakPad(), pitch:Math.min(map.getPitch(),30), essential:true});
   showUndoChip();
 }
 let _gpRAF=null;
@@ -1677,8 +1695,10 @@ function pulseGipfel(c){
     _gpRAF=requestAnimationFrame(step);
   }catch(_){}
 }
-// Delegierter Klick auf Gipfel-Einträge im Steckbrief (beide Tabs) -> focusGipfel.
+// Delegierter Klick auf Gipfel-Einträge im Steckbrief. „Höchster Berg" (.gip-hi) läuft
+// über die eindeutige Gruppen-Koordinate (N3); Tour-Gipfel (.gip) weiter über den Namen.
 (function(){ const p=document.getElementById('panel'); if(p) p.addEventListener('click', e=>{
+  const gh=e.target.closest&&e.target.closest('.gip-hi'); if(gh&&gh.dataset.sts){ focusGroupPeak(gh.dataset.sts); return; }
   const g=e.target.closest&&e.target.closest('.gip'); if(g&&g.dataset.gip) focusGipfel(g.dataset.gip); }); })();
 
 // ── featBbox: handles Polygon, MultiPolygon, GeometryCollection ───────────────
@@ -1738,9 +1758,10 @@ function steckbriefHtml(stsName, props){
   const settore = props.settore || '';
   const rows = [];
   if(w && w.hoechster_berg){
-    const _bn=String(w.hoechster_berg).replace(/\s*\(.*?\)\s*/g,'').trim();   // OSM-Name ohne Klammerzusatz
-    const _da=_escp(_bn).replace(/"/g,'&quot;');
-    rows.push(['Höchster Berg','<b class="gip" data-gip="'+_da+'" title="Auf der Karte zeigen">'+_escp(w.hoechster_berg)+
+    // N3: eindeutiger Lookup per Gruppe (Koordinate aus GROUP_PEAKS statt Namens-String —
+    // Namens-Dubletten wie „Krottenkopf" 2× sonst falsch/tot). data-sts trägt die Gruppe.
+    const _ds=_escp(stsName).replace(/"/g,'&quot;');
+    rows.push(['Höchster Berg','<b class="gip-hi" data-sts="'+_ds+'" title="Auf der Karte zeigen">'+_escp(w.hoechster_berg)+
       '</b>'+(w.hoehe_m?' · '+w.hoehe_m+' m':'')]);
   }
   if(settore) rows.push(['Lage', settore+' (Settore)']);

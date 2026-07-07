@@ -318,6 +318,57 @@ try:
 except FileNotFoundError:
     huts_wiki_json = '{"huetten":{}}'
 
+# N3: Höchster-Gipfel-Koordinate je SOIUSA-Gruppe (Peak×Polygon-Containment + Namensabgleich).
+# Eindeutig statt Namens-String (Dubletten „Krottenkopf" 2x). Beide Builds (neutrale Geodaten).
+# Das Containment (131 Polygone × ~13k Peaks) ist teuer -> Ergebnis in soiusa_group_peaks.json
+# cachen (getrackt); nur neu rechnen, wenn eine Eingabe neuer als der Cache ist.
+group_peaks = {}
+_gp_cache = HERE / "soiusa_group_peaks.json"
+_gp_inputs = [HERE / "soiusa_osm_peaks.geojson", HERE / "soiusa_sts_colored.geojson", HERE / "soiusa_wiki.json"]
+_gp_fresh = (_gp_cache.exists() and all(p.exists() for p in _gp_inputs)
+             and _gp_cache.stat().st_mtime >= max(p.stat().st_mtime for p in _gp_inputs))
+if _gp_fresh:
+    group_peaks = json.load(_gp_cache.open(encoding="utf-8"))
+else:
+    try:
+        import re as _re3, unicodedata as _ud3
+        from shapely.geometry import shape as _shape3, Point as _Point3
+        from shapely.prepared import prep as _prep3
+
+        def _pnorm(s):
+            s = _re3.sub(r"\s*\(.*?\)\s*", "", s or "").strip().lower()
+            s = "".join(c for c in _ud3.normalize("NFD", s) if _ud3.category(c) != "Mn")
+            return _re3.sub(r"[^a-z0-9]", "", s)
+
+        _wg3 = json.loads(wiki_json).get("gruppen", {})
+        _pk3 = json.load((HERE / "soiusa_osm_peaks.geojson").open(encoding="utf-8"))["features"]
+        _sts3 = json.load((HERE / "soiusa_sts_colored.geojson").open(encoding="utf-8"))["features"]
+        for _gf in _sts3:
+            _S = _gf["properties"].get("STS")
+            if not _S or not _gf.get("geometry"):
+                continue
+            _pp = _prep3(_shape3(_gf["geometry"]))
+            _in = [f for f in _pk3 if _pp.contains(_Point3(f["geometry"]["coordinates"][:2]))]
+            if not _in:
+                continue
+            _hb = (_wg3.get(_S) or {}).get("hoechster_berg")
+            _pick = None
+            if _hb:
+                _nb = _pnorm(_hb)
+                _cand = [f for f in _in if _nb and (_nb in _pnorm(f["properties"].get("name", ""))
+                                                    or _pnorm(f["properties"].get("name", "")) in _nb)]
+                if _cand:
+                    _pick = max(_cand, key=lambda f: f["properties"].get("ele", 0))
+            if not _pick:
+                _pick = max(_in, key=lambda f: f["properties"].get("ele", 0))
+            _c = _pick["geometry"]["coordinates"][:2]
+            group_peaks[_S] = [round(_c[0], 5), round(_c[1], 5)]
+        _gp_cache.write_text(json.dumps(group_peaks, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        print(f"  N3: {len(group_peaks)} Gruppen (neu berechnet -> soiusa_group_peaks.json)")
+    except Exception as _e:  # noqa: BLE001
+        print(f"[group_peaks] WARN {_e} -- Höchster-Berg-Link nutzt Fallback")
+group_peaks_json = json.dumps(group_peaks, ensure_ascii=False, separators=(",", ":"))
+
 sts_count = len(json.loads(sts_json)["features"])
 hl_count  = len(json.loads(highlights_json)["features"])
 
@@ -1127,6 +1178,7 @@ const OSM_CABLE  = __OSM_CABLE__;
 const OSM_CABLE_LINES = __OSM_CABLE_LINES__;   // W4: Seilbahn-Linien (voller Verlauf)
 const OSM_CHAIRLIFTS  = __OSM_CHAIRLIFTS__;    // Anreise-Folgepaket: Sessellift-Linien (chair_lift)
 const BORDERS_GJ = __BORDERS__;
+const GROUP_PEAKS = __GROUP_PEAKS__;   // N3: STS -> [lon,lat] des höchsten Gipfels (Build-time, eindeutig)
 const PRIV = __PRIV__;
 const TOUR_LAYERS = PRIV ? ['t-hit','t-cluster-halo'] : [];   // tour markers only exist in the private build (Hit-Kreis + Cluster)
 const CNAMES = {AT:'Österreich',CH:'Schweiz',DE:'Deutschland',
@@ -2387,6 +2439,23 @@ function resetGroupPeaks(){
 }
 // P3b §10a: Gipfel-Eintrag im Steckbrief anklicken -> flyTo + kurzer Puls auf dem Punkt.
 // Koordinate aus der geladenen osm-peaks-Quelle (Viewport) oder dem Inline-OSM_PEAKS (Standalone).
+// Abnahme-Fix Befund 1: Zoom-Deckel ~13,5 (Gipfel im Gebirgskontext, Track/Marker sichtbar) —
+// nie darüber reinzoomen; wer schon näher dran ist, behält den Zoom (Math.max). Panel-Offset
+// via padding. Pitch moderat (≤30). Puls-Marker erst NACH Ankunft (moveend). Ein Kern für alle.
+function _peakPad(){
+  const panelOpen=document.getElementById('panel').classList.contains('open');
+  const mobile=window.innerWidth<=640;
+  return !panelOpen ? {left:60,right:60,top:70,bottom:90}
+    : mobile ? {left:40,right:40,top:70,bottom:Math.round(window.innerHeight*0.5)}
+             : {left:320,right:70,top:80,bottom:90};
+}
+function _focusPeakAt(c){
+  if(!c || c.length<2) return;
+  saveUndo();
+  map.once('moveend', ()=>{ pulseGipfel(c); });
+  map.flyTo({center:c, zoom:Math.max(map.getZoom(),13.5), pitch:Math.min(map.getPitch(),30), padding:_peakPad(), essential:true});
+  showUndoChip();
+}
 function focusGipfel(name){
   if(!name) return;
   let feat=null;
@@ -2394,20 +2463,20 @@ function focusGipfel(name){
   if(!feat && typeof OSM_PEAKS!=='undefined' && OSM_PEAKS && OSM_PEAKS.features)
     feat=OSM_PEAKS.features.find(f=>f.properties && f.properties.name===name);
   if(!feat||!feat.geometry) return;
-  const c=feat.geometry.coordinates.slice(0,2);
-  // Abnahme-Fix Befund 1: Zoom-Deckel ~13,5 (Gipfel im Gebirgskontext, Track/Marker sichtbar) —
-  // nie darüber reinzoomen; wer schon näher dran ist, behält den Zoom (Math.max). Panel-Offset
-  // via padding (Gipfel im sichtbaren Bereich rechts vom offenen Panel bzw. über dem Bottom-Sheet).
-  // Pitch moderat (≤30, nicht eskalieren). Puls-Marker erst NACH Ankunft (moveend) -> im Blick.
-  const tz=Math.max(map.getZoom(), 13.5);
-  const panelOpen=document.getElementById('panel').classList.contains('open');
-  const mobile=window.innerWidth<=640;
-  const pad = !panelOpen ? {left:60,right:60,top:70,bottom:90}
-    : mobile ? {left:40,right:40,top:70,bottom:Math.round(window.innerHeight*0.5)}
-             : {left:320,right:70,top:80,bottom:90};
+  _focusPeakAt(feat.geometry.coordinates.slice(0,2));
+}
+// N3: „Höchster Berg" einer Gruppe — eindeutige Koordinate (GROUP_PEAKS, Build-time via
+// Peak×Polygon-Containment). Funktioniert für ALLE Gruppen; Gruppen ohne Gipfel ≥2000 m
+// (z. B. Sonntagshorn 1961) fallen auf fitBounds der Gruppe zurück.
+function focusGroupPeak(sts){
+  const c = (typeof GROUP_PEAKS!=='undefined' && GROUP_PEAKS) ? GROUP_PEAKS[sts] : null;
+  if(c && c.length===2){ _focusPeakAt(c); return; }
+  const f=SOIUSA_STS.features.find(x=>x.properties.STS===sts);
+  if(!f||!f.geometry) return;
+  let minx=180,miny=90,maxx=-180,maxy=-90;
+  (function walk(a){ if(typeof a[0]==='number'){ if(a[0]<minx)minx=a[0]; if(a[0]>maxx)maxx=a[0]; if(a[1]<miny)miny=a[1]; if(a[1]>maxy)maxy=a[1]; } else a.forEach(walk); })(f.geometry.coordinates);
   saveUndo();
-  map.once('moveend', ()=>{ pulseGipfel(c); });
-  map.flyTo({center:c, zoom:tz, pitch:Math.min(map.getPitch(),30), padding:pad, essential:true});
+  map.fitBounds([[minx,miny],[maxx,maxy]], {padding:_peakPad(), pitch:Math.min(map.getPitch(),30), essential:true});
   showUndoChip();
 }
 let _gpRAF=null;
@@ -2427,8 +2496,10 @@ function pulseGipfel(c){
     _gpRAF=requestAnimationFrame(step);
   }catch(_){}
 }
-// Delegierter Klick auf Gipfel-Einträge im Steckbrief (beide Tabs) -> focusGipfel.
+// Delegierter Klick auf Gipfel-Einträge im Steckbrief. „Höchster Berg" (.gip-hi) läuft
+// über die eindeutige Gruppen-Koordinate (N3); Tour-Gipfel (.gip) weiter über den Namen.
 (function(){ const p=document.getElementById('panel'); if(p) p.addEventListener('click', e=>{
+  const gh=e.target.closest&&e.target.closest('.gip-hi'); if(gh&&gh.dataset.sts){ focusGroupPeak(gh.dataset.sts); return; }
   const g=e.target.closest&&e.target.closest('.gip'); if(g&&g.dataset.gip) focusGipfel(g.dataset.gip); }); })();
 
 // ── featBbox: handles Polygon, MultiPolygon, GeometryCollection ───────────────
@@ -2492,9 +2563,10 @@ function steckbriefHtml(stsName, props){
   const settore = props.settore || '';
   const rows = [];
   if(w && w.hoechster_berg){
-    const _bn=String(w.hoechster_berg).replace(/\s*\(.*?\)\s*/g,'').trim();   // OSM-Name ohne Klammerzusatz
-    const _da=_escp(_bn).replace(/"/g,'&quot;');
-    rows.push(['Höchster Berg','<b class="gip" data-gip="'+_da+'" title="Auf der Karte zeigen">'+_escp(w.hoechster_berg)+
+    // N3: eindeutiger Lookup per Gruppe (Koordinate aus GROUP_PEAKS statt Namens-String —
+    // Namens-Dubletten wie „Krottenkopf" 2× sonst falsch/tot). data-sts trägt die Gruppe.
+    const _ds=_escp(stsName).replace(/"/g,'&quot;');
+    rows.push(['Höchster Berg','<b class="gip-hi" data-sts="'+_ds+'" title="Auf der Karte zeigen">'+_escp(w.hoechster_berg)+
       '</b>'+(w.hoehe_m?' · '+w.hoehe_m+' m':'')]);
   }
   if(settore) rows.push(['Lage', settore+' (Settore)']);
@@ -3930,6 +4002,7 @@ html = html.replace("__OSM_CABLE__",  osm_cable)
 html = html.replace("__OSM_CABLE_LINES__", osm_cable_lines)
 html = html.replace("__OSM_CHAIRLIFTS__", osm_chairlifts)
 html = html.replace("__BORDERS__",    borders_gj)
+html = html.replace("__GROUP_PEAKS__", group_peaks_json)
 html = html.replace("__HUT_VISITS__", hut_visits_json)   # §1: Besuchsjahre je OSM-Hütte (Privat)
 html = html.replace("__HEAD_LIBS__",  head_libs)   # zuletzt (Lib-Inhalt nicht rescannen)
 
