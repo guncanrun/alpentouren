@@ -411,6 +411,9 @@ __HEAD_LIBS__
     --ctl:32px;        /* Zeilen-Controls / Schliessen-X */
     --ctl-round:40px;  /* runde Aktions-Icons (Info/Home/Suche): Maus-freundlich */
     --ctl-right:12px;  /* gemeinsamer Rechtsabstand der Controls unten rechts (W4 §2) */
+    /* P1 (Befund 12): gemeinsame Panel-Breite -> Title-Card + Touren-Panel/Steckbrief
+       fluchten (Kanten). --radius als konsolidiertes Token (Streuwerte 12/14 px). */
+    --panel-w:310px; --ebenen-w:176px; --radius:14px;
   }
   /* Touch (Tablet/Handy): grosse, komfortable Ziele. Desktop bleibt kompakt. */
   @media (pointer: coarse){
@@ -420,15 +423,12 @@ __HEAD_LIBS__
      Groessere Schrift/Controls + ~20% breitere Panels/Karten/Title. 16" (<2200px) und
      Touch (coarse) bleiben unveraendert. */
   @media (min-width: 2200px) and (pointer: fine){
-    :root{ --row-h:38px; --fs-ui:15.5px; --fs-popup:15.5px; --ctl:36px; --ctl-round:46px; }
-    #title{max-width:372px}
+    :root{ --row-h:38px; --fs-ui:15.5px; --fs-popup:15.5px; --ctl:36px; --ctl-round:46px;
+           --panel-w:372px; --ebenen-w:200px; }   /* P1: ~20% breiter am 27" */
     #title h1{font-size:24px}
     #title p{font-size:15.5px}
     #title .kpi b{font-size:26px}
-    #panel{width:342px}
-    #ebenen{width:278px}
     #legend{width:224px}
-    #cov{width:324px}
     #about{width:min(432px,calc(100vw - 32px))}
     .hut-pop{max-width:276px}
   }
@@ -459,13 +459,14 @@ __HEAD_LIBS__
   body.tilted .maplibregl-ctrl-scale{display:none}   /* Pitch>30°: Maßstab tiefenabh. falsch */
 
   /* ── Title card ── */
-  #title{position:absolute;top:16px;left:16px;z-index:5;max-width:310px;
+  #title{position:absolute;top:16px;left:16px;z-index:5;width:var(--panel-w);max-width:calc(100vw - 32px);
     background:var(--panel);backdrop-filter:blur(8px);border:1px solid var(--line);
     border-radius:14px;padding:13px 15px;box-shadow:0 8px 30px rgba(0,0,0,.5)}
   #title h1{margin:0;font-size:20px;letter-spacing:.2px}
   #title p{margin:6px 0 0;font-size:13px;color:var(--muted);line-height:1.45}
   /* Politur P1.2: Mini-Zeile — Logo · Titel · Mini-KPI · ▾ (nur im mini-Zustand sichtbar) */
   #title.mini{padding:9px 13px}
+  #title.mini{width:auto}   /* P1: eingeklappt auf Inhalt schrumpfen (Kanten-Flucht gilt der aufgeklappten Card) */
   #title.mini > *:not(#titleMini){display:none}
   #title:not(.mini) #titleMini{display:none}
   #title:not(.mini) h1{cursor:pointer}   /* Befund 5: Titel-Klick klappt ein */
@@ -521,7 +522,7 @@ __HEAD_LIBS__
   .btn:hover{border-color:rgba(255,255,255,.3)}
 
   /* ── Detail panel ── */
-  #panel{position:absolute;top:174px;left:16px;z-index:7;width:285px;
+  #panel{position:absolute;top:174px;left:16px;z-index:7;width:var(--panel-w);
     background:var(--panel);backdrop-filter:blur(8px);border:1px solid var(--line);
     border-radius:14px;padding:0;box-shadow:0 8px 30px rgba(0,0,0,.5);
     transform:translateX(-120%);transition:transform .35s cubic-bezier(.2,.8,.2,1);overflow:hidden}
@@ -530,7 +531,7 @@ __HEAD_LIBS__
   #panel .yr{font-size:11px;color:var(--accent2);font-weight:600;letter-spacing:.5px}
   #panel h2{margin:3px 0 2px;font-size:16px;line-height:1.2}
   #panel .gegend{font-size:10.5px;color:var(--muted)}
-  #panel .body{padding:11px 14px 14px;font-size:14px;line-height:1.55;max-height:58vh;overflow-y:auto;
+  #panel .body{padding:11px 14px 14px;font-size:15px;line-height:1.5;max-height:58vh;overflow-y:auto;   /* P1/Review §5: Grundschrift +1pt */
     -webkit-overflow-scrolling:touch}
   #panel .sec{margin:0 0 10px}
   #panel .sec h3{margin:0 0 4px;font-size:9.5px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
@@ -570,7 +571,7 @@ __HEAD_LIBS__
   /* ── Coverage list (default collapsed) ── */
   /* #cov: Höhe bis knapp über die Chronoleiste (JS sizeCov -> --cov-max), damit die
      Tourenliste maximal viele Zeilen zeigt; harte vh-Kappe als Fallback. */
-  #cov{position:absolute;bottom:calc(var(--row-h) + 54px);left:16px;z-index:5;width:288px;
+  #cov{position:absolute;bottom:calc(var(--row-h) + 54px);left:16px;z-index:5;width:var(--panel-w);
     max-height:calc(100vh - 130px);
     background:var(--panel);backdrop-filter:blur(8px);border:1px solid var(--line);
     border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.45);overflow:hidden}
@@ -677,7 +678,7 @@ __HEAD_LIBS__
   #tourFilter .tf-tracks .tf-eye{width:15px;height:15px;fill:none;stroke:var(--muted);stroke-width:1.3;flex:0 0 auto}
   @media (pointer: coarse){ #tourFilter .tf-tracks{min-height:var(--row-h)} }
   /* ── P2: Master-Detail — Steckbrief nutzt (Desktop, privat) die Tourenlisten-Position ── */
-  #panel.as-cov{top:auto;bottom:calc(var(--row-h) + 54px);left:16px;width:288px;
+  #panel.as-cov{top:auto;bottom:calc(var(--row-h) + 54px);left:16px;width:var(--panel-w);
     max-height:calc(100vh - 130px);display:flex;flex-direction:column}
   #panel.as-cov .body{max-height:none;flex:1 1 auto;min-height:0}
   #panel .pback{display:none;align-items:center;gap:7px;padding:8px 13px 7px;cursor:pointer;
@@ -693,7 +694,7 @@ __HEAD_LIBS__
   .tcard-h .tc-geb{flex:1;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .tcard-h .tc-caret{color:var(--muted);transition:transform .25s;font-size:.85em;flex:0 0 auto}
   .tcard.open .tc-caret{transform:rotate(180deg)}
-  .tcard-b{display:none;padding:2px 11px 10px;font-size:13px;line-height:1.5}
+  .tcard-b{display:none;padding:2px 11px 10px;font-size:14px;line-height:1.5}   /* P1: +1pt */
   .tcard.open .tcard-b{display:block}
   .tcard-b .tc-row{margin:5px 0}
   .tcard-b .tc-k{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:1px}
@@ -787,7 +788,7 @@ __HEAD_LIBS__
     border:1px solid var(--accent2);font-size:11px;font-style:italic;font-weight:700}
 
   /* ── Ebenen-Panel (Toggle-Switches + Legende) ── */
-  #ebenen{position:absolute;top:64px;right:16px;z-index:6;width:196px;   /* Politur P1.5: schmaler (eher lang) */
+  #ebenen{position:absolute;top:64px;right:16px;z-index:6;width:var(--ebenen-w);   /* P1: --ebenen-w (176px), Kanten/Touch ok */
     background:var(--panel);backdrop-filter:blur(8px);border:1px solid var(--line);
     border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.5);overflow:hidden}
   #ebenen .eh{padding:9px 15px;font-size:var(--fs-ui);font-weight:600;cursor:pointer;min-height:var(--row-h);
@@ -1340,7 +1341,12 @@ const map = new maplibregl.Map({
 // Touren-Panel (left) und dem rechten Ebenen-Panel (right). Nur Desktop (Maus + breit);
 // Tablet/Mobile (Bottom-Sheet) unverändert. flyTo/fitBounds mit eigenem padding überschreiben.
 function _padGate(){ return window.innerWidth > 900 && window.matchMedia('(pointer: fine)').matches; }
-function _panelPadPx(){ return _padGate() ? 340 : 0; }
+// P1: linkes Padding = Footprint des Touren-Panels am DOM (folgt --panel-w automatisch).
+function _panelPadPx(){
+  if(!_padGate()) return 0;
+  try{ const el=document.getElementById('cov'); if(el){ const r=el.getBoundingClientRect(); if(r.width>0) return Math.round(r.right + 12); } }catch(_){}
+  return 340;
+}
 // B11: rechtes Padding = Footprint des Ebenen-Panels, AM DOM GEMESSEN (nicht hardcoden) und
 // dynamisch: nur wenn aufgeklappt (dann steht die Box im Kartenbild); eingeklappt = nur der
 // schmale Header oben rechts -> 0 (Bogen darf die Fläche nutzen).
