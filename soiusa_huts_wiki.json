@@ -9238,6 +9238,16 @@
    "web": "http://www.lavarella.it/",
    "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/Lavarellah%C3%BCtte.JPG/330px-Lavarellah%C3%BCtte.JPG",
    "img_attr": "The original uploader was Alex1011 at German Wikipedia. / Public domain"
+  },
+  "Rifugio Gardeccia": {
+   "wiki": "https://it.wikipedia.org/wiki/Rifugio_Gardeccia",
+   "ele": 1949,
+   "web": "http://www.gardeccia.it",
+   "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Rifugio_Gardeccia_2.jpg/330px-Rifugio_Gardeccia_2.jpg",
+   "img_attr": "Syrio / CC BY-SA 4.0",
+   "sb_d": 3136,
+   "sb_n": "König Laurin II - Re Laurino II",
+   "sb_t": "gondola"
   }
  }
 }
