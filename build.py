@@ -462,6 +462,7 @@ __HEAD_LIBS__
   .pk-pop .pk-ele{color:var(--muted);font-size:11px;margin-top:1px}
   .pk-pop .pk-grp{margin-top:6px;padding-top:5px;border-top:1px solid var(--line);color:var(--accent2);cursor:pointer;font-size:11.5px}
   .pk-pop .pk-grp:hover{text-decoration:underline}
+  .lift-pop{font-size:11.5px;font-weight:600;color:var(--txt)}   /* N4: Sessellift-Name */
   #titleMini{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;max-width:calc(100vw - 60px)}
   #titleMini .tm-logo{color:var(--accent);font-size:13px;flex:0 0 auto}
   #titleMini .tm-name{font-weight:700;font-size:14px;white-space:nowrap;flex:0 0 auto}
@@ -592,10 +593,15 @@ __HEAD_LIBS__
   #cov.pers-open .tf-perstoggle .tf-caret{transform:rotate(180deg)}
   #cov:not(.pers-open) .tf-chips{display:none}
   /* Politur P1.4: Filter-Block als Ganzes einklappbar („Filter ▾"); Bilanzzeile bleibt sichtbar */
+  /* N5: Filter-Aufklapper klar als bedienbar (Personen-Icon + Akzent + Button-Optik). */
   .tf-filterhead{display:flex;align-items:center;justify-content:space-between;gap:8px;
-    padding:3px 2px 5px;cursor:pointer;font-size:12px;font-weight:600;color:var(--txt);
-    min-height:26px;touch-action:manipulation;user-select:none}
-  .tf-filterhead .tf-caret{transition:transform .25s;font-size:.85em;color:var(--muted)}
+    padding:5px 9px;margin:1px 0 3px;cursor:pointer;font-size:12px;font-weight:600;color:var(--accent);
+    background:rgba(255,178,77,.09);border:1px solid rgba(255,178,77,.32);border-radius:8px;
+    min-height:30px;touch-action:manipulation;user-select:none}
+  .tf-filterhead:hover{background:rgba(255,178,77,.16)}
+  .tf-filterhead .tf-fh-l{display:inline-flex;align-items:center;gap:7px}
+  .tf-filterhead .tf-picon{width:15px;height:15px;fill:none;stroke:var(--accent);stroke-width:1.5;flex:0 0 auto}
+  .tf-filterhead .tf-caret{transition:transform .25s;font-size:.9em;color:var(--accent)}
   #cov.filter-open .tf-filterhead .tf-caret{transform:rotate(180deg)}
   #cov:not(.filter-open) .tf-filterbody{display:none}
   @media (pointer: coarse){ .tf-filterhead{min-height:var(--row-h)} }
@@ -1089,7 +1095,7 @@ Touren ansehen <span id="covCount"></span>
   </div>
   <div class="cl">
     <div id="tourFilter">
-      <div class="tf-filterhead" id="tfFilterHead" onclick="toggleFilterBlock()"><span>Filter</span><span class="tf-caret">&#9662;</span></div>
+      <div class="tf-filterhead" id="tfFilterHead" onclick="toggleFilterBlock()"><span class="tf-fh-l"><svg class="tf-picon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="5" r="3"/><path d="M2.5 14c0-3.2 2.5-5 5.5-5s5.5 1.8 5.5 5"/></svg>Personen &amp; Jahre filtern</span><span class="tf-caret">&#9662;</span></div>
       <div class="tf-filterbody">
         <div class="tf-seg" id="strangSeg">
           <button class="tf-sbtn on" data-strang="alle" onclick="setStrang('alle')">Alle (<b id="cntAlle">18</b>)</button>
@@ -1827,12 +1833,19 @@ map.on('load',()=>{
       'text-variable-anchor':['left','right','top','bottom'],'text-radial-offset':0.7,
       'text-optional':true,'text-allow-overlap':false,'symbol-sort-key':['*',-1,_POP]},
     paint:{'text-color':'#d8c8a0','text-halo-color':'#1a1206','text-halo-width':1.2}});
-  // Sessellift-LINIEN (chair_lift) — deutlich dezenter als Gondel/Seilbahn: minzoom 11,
-  // ~60% Breite (0,9 vs 1,5), gedämpfte Farbe/Opacity, KEIN Halo, KEINE Gondel-Icons.
-  // ZUERST hinzugefügt -> zeichnet UNTER den Gondelbahn-Linien (Kollisions-/PRIO-Vorrang Gondel).
+  // Sessellift-LINIEN (chair_lift), minzoom 11 — N4: kräftiger/dunkler + Querstrich-Signatur
+  // (klassische Lift-Konvention statt der zu dezenten Haarlinie). ZUERST hinzugefügt ->
+  // zeichnet UNTER den Gondelbahn-Linien (Kollisions-/PRIO-Vorrang Gondel).
   map.addLayer({id:'chairlift-line', type:'line', source:'osm-chairlifts', minzoom:11,
     layout:{visibility:'none','line-join':'round','line-cap':'round'},
-    paint:{'line-color':'#6b7580','line-width':0.9,'line-opacity':0.6}});
+    paint:{'line-color':'#3f4a56','line-width':1.3,'line-opacity':0.9}});
+  // Querstriche = senkrechte Ticks entlang der Linie (Symbol mit line-Placement, 90° gedreht).
+  map.addLayer({id:'chairlift-ticks', type:'symbol', source:'osm-chairlifts', minzoom:12,
+    layout:{visibility:'none','symbol-placement':'line','symbol-spacing':13,
+      'text-field':'|','text-font':['Noto Sans Bold'],'text-size':11,
+      'text-rotate':90,'text-keep-upright':false,'text-rotation-alignment':'map',
+      'text-allow-overlap':true,'text-ignore-placement':true},
+    paint:{'text-color':'#3f4a56','text-opacity':0.9}});
   // W4: Seilbahn-LINIEN (voller Verlauf Tal->Berg) — dunkle Linie mit hellem Halo,
   // dünn/dezent, Zoom-Gate z≥10; am bestehenden Seilbahnen-Toggle. Vor dem Logo.
   map.addLayer({id:'cable-line-halo', type:'line', source:'osm-cable-lines', minzoom:10,
@@ -2189,6 +2202,17 @@ map.on('load',()=>{
     }
   })();
 
+  // ── N4: Sessellift-Name bei Hover/Klick (OSM-name, falls vorhanden) ───────
+  map.on('mouseenter','chairlift-line',e=>{ map.getCanvas().style.cursor='pointer';
+    const n=e.features[0].properties&&e.features[0].properties.name;
+    if(n){ hoverPop.setLngLat(e.lngLat).setHTML('<div class="lift-pop">'+_e(n)+'</div>').addTo(map); } });
+  map.on('mousemove','chairlift-line',e=>{ try{ if(hoverPop.isOpen()) hoverPop.setLngLat(e.lngLat); }catch(_){ } });
+  map.on('mouseleave','chairlift-line',()=>{ map.getCanvas().style.cursor=''; hoverPop.remove(); });
+  map.on('click','chairlift-line',e=>{ const n=e.features[0].properties&&e.features[0].properties.name;
+    closeAllPopups();
+    peakPopup.setLngLat(e.lngLat).setHTML('<div class="pk-pop"><div class="pk-name">'+_e(n||'Sessellift')+
+      '</div><div class="pk-ele">Sessellift</div></div>').addTo(map); });
+
   // ── STS fill click — popup always; panel only for visited groups ─────────
   map.on('mouseenter','sts-hit',()=>map.getCanvas().style.cursor='pointer');
   // B) Hover-Box: Name + Settore (+ privat: Besuchs-Badge + Jahre) + Klick-Hinweis.
@@ -2240,9 +2264,16 @@ map.on('load',()=>{
     closeAllPopups();
     peakPopup.setLngLat(f.geometry.coordinates.slice()).setHTML(peakPopupHtml(name, ele, sts, gname)).addTo(map);
   });
+  // N6: Custom-Cursor über Gipfeln (vereinfachtes Bergsymbol + „?"), Fallback pointer.
+  const _peakCurSvg="<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'>"+
+    "<path d='M1 24 L9 9 L14 17 L17 12 L27 24 Z' fill='#f2f6fa' stroke='#1a2530' stroke-width='1.6' stroke-linejoin='round'/>"+
+    "<path d='M7.4 12.5 L9 9 L10.6 12.5 L9 13.4 Z' fill='#a9c7dd'/>"+
+    "<circle cx='21' cy='7' r='6' fill='#ffb24d' stroke='#1a2530' stroke-width='1.2'/>"+
+    "<text x='21' y='10.4' font-size='9' font-family='Arial,sans-serif' font-weight='bold' fill='#1a2530' text-anchor='middle'>?</text></svg>";
+  const PEAK_CURSOR='url("data:image/svg+xml,'+encodeURIComponent(_peakCurSvg)+'") 5 24, pointer';
   PEAK_LAYERS.forEach(l=>{
-    map.on('mouseenter',l,()=>map.getCanvas().style.cursor='pointer');
-    map.on('mouseleave',l,()=>map.getCanvas().style.cursor='');
+    map.on('mouseenter',l,()=>{ map.getCanvas().style.cursor=PEAK_CURSOR; });
+    map.on('mouseleave',l,()=>{ map.getCanvas().style.cursor=''; });
   });
 
   map.on('click','sts-hit',e=>{
@@ -2273,10 +2304,10 @@ map.on('load',()=>{
   // ── Click on empty map (no feature) closes popup + selection ──────────────
   map.on('click', e=>{
     if(!map.queryRenderedFeatures(e.point,{layers:HUT_LAYERS}).length) hutPopup.remove();
-    if(!map.queryRenderedFeatures(e.point,{layers:PEAK_LAYERS}).length) peakPopup.remove();  // Befund 3: Außenklick schließt Gipfel-Popup
+    if(!map.queryRenderedFeatures(e.point,{layers:PEAK_LAYERS.concat(['chairlift-line'])}).length) peakPopup.remove();  // Befund 3/N4: Gipfel-/Lift-Popup
     // W1c: Klick ohne Gruppen-/Linien-/Punkt-Feature -> Steckbrief schliessen + Auswahl-Rand weg.
     const feats=map.queryRenderedFeatures(e.point,{layers:
-      ['sts-hit','hl-line','osm-passes','osm-passes-famous',
+      ['sts-hit','hl-line','osm-passes','osm-passes-famous','chairlift-line',
        'places-sq','places-dot','places-label','places-village','places-village-label','cable-icon']
         .concat(PEAK_LAYERS).concat(HUT_LAYERS).concat(TOUR_LAYERS)});
     if(!feats.length) closePanel();
@@ -3020,7 +3051,7 @@ function togglePlaces(){
 let _cableOn=false;
 function toggleCable(){
   _cableOn=!_cableOn; const v=_cableOn?'visible':'none';
-  _setVis(['cable-line-halo','cable-line','cable-icon','chairlift-line'], v);   // ein Toggle: Gondeln + Sessellifte
+  _setVis(['cable-line-halo','cable-line','cable-icon','chairlift-line','chairlift-ticks'], v);   // ein Toggle: Gondeln + Sessellifte
   document.getElementById('tglCable').classList.toggle('on',_cableOn);
   persistToggles();
 }
