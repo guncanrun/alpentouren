@@ -144,6 +144,7 @@ else:
         return [p for p, k in zip(pts, keep) if k]
 
     _tfeats = []
+    _track_pts_by_tid = {}   # B24: tour_id -> vereinfachte Trackpunkte (Distanz-Cap)
     for t in data["touren"]:
         rel = t.get("gpx")
         if not rel:
@@ -178,6 +179,7 @@ else:
                          "coordinates": [[round(x, 5), round(y, 5), round(_e)] for x, y, _e in simp]},
             "properties": {"tour_id": t["id"],
                            "rek": 1 if t.get("gpx_rekonstruiert") else 0}})
+        _track_pts_by_tid[t["id"]] = [(x, y) for x, y, _e in simp]   # B24: fuer das Track-Distanz-Cap
         print(f"[tracks] Tour {t['id']}: {len(pts)} -> {len(simp)} Punkte · {km:.1f} km · +{hm:.0f} hm")
     tracks_json = json.dumps({"type": "FeatureCollection", "features": _tfeats},
                              ensure_ascii=False, separators=(",", ":"))
@@ -338,8 +340,8 @@ if not PUBLIC:
         return min(_cands, key=lambda c: (c[1] - _lo) ** 2 + (c[2] - _la) ** 2)
 
     for _t in data["touren"]:
-        _m = re.search(r"\d{4}", str(_t.get("jahr", "")))
-        _y = _m.group() if _m else None
+        _ym = re.search(r"\d{4}", str(_t.get("jahr", "")))   # B24-Fix: nicht _m (math-Alias!)
+        _y = _ym.group() if _ym else None
         _links = []
         for _raw in (_t.get("huetten") or "").split(","):
             _e = _raw.strip()
@@ -372,7 +374,14 @@ hut_visits_json = json.dumps(hut_visits, ensure_ascii=False, separators=(",", ":
 # Namens-Match). Aufloesung: normalisierter Name (+ /-Varianten, + PEAK_ALIASES),
 # Dubletten ueber Naehe zum Tour-Zentrum (<= 40 km). Nicht-Matches -> WARN-Liste
 # (Cowork-Kuratierung); solche Eintraege rendert die Karte NICHT klickbar.
-_PEAK_ALIASES_RAW = {}   # kuratierbar: Freitext aus touren.json -> exakter OSM-Peak-Name
+# B24: Werte sind entweder exakter OSM-Peak-Name (str) ODER eine kuratierte
+# Direkt-Koordinate {"id": tour_id, "c": [lon, lat]} fuer Gipfel, die im
+# Datensatz FEHLEN (id-Beschraenkung gegen Namensvettern anderer Touren).
+_PEAK_ALIASES_RAW = {
+    # Kaiser-Gamskogel fehlt in OSM-peaks (11 Namensvettern, keiner im Track-
+    # Fenster); Kuppe aus Track idx 116 + Sichtpruefung lokalisiert, real 1449 m.
+    "Gamskogel": {"id": 22, "c": [12.23360, 47.58037]},
+}
 if not PUBLIC:
     def _name_variants(_nm):
         # Doppel-/Kompositnamen zerlegen: "A / B" (OSM+touren.json) und "A - B"
@@ -390,23 +399,55 @@ if not PUBLIC:
         _rec = (_nm, _c[0], _c[1], _f["properties"].get("ele"))
         for _v in _name_variants(_nm):
             _pk_idx.setdefault(_v, []).append(_rec)
-    PEAK_ALIASES = {_hutnorm(k): _hutnorm(v) for k, v in _PEAK_ALIASES_RAW.items()}
-    _pk_warn = []
+    PEAK_ALIASES = {}
+    for _k, _v in _PEAK_ALIASES_RAW.items():
+        PEAK_ALIASES[_hutnorm(_k)] = _hutnorm(_v) if isinstance(_v, str) else _v
+
+    # B24: Distanz-Cap — Match > ~15 km vom Tour-Zentrum bzw. (falls Track da)
+    # > ~3 km vom Track gilt als UNAUFGELOEST (WARN + nicht klickbar) statt
+    # falsch zu fliegen (Gamskogel-Falle: Namensvetter in 27 km gewann frueher).
+    def _cap_ok(_t, _lo, _la):
+        _pts = _track_pts_by_tid.get(_t["id"])
+        if _pts:
+            _dmin = min(_hav_m((_lo, _la, 0), (_px, _py, 0)) for _px, _py in _pts[::3] or _pts)
+            return _dmin <= 3000, f"{_dmin/1000:.1f} km vom Track"
+        if _t.get("lon") is None:
+            return True, "kein Zentrum"
+        _d = _hav_m((_lo, _la, 0), (_t["lon"], _t["lat"], 0))
+        return _d <= 15000, f"{_d/1000:.1f} km vom Zentrum"
+
+    _pk_warn, _pk_ok = [], []
     for _t in data["touren"]:
         for _g in (_t.get("gipfel") or []):
-            _cands = []
+            _resolved = None
             for _ne in _name_variants(_g.get("name")):
-                _cands += _pk_idx.get(PEAK_ALIASES.get(_ne, _ne), [])
-            if _cands:
-                _pn, _plo, _pla, _pel = _nearest(_cands, _t)
-                # Plausibilitaet: Treffer muss in Tour-Naehe liegen (~40 km)
-                if _t.get("lon") is None or ((_plo - _t["lon"]) ** 2 + (_pla - _t["lat"]) ** 2) < 0.55 ** 2:
-                    _g["c"] = [round(_plo, 5), round(_pla, 5)]
-                    continue
-            _pk_warn.append((_t["id"], _g.get("name")))
-    print(f"  B21 Gipfel-Aufloesung: {sum(1 for _t in data['touren'] for _g in (_t.get('gipfel') or []) if _g.get('c'))} aufgeloest · {len(_pk_warn)} WARN")
-    for _tid, _gn in _pk_warn:
-        print(f"     WARN Tour {_tid}: Gipfel '{_gn}' nicht im Peak-Datensatz -> nicht klickbar")
+                _al = PEAK_ALIASES.get(_ne)
+                if isinstance(_al, dict) and (_al.get("id") is None or _al.get("id") == _t["id"]):
+                    _resolved = (_g.get("name") + " (Alias)", _al["c"][0], _al["c"][1], None)
+                    break
+            if _resolved is None:
+                _cands = []
+                for _ne in _name_variants(_g.get("name")):
+                    _al = PEAK_ALIASES.get(_ne)
+                    _cands += _pk_idx.get(_al if isinstance(_al, str) else _ne, [])
+                if _cands:
+                    _pn, _plo, _pla, _pel = _nearest(_cands, _t)
+                    _ok, _why = _cap_ok(_t, _plo, _pla)
+                    if _ok:
+                        _resolved = (_pn, _plo, _pla, _pel)
+                    else:
+                        _pk_warn.append((_t["id"], _g.get("name"), f"Cap: naechster Treffer '{_pn}' {_why}"))
+                        continue
+            if _resolved:
+                _g["c"] = [round(_resolved[1], 5), round(_resolved[2], 5)]
+                _pk_ok.append((_t["id"], _g.get("name"), _resolved[0], _cap_ok(_t, _resolved[1], _resolved[2])[1]))
+            else:
+                _pk_warn.append((_t["id"], _g.get("name"), "nicht im Peak-Datensatz"))
+    print(f"  B21/B24 Gipfel-Aufloesung: {len(_pk_ok)} aufgeloest · {len(_pk_warn)} WARN (Cap 15 km Zentrum / 3 km Track)")
+    for _tid, _gn, _to, _why in _pk_ok:
+        print(f"     OK   Tour {_tid}: '{_gn}' -> {_to} ({_why})")
+    for _tid, _gn, _why in _pk_warn:
+        print(f"     WARN Tour {_tid}: Gipfel '{_gn}' -> {_why} -> nicht klickbar")
 
 # B21: Dump erst NACH der Aufloesung (huetten_links/gipfel[].c muessen mit rein).
 touren_json = json.dumps(data["touren"], ensure_ascii=False)
@@ -889,6 +930,8 @@ __HEAD_LIBS__
   #ebenen .mem-tl{display:inline-flex;align-items:center;gap:6px}
   #ebenen .mem-eye{width:15px;height:15px;fill:none;stroke:var(--muted);stroke-width:1.3;flex:0 0 auto}
   #ebenen .tgl.sub{padding-left:23px;font-size:12px;color:var(--muted)}
+  /* B23a: Sub-Toggle bei Master AUS gesperrt (Muster #legend .tgl.locked) */
+  #ebenen .tgl.disabled{opacity:.4;pointer-events:none}
   /* ── P2: Master-Detail — Steckbrief nutzt (Desktop, privat) die Tourenlisten-Position ── */
   /* B15: Panel-Deckel zusaetzlich an die Title-Card gekoppelt (--p-panel-max, JS sizeCov):
      bottom-verankert heisst Hoehe deckeln = Oberkante unter der Card halten; Body flext+scrollt. */
@@ -1409,7 +1452,7 @@ Touren ansehen <span id="covCount"></span>
       <button id="bmTopo" onclick="setBasemap('topo')">Topo</button>
     </div>
     <div class="grp">Struktur</div>
-    <div id="tglNamen" class="tgl" onclick="toggleLayers()"><span>Namen</span><span class="sw"></span></div>
+    <div id="tglNamen" class="tgl" onclick="toggleLayers()"><span>Gebirgsnamen</span><span class="sw"></span></div>
     <div id="tglBorders" class="tgl" onclick="toggleBorders()"><span>Landesgrenzen</span><span class="sw"></span></div>
     <div class="grp">Punkte</div>
     <div id="tglPeaks" class="tgl" onclick="togglePeaks()"><span>Gipfel</span><span class="sw"></span></div>
@@ -3594,6 +3637,10 @@ function _memApply(){
   try{ map.setFilter('sts-line', _memOn?['==',['get','visited'],0]:null); }catch(_){}   // AUS: Kontur fuer alle
   try{ updateStsLabelFilter(); }catch(_){}
   try{ map.setLayoutProperty('sts-label-hl','visibility',(_memOn&&_layersOn)?'visible':'none'); }catch(_){}
+  // B23a: Sub-Toggle spiegelt den Master — bei AUS ausgegraut + Schalter aus
+  // (Zustand _tracksOn bleibt erhalten und kehrt beim Wieder-AN zurueck).
+  const tt=document.getElementById('tglTracks');
+  if(tt){ tt.classList.toggle('disabled', !_memOn); tt.classList.toggle('on', _memOn && _tracksOn); }
 }
 function toggleMemories(){
   _memOn=!_memOn;
