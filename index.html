@@ -1881,6 +1881,7 @@ function pulseGipfel(c){
 // Delegierter Klick auf Gipfel-Einträge im Steckbrief. „Höchster Berg" (.gip-hi) läuft
 // über die eindeutige Gruppen-Koordinate (N3); Tour-Gipfel (.gip) weiter über den Namen.
 (function(){ const p=document.getElementById('panel'); if(p) p.addEventListener('click', e=>{
+  
   const gh=e.target.closest&&e.target.closest('.gip-hi'); if(gh&&gh.dataset.sts){ focusGroupPeak(gh.dataset.sts); return; }
   const g=e.target.closest&&e.target.closest('.gip');
   if(g){

@@ -902,6 +902,8 @@ __HEAD_LIBS__
   #panel .pback:hover{color:var(--txt)}
   /* ── P2: Touren-Accordion (Tab „Touren (n)") ── */
   .tcard{border:1px solid var(--line);border-radius:9px;margin:0 0 7px;overflow:hidden;background:rgba(255,255,255,.02)}
+  /* B22: aktive Tour-Karte — dezenter 1px-Akzent-Rahmen (Token), Karte+Panel synchron */
+  .tcard.active{border-color:var(--accent2)}
   .tcard-h{display:flex;align-items:center;gap:8px;padding:7px 9px;cursor:pointer;min-height:var(--row-h);
     box-sizing:border-box;touch-action:manipulation;user-select:none}
   .tcard-h .tc-yr{color:var(--accent);font-weight:700;font-variant-numeric:tabular-nums;cursor:pointer;flex:0 0 auto}
@@ -2894,6 +2896,17 @@ function pulseGipfel(c){
 // Delegierter Klick auf Gipfel-Einträge im Steckbrief. „Höchster Berg" (.gip-hi) läuft
 // über die eindeutige Gruppen-Koordinate (N3); Tour-Gipfel (.gip) weiter über den Namen.
 (function(){ const p=document.getElementById('panel'); if(p) p.addEventListener('click', e=>{
+  /* PRIV:START */
+  // B22: „aktiv = zuletzt interagiert" — jeder Klick in eine OFFENE Tour-Karte
+  // (Kopf-Toggle hat via inline-onclick schon geschaltet; Zustand hier = danach)
+  // zieht die Karten-Betonung + den Akzent-Rahmen auf diese Tour.
+  try{
+    const tc=e.target.closest&&e.target.closest('#pTour .tcard');
+    if(tc && tc.classList.contains('open') && +tc.dataset.tid!==_selTourId){
+      _selTourId=+tc.dataset.tid; markSelTourRow(); emphasizeTour(_selTourId);
+    }
+  }catch(_){}
+  /* PRIV:END */
   const gh=e.target.closest&&e.target.closest('.gip-hi'); if(gh&&gh.dataset.sts){ focusGroupPeak(gh.dataset.sts); return; }
   const g=e.target.closest&&e.target.closest('.gip');
   if(g){
@@ -3240,8 +3253,10 @@ function toggleTcard(h){
   if(!h||!h.parentElement) return;
   const card=h.parentElement, willOpen=!card.classList.contains('open');
   card.classList.toggle('open');
-  if(willOpen) _selTourId=+card.dataset.tid;
-  else { const o=document.querySelector('#pTour .tcard.open'); _selTourId=o?+o.dataset.tid:null; }
+  if(willOpen) _selTourId=+card.dataset.tid;   // B22: Aufklappen = zuletzt interagiert = aktiv
+  // B22: Zuklappen der AKTIVEN Karte -> Gruppen-Default (kein Geist-Rahmen, auch
+  // wenn andere Karten offen bleiben); Zuklappen einer nicht-aktiven ändert nichts.
+  else if(+card.dataset.tid===_selTourId) _selTourId=null;
   markSelTourRow(); emphasizeTour(_selTourId);   // P3b §7: Selektion -> Karte betonen
 }
 // „In der Chronik zeigen" (Deep-Link, P3a.4): ist die Ziel-Tour von F ausgeschlossen,
@@ -4147,6 +4162,8 @@ function _groupFeatureOfTour(tid){
 }
 function markSelTourRow(){
   document.querySelectorAll('#covList .trow').forEach(r=>r.classList.toggle('sel', +r.dataset.tid===_selTourId));
+  // B22: Panel-Sync — Akzent-Rahmen an der aktiven Tour-Karte (und nur dort)
+  document.querySelectorAll('#pTour .tcard').forEach(c=>c.classList.toggle('active', +c.dataset.tid===_selTourId));
 }
 // P3b §7: selektierte (aufgeklappte) Tour betonen — ihr Icon+Track heller, andere
 // Icons DESSELBEN Gebiets gedimmt. id=null hebt auf (Basis-Deckkraft).
