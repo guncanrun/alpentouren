@@ -82,7 +82,8 @@
   #title p{margin:6px 0 0;font-size:13px;color:var(--muted);line-height:1.45}
   /* Politur P1.2: Mini-Zeile — Logo · Titel · Mini-KPI · ▾ (nur im mini-Zustand sichtbar) */
   #title.mini{padding:9px 13px}
-  #title.mini{width:auto}   /* P1: eingeklappt auf Inhalt schrumpfen (Kanten-Flucht gilt der aufgeklappten Card) */
+  /* B16: auch eingeklappt EINE Breite (--panel-w) — nach P4.2 wuchs die Mini-Zeile
+     inhaltsgetrieben ueber die Panel-Kante; tm-kpi ellipsiert den Ueberhang. */
   #title.mini > *:not(#titleMini){display:none}
   #title:not(.mini) #titleMini{display:none}
   #title:not(.mini) h1{cursor:pointer}   /* Befund 5: Titel-Klick klappt ein */
@@ -137,6 +138,9 @@
   #legend .lrow{display:flex;align-items:center;gap:8px;padding:3px 0;
     font-size:11.5px;color:var(--txt)}
   #legend .lsep{height:1px;background:var(--line);margin:6px 0}
+  /* B17: klickbare Legende — dezente Hover-Affordance, kein eigener Button-Block */
+  #legend .lfoc{cursor:pointer;border-radius:5px;margin:0 -4px;padding-left:4px;padding-right:4px}
+  #legend .lfoc:hover{background:rgba(95,208,197,.12);color:var(--accent2)}
   #legend .tgl{padding:0;gap:7px;font-size:11px;min-height:0;color:var(--muted)}
   #legend .tgl.locked{opacity:.4;pointer-events:none}
   .sw-hl{display:inline-block;width:13px;height:13px;border:2px solid #ffb24d;border-radius:3px;flex-shrink:0}
@@ -165,7 +169,10 @@
   #panel .yr{font-size:11px;color:var(--accent2);font-weight:600;letter-spacing:.5px}
   #panel h2{margin:3px 0 2px;font-size:16px;line-height:1.2}
   #panel .gegend{font-size:10.5px;color:var(--muted)}
-  #panel .body{padding:11px 14px 14px;font-size:15px;line-height:1.5;max-height:58vh;overflow-y:auto;   /* P1/Review §5: Grundschrift +1pt */
+  /* B15: Body-Hoehe zusaetzlich an die Title-Card gekoppelt (--p-body-max, JS sizeCov):
+     Panel dockt UNTER der Card an, nie ueberlagern; Rest scrollt intern. */
+  #panel .body{padding:11px 14px 14px;font-size:15px;line-height:1.5;
+    max-height:min(58vh, var(--p-body-max, 58vh));overflow-y:auto;   /* P1/Review §5: Grundschrift +1pt */
     -webkit-overflow-scrolling:touch}
   #panel .sec{margin:0 0 10px}
   #panel .sec h3{margin:0 0 4px;font-size:9.5px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)}
@@ -462,17 +469,18 @@
       <div id="tglFarbung" class="tgl on" onclick="event.stopPropagation();toggleFarbung()" title="F&auml;rbung an/aus"><span>F&auml;rbung</span><span class="sw"></span></div>
     </div>
     <div class="ll">
+      <!-- B17: Legende klickbar = Sektor-Fokus (fitBounds in den freien Ausschnitt) -->
       <div class="lcols">
         <div class="lcol">
-          <div class="lgrp">Westalpen</div>
-          <div class="lrow"><span class="sw-nw"></span>Nordwestalpen</div>
-          <div class="lrow"><span class="sw-sw"></span>S&uuml;dwestalpen</div>
+          <div class="lgrp lfoc" onclick="legendFocus('west',event)" title="Westalpen einpassen">Westalpen</div>
+          <div class="lrow lfoc" onclick="legendFocus('Nordwestalpen',event)" title="Sektor einpassen"><span class="sw-nw"></span>Nordwestalpen</div>
+          <div class="lrow lfoc" onclick="legendFocus('S&uuml;dwestalpen',event)" title="Sektor einpassen"><span class="sw-sw"></span>S&uuml;dwestalpen</div>
         </div>
         <div class="lcol">
-          <div class="lgrp">Ostalpen</div>
-          <div class="lrow"><span class="sw-no"></span>Nordostalpen</div>
-          <div class="lrow"><span class="sw-zo"></span>Zentralostalpen</div>
-          <div class="lrow"><span class="sw-so"></span>S&uuml;dostalpen</div>
+          <div class="lgrp lfoc" onclick="legendFocus('ost',event)" title="Ostalpen einpassen">Ostalpen</div>
+          <div class="lrow lfoc" onclick="legendFocus('Nordostalpen',event)" title="Sektor einpassen"><span class="sw-no"></span>Nordostalpen</div>
+          <div class="lrow lfoc" onclick="legendFocus('Zentralostalpen',event)" title="Sektor einpassen"><span class="sw-zo"></span>Zentralostalpen</div>
+          <div class="lrow lfoc" onclick="legendFocus('S&uuml;dostalpen',event)" title="Sektor einpassen"><span class="sw-so"></span>S&uuml;dostalpen</div>
         </div>
       </div>
       
@@ -647,7 +655,10 @@ const map = new maplibregl.Map({
   pixelRatio: window.devicePixelRatio || 2,
   preserveDrawingBuffer: _SMOKE,
   minZoom: 5.0,
-  maxBounds: [[3.5,42.5],[18.5,49.5]],
+  // B17: moderat geweitet — die alten Grenzen erzwangen an breiten Viewports eine
+  // Mindest-Zoomstufe, die das Home-fitBounds in den freien Ausschnitt klemmte
+  // (Bogen-Westteil rutschte unters Panel). Maske deckt den Zugewinn ab.
+  maxBounds: [[1.8,41.8],[19.5,50.2]],
   style:{
     version:8,
     glyphs:'./fonts/{fontstack}/{range}.pbf',
@@ -1668,6 +1679,9 @@ map.on('load',()=>{
   map.on('zoom', updateTopoGate);
   restoreToggles();   // UX(1): gespeicherte Ebenen-Zustaende wiederherstellen (nach Layer+Basemap)
   _syncPointToggles();   // W1.1: Wunsch-Zustand (auch aus Klick vor Layer-Init) auf die Layer nachziehen
+  // B17: Initial-Ansicht = dasselbe dynamische Framing wie der Home-Button
+  // (ALPS-Konstruktorwert ist nur der Vor-Fit-Startpunkt).
+  try{ _fitFree(_alpsBbox(), 0); }catch(_){ }
   
 
   // ── Build the search index (groups now; OSM points fetched async) ──────────
@@ -2474,10 +2488,42 @@ function closePanel(){
   resetGroupPeaks();
   
 }
+// B17: Home/Initial = dynamisches fitBounds der Alpen-bbox in den FREIEN Ausschnitt
+// (Panel-/Ebenen-Padding einrechnen) statt Fix-Zoom — 27" mit offener Liste hatte
+// den Westteil des Bogens unter dem Panel. Nach der Bewegung wird das persistente
+// B6/B11-Padding restauriert (fitBounds-Padding soll nicht kleben bleiben).
+let _alpsBB=null;
+function _bboxOf(feats){
+  let mx=180,my=90,Mx=-180,My=-90,found=false;
+  feats.forEach(f=>(function w(a){ if(typeof a[0]==='number'){ found=true;
+    if(a[0]<mx)mx=a[0]; if(a[0]>Mx)Mx=a[0]; if(a[1]<my)my=a[1]; if(a[1]>My)My=a[1]; }
+    else a.forEach(w); })(f.geometry.coordinates));
+  return found?[[mx,my],[Mx,My]]:null;
+}
+function _alpsBbox(){ if(!_alpsBB) _alpsBB=_bboxOf(SOIUSA_STS.features); return _alpsBB; }
+function _fitFree(bb, dur){
+  if(!bb) return;
+  const pad={top:60, bottom:72,   // Suchknopf oben / Scale-Bar unten; knapp, damit die Breite bindet
+    left:Math.max(28,(typeof _panelPadPx==='function'?_panelPadPx():0)+8),
+    right:Math.max(28,(typeof _ebenenPadPx==='function'?_ebenenPadPx():0)+8)};
+  map.fitBounds(bb,{padding:pad, pitch:0, bearing:0, duration:dur==null?1200:dur, essential:true});
+  map.once('moveend', ()=>{ try{ _applyPanelPad(); }catch(_){ } });
+}
 function overview(){
   closePanel();
   _autoPitch=true;
-  map.flyTo({...ALPS,duration:1200,essential:true});
+  _fitFree(_alpsBbox());
+}
+// B17-Feature (freigegeben): Legende klickbar — West/Ost-Überschrift + Sektor-Zeile
+// fokussieren den Teil-Bogen (fitBounds mit demselben freien Ausschnitt).
+function legendFocus(which, ev){
+  if(ev){ ev.stopPropagation(); }   // Legende sitzt in der Title-Card (collapse-Handler!)
+  const parts={west:['Nordwestalpen','Südwestalpen'], ost:['Nordostalpen','Zentralostalpen','Südostalpen']};
+  const sel=parts[which]||[which];
+  const feats=SOIUSA_STS.features.filter(f=>sel.includes(f.properties.settore));
+  if(!feats.length) return;
+  _autoPitch=true;
+  _fitFree(_bboxOf(feats));
 }
 // §6b (W4): „Letzte Ansicht"-Chip nach automatischem Kamerasprung (Gruppen-flyTo,
 // Suchtreffer). Stellt die vorherige Kamera-Pose wieder her; verschwindet nach ~8 s
