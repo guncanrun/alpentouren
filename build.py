@@ -201,7 +201,7 @@ else:
         print("[personen] WARN personen.json fehlt -- Register leer (Filter-Chips ohne Namen)")
         personen_json = '{"personen":[]}'
 
-    touren_json = json.dumps(data["touren"], ensure_ascii=False)
+    # touren_json wird erst NACH der B21-Aufloesung (unten) gedumpt.
 
 sts_json        = load_compact("soiusa_sts_colored.geojson")
 highlights_json = load_compact("soiusa_highlights_clean.geojson") if (HERE / "soiusa_highlights_clean.geojson").exists() else '{"type":"FeatureCollection","features":[]}'
@@ -318,15 +318,29 @@ _HUT_ALIASES_RAW = {
 
 hut_visits, hut_nonmatch = {}, []
 if not PUBLIC:
-    _osm_hn = {}
+    _osm_hn, _osm_hpos = {}, {}
     for _f in json.loads((HERE / "soiusa_osm_huts.geojson").read_text(encoding="utf-8"))["features"]:
         _nm = _f["properties"].get("name")
         if _nm:
             _osm_hn.setdefault(_hutnorm(_nm), set()).add(_nm)
+            # B21: Position/ele je Norm-Name (fuer klickbare Huetten-Eintraege)
+            _osm_hpos.setdefault(_hutnorm(_nm), []).append(
+                (_nm, _f["geometry"]["coordinates"][0], _f["geometry"]["coordinates"][1],
+                 _f["properties"].get("ele")))
     HUT_ALIASES = {_hutnorm(k): _hutnorm(v) for k, v in _HUT_ALIASES_RAW.items()}   # normalisiert
+
+    def _nearest(_cands, _t):
+        # B21: Dubletten-Regel — bei mehreren Treffern gewinnt der naechste zum
+        # Tour-Zentrum (Namens-Dubletten-Falle, vgl. Krottenkopf).
+        _lo, _la = _t.get("lon"), _t.get("lat")
+        if _lo is None or len(_cands) == 1:
+            return _cands[0]
+        return min(_cands, key=lambda c: (c[1] - _lo) ** 2 + (c[2] - _la) ** 2)
+
     for _t in data["touren"]:
         _m = re.search(r"\d{4}", str(_t.get("jahr", "")))
         _y = _m.group() if _m else None
+        _links = []
         for _raw in (_t.get("huetten") or "").split(","):
             _e = _raw.strip()
             if not _e:
@@ -336,13 +350,66 @@ if not PUBLIC:
             if _target and _target in _osm_hn:
                 for _disp in _osm_hn[_target]:
                     hut_visits.setdefault(_disp, set()).add(_y)
+                _hn, _hlo, _hla, _hel = _nearest(_osm_hpos[_target], _t)
+                _lk = {"t": _e, "n": _hn, "c": [round(_hlo, 5), round(_hla, 5)]}
+                if _hel is not None:
+                    _lk["e"] = _hel
+                _links.append(_lk)
             else:
                 hut_nonmatch.append((_e, _y))
+                _links.append({"t": _e})   # B21: unaufgeloest -> Text, nicht klickbar
+        if _links:
+            _t["huetten_links"] = _links
     hut_visits = {k: sorted(v) for k, v in hut_visits.items()}   # Jahre chronologisch
     print(f"  §1 Ihr-wart-hier: {len(hut_visits)} OSM-Hütten gematcht · {len(hut_nonmatch)} Nicht-Matches")
     for _e, _y in hut_nonmatch:
         print(f"     NICHT-MATCH [{_y}] {_e}")
 hut_visits_json = json.dumps(hut_visits, ensure_ascii=False, separators=(",", ":"))
+
+# ── B21: Tour-Gipfel build-seitig aufloesen (Muster HUT_ALIASES) ────────────────
+# Jeder touren.json-Gipfel bekommt seine OSM-Peak-Koordinate in die Renderdaten
+# (g["c"]) -> der Laufzeit-Klick fliegt IMMER (kein stiller No-op mehr wie beim
+# Namens-Match). Aufloesung: normalisierter Name (+ /-Varianten, + PEAK_ALIASES),
+# Dubletten ueber Naehe zum Tour-Zentrum (<= 40 km). Nicht-Matches -> WARN-Liste
+# (Cowork-Kuratierung); solche Eintraege rendert die Karte NICHT klickbar.
+_PEAK_ALIASES_RAW = {}   # kuratierbar: Freitext aus touren.json -> exakter OSM-Peak-Name
+if not PUBLIC:
+    def _name_variants(_nm):
+        # Doppel-/Kompositnamen zerlegen: "A / B" (OSM+touren.json) und "A - B"
+        # (OSM, z. B. "Kesselkogel - Catinaccio d'Antermoia"). NUR " - " mit
+        # Leerzeichen — Bindestrich-Namen (Alois-Günther-Haus-Muster) bleiben ganz.
+        _parts = {str(_nm)} | {p for p in re.split(r"\s+/\s+|\s+-\s+", str(_nm)) if p.strip()}
+        return {_hutnorm(p) for p in _parts if _hutnorm(p)}
+
+    _pk_idx = {}
+    for _f in json.loads((HERE / "soiusa_osm_peaks.geojson").read_text(encoding="utf-8"))["features"]:
+        _nm = _f["properties"].get("name")
+        if not _nm:
+            continue
+        _c = _f["geometry"]["coordinates"]
+        _rec = (_nm, _c[0], _c[1], _f["properties"].get("ele"))
+        for _v in _name_variants(_nm):
+            _pk_idx.setdefault(_v, []).append(_rec)
+    PEAK_ALIASES = {_hutnorm(k): _hutnorm(v) for k, v in _PEAK_ALIASES_RAW.items()}
+    _pk_warn = []
+    for _t in data["touren"]:
+        for _g in (_t.get("gipfel") or []):
+            _cands = []
+            for _ne in _name_variants(_g.get("name")):
+                _cands += _pk_idx.get(PEAK_ALIASES.get(_ne, _ne), [])
+            if _cands:
+                _pn, _plo, _pla, _pel = _nearest(_cands, _t)
+                # Plausibilitaet: Treffer muss in Tour-Naehe liegen (~40 km)
+                if _t.get("lon") is None or ((_plo - _t["lon"]) ** 2 + (_pla - _t["lat"]) ** 2) < 0.55 ** 2:
+                    _g["c"] = [round(_plo, 5), round(_pla, 5)]
+                    continue
+            _pk_warn.append((_t["id"], _g.get("name")))
+    print(f"  B21 Gipfel-Aufloesung: {sum(1 for _t in data['touren'] for _g in (_t.get('gipfel') or []) if _g.get('c'))} aufgeloest · {len(_pk_warn)} WARN")
+    for _tid, _gn in _pk_warn:
+        print(f"     WARN Tour {_tid}: Gipfel '{_gn}' nicht im Peak-Datensatz -> nicht klickbar")
+
+# B21: Dump erst NACH der Aufloesung (huetten_links/gipfel[].c muessen mit rein).
+touren_json = json.dumps(data["touren"], ensure_ascii=False)
 
 # E8: strip the personal "visited" layer from the PUBLIC embedded data.
 # visited -> 0 everywhere (so the visited-only layers render nothing and every
@@ -853,6 +920,9 @@ __HEAD_LIBS__
   .tcs-area{fill:var(--accent);opacity:.10}
   .tcs-lbl{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:1px}
   .tcs-lbl .tcs-max{color:var(--accent)}
+  /* B21: klickbare Hütten-/Stationen-Einträge (nur aufgeloeste, Muster b.gip) */
+  .hu-link{cursor:pointer;border-bottom:1px dotted var(--accent2)}
+  .hu-link:hover{color:var(--accent2)}
   /* B18: „Zum Track" — Zeile+Sparkline klickbar, dezentes Fokus-Icon rechts. */
   .trk-foc{cursor:pointer}
   .tc-row.trk-foc{border-radius:5px;margin-left:-4px;margin-right:-4px;padding-left:4px;padding-right:4px}
@@ -2825,7 +2895,26 @@ function pulseGipfel(c){
 // über die eindeutige Gruppen-Koordinate (N3); Tour-Gipfel (.gip) weiter über den Namen.
 (function(){ const p=document.getElementById('panel'); if(p) p.addEventListener('click', e=>{
   const gh=e.target.closest&&e.target.closest('.gip-hi'); if(gh&&gh.dataset.sts){ focusGroupPeak(gh.dataset.sts); return; }
-  const g=e.target.closest&&e.target.closest('.gip'); if(g&&g.dataset.gip) focusGipfel(g.dataset.gip); }); })();
+  const g=e.target.closest&&e.target.closest('.gip');
+  if(g){
+    // B21: aufgeloeste Koordinate hat Vorrang (fliegt immer); Namens-Fallback
+    // nur noch fuer Alt-Aufrufer ohne data-c (Steckbrief-Zeilen).
+    if(g.dataset.c){ const c=g.dataset.c.split(','); _ensurePeaksOn(); _focusPeakAt([+c[0],+c[1]]); }
+    else if(g.dataset.gip) focusGipfel(g.dataset.gip);
+    return;
+  }
+  const hu=e.target.closest&&e.target.closest('.hu-link');
+  if(hu&&hu.dataset.c){ const c=hu.dataset.c.split(','); focusHutAt(+c[0],+c[1],hu.dataset.n,hu.dataset.e); } }); })();
+// B21: Huetten-/Stationen-Klick — flyTo + Huetten-Popup ueber die bestehende
+// Suche->Popup-Mechanik (W1.4); Huetten-Ebene bei Bedarf AN (B13-Konvention).
+function focusHutAt(lon,lat,name,ele){
+  if(_basemap!=='topo' && typeof _hutsOn!=='undefined' && !_hutsOn) toggleHuts();
+  saveUndo();
+  map.flyTo({center:[lon,lat], zoom:12.5, duration:1200, essential:true});
+  showUndoChip();
+  closeAllPopups();
+  hutPopup.setLngLat([lon,lat]).setHTML(hutPopupHtml({name:name, ele:(ele!==''&&ele!=null)?+ele:undefined})).addTo(map);
+}
 
 // ── featBbox: handles Polygon, MultiPolygon, GeometryCollection ───────────────
 function featBbox(feat){
@@ -2868,8 +2957,11 @@ function setTourTab(html, count){
 function gipfelUl(gipfel){
   if(!gipfel||!gipfel.length) return '';
   return '<ul>'+gipfel.map(g=>{
-    const da=_escp(String(g.name||'')).replace(/"/g,'&quot;');
-    return '<li class="gip" data-gip="'+da+'" title="Auf der Karte zeigen"><span>'+_escp(g.name)+
+    // B21: klickbar NUR mit build-seitig aufgeloester Koordinate (g.c) — kein
+    // Laufzeit-Namensmatch mehr, keine tote Affordance bei Unaufgeloesten.
+    const ok=(g.c&&g.c.length===2);
+    const attrs=ok?' class="gip" data-c="'+g.c[0]+','+g.c[1]+'" title="Auf der Karte zeigen"':'';
+    return '<li'+attrs+'><span>'+_escp(g.name)+
       (g.hinweis?' <i style="color:var(--muted)">('+_escp(g.hinweis)+')</i>':'')+
       '</span>'+(g.hoehe_m?'<b>'+g.hoehe_m+' m</b>':'')+'</li>';
   }).join('')+'</ul>';
@@ -3024,6 +3116,21 @@ function _trackSparkline(tid){
         '<span>'+Math.round(es[es.length-1])+' m</span></div></div>';
   }catch(_){ return ''; }
 }
+// B21: Hütten/Stationen — build-seitig aufgeloeste Eintraege (huetten_links,
+// {t,n,c[,e]}) als klickbare Spans; Unaufgeloeste bleiben Freitext (keine tote
+// Affordance). ort-Freitext bleibt generell Text (nicht auflösbar).
+function _huettenHtml(t){
+  const L=t.huetten_links;
+  if(!L||!L.length) return _e(t.huetten);
+  return L.map(x=>{
+    if(x.c&&x.c.length===2){
+      const dn=_e(x.n).replace(/"/g,'&quot;');
+      return '<span class="hu-link" title="Auf der Karte zeigen" data-c="'+x.c[0]+','+x.c[1]+
+        '" data-n="'+dn+'" data-e="'+(x.e!=null?x.e:'')+'">'+_e(x.t)+'</span>';
+    }
+    return _e(x.t);
+  }).join(', ');
+}
 // B18: „Zum Track" — Klick auf TRACK-Zeile/Sparkline rahmt die Track-bbox der
 // Tour (Panel-Padding + Zoom-Deckel/Easing wie Befund 14). B13-Konsistenz:
 // ausgeschaltete Tracks-Ebene bzw. Erinnerungen-Master werden ANgeschaltet
@@ -3102,7 +3209,7 @@ function groupTourHtml(props){
     if(t.datum) b+='<div class="tc-row"><span class="tc-k">Datum</span>'+_e(t.datum)+'</div>';
     if(t.teilnehmer) b+='<div class="tc-row"><span class="tc-k">Teilnehmer</span>'+_teilnehmerHtml(t)+'</div>';
     if(t.gipfel&&t.gipfel.length) b+='<div class="tc-row"><span class="tc-k">Gipfel</span>'+gipfelUl(t.gipfel)+'</div>';
-    if(t.huetten) b+='<div class="tc-row"><span class="tc-k">Hütten / Stationen</span>'+_e(t.huetten)+'</div>';
+    if(t.huetten) b+='<div class="tc-row"><span class="tc-k">Hütten / Stationen</span>'+_huettenHtml(t)+'</div>';
     if(t.track_km){
       // Befund 9: Quelle je nach gpx_quelle (aufgezeichnet vs. rekonstruiert), Fallback altes Flag.
       const _q=t.gpx_quelle||(t.gpx_rekonstruiert?'rekonstruiert':'');

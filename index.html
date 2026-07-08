@@ -1882,7 +1882,26 @@ function pulseGipfel(c){
 // über die eindeutige Gruppen-Koordinate (N3); Tour-Gipfel (.gip) weiter über den Namen.
 (function(){ const p=document.getElementById('panel'); if(p) p.addEventListener('click', e=>{
   const gh=e.target.closest&&e.target.closest('.gip-hi'); if(gh&&gh.dataset.sts){ focusGroupPeak(gh.dataset.sts); return; }
-  const g=e.target.closest&&e.target.closest('.gip'); if(g&&g.dataset.gip) focusGipfel(g.dataset.gip); }); })();
+  const g=e.target.closest&&e.target.closest('.gip');
+  if(g){
+    // B21: aufgeloeste Koordinate hat Vorrang (fliegt immer); Namens-Fallback
+    // nur noch fuer Alt-Aufrufer ohne data-c (Steckbrief-Zeilen).
+    if(g.dataset.c){ const c=g.dataset.c.split(','); _ensurePeaksOn(); _focusPeakAt([+c[0],+c[1]]); }
+    else if(g.dataset.gip) focusGipfel(g.dataset.gip);
+    return;
+  }
+  const hu=e.target.closest&&e.target.closest('.hu-link');
+  if(hu&&hu.dataset.c){ const c=hu.dataset.c.split(','); focusHutAt(+c[0],+c[1],hu.dataset.n,hu.dataset.e); } }); })();
+// B21: Huetten-/Stationen-Klick — flyTo + Huetten-Popup ueber die bestehende
+// Suche->Popup-Mechanik (W1.4); Huetten-Ebene bei Bedarf AN (B13-Konvention).
+function focusHutAt(lon,lat,name,ele){
+  if(_basemap!=='topo' && typeof _hutsOn!=='undefined' && !_hutsOn) toggleHuts();
+  saveUndo();
+  map.flyTo({center:[lon,lat], zoom:12.5, duration:1200, essential:true});
+  showUndoChip();
+  closeAllPopups();
+  hutPopup.setLngLat([lon,lat]).setHTML(hutPopupHtml({name:name, ele:(ele!==''&&ele!=null)?+ele:undefined})).addTo(map);
+}
 
 // ── featBbox: handles Polygon, MultiPolygon, GeometryCollection ───────────────
 function featBbox(feat){
@@ -1925,8 +1944,11 @@ function setTourTab(html, count){
 function gipfelUl(gipfel){
   if(!gipfel||!gipfel.length) return '';
   return '<ul>'+gipfel.map(g=>{
-    const da=_escp(String(g.name||'')).replace(/"/g,'&quot;');
-    return '<li class="gip" data-gip="'+da+'" title="Auf der Karte zeigen"><span>'+_escp(g.name)+
+    // B21: klickbar NUR mit build-seitig aufgeloester Koordinate (g.c) — kein
+    // Laufzeit-Namensmatch mehr, keine tote Affordance bei Unaufgeloesten.
+    const ok=(g.c&&g.c.length===2);
+    const attrs=ok?' class="gip" data-c="'+g.c[0]+','+g.c[1]+'" title="Auf der Karte zeigen"':'';
+    return '<li'+attrs+'><span>'+_escp(g.name)+
       (g.hinweis?' <i style="color:var(--muted)">('+_escp(g.hinweis)+')</i>':'')+
       '</span>'+(g.hoehe_m?'<b>'+g.hoehe_m+' m</b>':'')+'</li>';
   }).join('')+'</ul>';
