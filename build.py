@@ -857,6 +857,13 @@ __HEAD_LIBS__
   .tcs-area{fill:var(--accent);opacity:.10}
   .tcs-lbl{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:1px}
   .tcs-lbl .tcs-max{color:var(--accent)}
+  /* B18: „Zum Track" — Zeile+Sparkline klickbar, dezentes Fokus-Icon rechts. */
+  .trk-foc{cursor:pointer}
+  .tc-row.trk-foc{border-radius:5px;margin-left:-4px;margin-right:-4px;padding-left:4px;padding-right:4px}
+  .tc-row.trk-foc:hover, .tc-spark.trk-foc:hover .tcs-lbl{color:var(--accent2)}
+  .tc-spark.trk-foc:hover .tcs-line{stroke:var(--accent2)}
+  .trk-fx{width:13px;height:13px;float:right;margin-top:2px;fill:none;stroke:var(--muted);stroke-width:1.3}
+  .tc-row.trk-foc:hover .trk-fx{stroke:var(--accent2)}
   /* P6/Befund 4: Teilnehmer als Chips (Pill + Filter-Icon) + Bestätigungs-Popover. */
   .tc-pers{display:inline-flex;align-items:center;gap:3px;padding:1px 8px;margin:1px 1px;border-radius:11px;
     background:rgba(255,178,77,.13);border:1px solid rgba(255,178,77,.42);color:var(--accent);
@@ -2988,13 +2995,31 @@ function _trackSparkline(tid){
     let area='M'+px(0).toFixed(1)+','+(H-PY);
     for(let i=0;i<xs.length;i++){ area+=' L'+px(i).toFixed(1)+','+py(i).toFixed(1); }
     area+=' L'+px(xs.length-1).toFixed(1)+','+(H-PY)+' Z';
-    return '<div class="tc-spark" title="Höhenprofil">'+
+    return '<div class="tc-spark trk-foc" title="Zum Track" onclick="event.stopPropagation();focusTrack('+tid+')">'+
       '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true">'+
         '<path class="tcs-area" d="'+area+'"/><polyline class="tcs-line" points="'+pts+'"/></svg>'+
       '<div class="tcs-lbl"><span>'+Math.round(es[0])+' m</span>'+
         '<span class="tcs-max">▲ '+Math.round(eMax)+' m</span>'+
         '<span>'+Math.round(es[es.length-1])+' m</span></div></div>';
   }catch(_){ return ''; }
+}
+// B18: „Zum Track" — Klick auf TRACK-Zeile/Sparkline rahmt die Track-bbox der
+// Tour (Panel-Padding + Zoom-Deckel/Easing wie Befund 14). B13-Konsistenz:
+// ausgeschaltete Tracks-Ebene bzw. Erinnerungen-Master werden ANgeschaltet
+// (Panel-Sync über die toggle-Funktionen, kein Auto-Rückschalten).
+function focusTrack(tid){
+  try{
+    const f=(typeof TRACKS!=='undefined' && TRACKS && TRACKS.features)
+      ? TRACKS.features.find(x=>x.properties.tour_id===tid) : null;
+    if(!f) return;
+    if(typeof _memOn!=='undefined' && !_memOn) toggleMemories();
+    if(typeof _tracksOn!=='undefined' && !_tracksOn) toggleTracks();
+    const bb=_bboxOf([f]); if(!bb) return;
+    saveUndo();
+    map.fitBounds(bb,{padding:_selPad(), pitch:Math.min(map.getPitch(),18), bearing:0,
+      maxZoom:13.5, duration:900, essential:true});
+    showUndoChip();
+  }catch(_){}
 }
 // P6/Befund 4: Teilnehmer-Namen als optische Chips (Pill + Filter-Icon, nur
 // filterbar!=false). Klick öffnet ein BESTÄTIGUNGS-Popover statt sofort zu filtern
@@ -3062,8 +3087,14 @@ function groupTourHtml(props){
       const _q=t.gpx_quelle||(t.gpx_rekonstruiert?'rekonstruiert':'');
       const _qs=_q==='aufgezeichnet'?' · <i>GPS-Aufzeichnung (gemerged)</i>'
                :_q==='rekonstruiert'?' · <i>rekonstruiert (__PT_LBL_BOOKSRC__)</i>':'';
-      b+='<div class="tc-row"><span class="tc-k">Track</span>'+String(t.track_km).replace('.',',')+
-        ' km · +'+t.track_hm+' hm'+_qs+'</div>';
+      // B18: TRACK-Zeile + Sparkline zentrieren auf die Track-bbox („Zum Track").
+      // track_km existiert nur bei geladenem GPX -> Touren ohne Track (id 23)
+      // bekommen weder Zeile noch Sparkline = keine tote Affordance.
+      b+='<div class="tc-row trk-foc" onclick="event.stopPropagation();focusTrack('+t.id+')" title="Zum Track">'+
+        '<span class="tc-k">Track</span>'+String(t.track_km).replace('.',',')+
+        ' km · +'+t.track_hm+' hm'+_qs+
+        '<svg class="trk-fx" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="4.2"/>'+
+        '<path d="M8 1v3.2M8 11.8V15M1 8h3.2M11.8 8H15"/></svg></div>';
       b+=_trackSparkline(t.id); }   // P5: Mini-Höhenprofil
     if(t.bemerkung) b+='<div class="tc-row">'+_e(t.bemerkung)+'</div>';
     if(t.memo&&t.memo.trim()) b+='<div class="tour-memo">'+_esc(t.memo.trim()).replace(/\n/g,'<br>')+'</div>';
