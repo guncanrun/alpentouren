@@ -816,16 +816,12 @@ __HEAD_LIBS__
     #filterBadges .tf-reset{min-height:var(--row-h);min-width:40px;justify-content:center} }
   /* Chronik-Sync: Auswahl-Rahmen (Gebiet offen) — teal Ring, klar vom Play-Cursor (orange) getrennt */
   #chronoChips .chip.chsel{box-shadow:inset 0 0 0 2px var(--accent2)}
-  /* Touren-Tracks-Toggle — Befund 8: klar als EBENE (Darstellung), nicht als Filter.
-     Deutlicher Separator + Abstand + Auge-Icon, gedämpftes Layer-Styling. */
-  #tourFilter .tf-tracks{padding:6px 8px;min-height:32px;font-size:12px;color:var(--muted);margin-top:9px;
-    border-top:1px solid rgba(255,255,255,.14)}
-  #tourFilter .tf-tracks .tf-tl{display:inline-flex;align-items:center;gap:6px}
-  #tourFilter .tf-tracks .tf-eye{width:15px;height:15px;fill:none;stroke:var(--muted);stroke-width:1.3;flex:0 0 auto}
-  /* N2: Master-Schalter "Erinnerungen" im Ebenen-Panel (Auge-Konvention wie Tracks) */
+  /* N2: Master-Schalter "Erinnerungen" im Ebenen-Panel (Auge-Konvention).
+     B19: Touren-Tracks zog vom Touren-Panel hierher (eingerückter Sub-Toggle
+     unter dem Master; Befund-8-CSS im tourFilter damit entfallen). */
   #ebenen .mem-tl{display:inline-flex;align-items:center;gap:6px}
   #ebenen .mem-eye{width:15px;height:15px;fill:none;stroke:var(--muted);stroke-width:1.3;flex:0 0 auto}
-  @media (pointer: coarse){ #tourFilter .tf-tracks{min-height:var(--row-h)} }
+  #ebenen .tgl.sub{padding-left:23px;font-size:12px;color:var(--muted)}
   /* ── P2: Master-Detail — Steckbrief nutzt (Desktop, privat) die Tourenlisten-Position ── */
   /* B15: Panel-Deckel zusaetzlich an die Title-Card gekoppelt (--p-panel-max, JS sizeCov):
      bottom-verankert heisst Hoehe deckeln = Oberkante unter der Card halten; Body flext+scrollt. */
@@ -1304,7 +1300,6 @@ Touren ansehen <span id="covCount"></span>
         <div class="tf-chips" id="personChips"></div>
       </div>
       <div class="tf-badges" id="filterBadges"></div>
-      <div id="tglTracks" class="tgl on tf-tracks" onclick="toggleTracks()" title="Ebene ein-/ausblenden: Routen der Touren"><span class="tf-tl"><svg class="tf-eye" viewBox="0 0 16 16" aria-hidden="true"><path d="M1 8s2.6-4.3 7-4.3S15 8 15 8s-2.6 4.3-7 4.3S1 8 1 8z"/><circle cx="8" cy="8" r="2.1"/></svg>Touren-Tracks</span><span class="sw"></span></div>
     </div>
     <div id="covList"></div>
     <div id="covEmpty" class="tf-empty" style="display:none"></div>
@@ -1333,6 +1328,8 @@ Touren ansehen <span id="covCount"></span>
     <!-- PRIV:START -->
     <div class="grp">Erinnerungen</div>
     <div id="tglMem" class="tgl on" onclick="toggleMemories()" title="Alles Pers&ouml;nliche ein-/ausblenden: Touren, Routen, besuchte Gebiete, Chronik"><span class="mem-tl"><svg class="mem-eye" viewBox="0 0 16 16" aria-hidden="true"><path d="M1 8s2.6-4.3 7-4.3S15 8 15 8s-2.6 4.3-7 4.3S1 8 1 8z"/><circle cx="8" cy="8" r="2.1"/></svg>Erinnerungen</span><span class="sw"></span></div>
+    <!-- B19: Tracks als eingerückter Sub-Toggle (UND-Logik mit Master, keine Doppelung im Touren-Panel) -->
+    <div id="tglTracks" class="tgl on sub" onclick="toggleTracks()" title="Routen der Touren ein-/ausblenden"><span>Touren-Tracks</span><span class="sw"></span></div>
     <!-- PRIV:END -->
     <div class="grp">Karte</div>
     <div class="seg">
@@ -1446,6 +1443,9 @@ const clusterFC={type:'FeatureCollection', features:_clusterFeats};
 
 // ── Default camera: full Alpine view, slightly SW-biased ──────────────────────
 const ALPS = {center:[10.2,46.1], zoom:5.3, pitch:0, bearing:0};
+// B20: EINE Quelle für die Gipfel-Label-Stufen — speist den text-field-Step von
+// osm-peaks UND das Klick-/Hover-Gate (_peakClickable). Interaktion folgt Namen.
+const PEAK_NAME_GATE = {t2:10, t3:11, t4ele:12, t4all:13, t4min:2600};
 
 // Große-Screen-Stufe (27"+, feiner Zeiger): spiegelt die CSS-Media-Query. Steuert
 // Popup-Breiten und einen leichten Karten-Label-Boost (initialer Viewport-Check).
@@ -2133,14 +2133,16 @@ map.on('load',()=>{
       'icon-size':['match',['get','tier'], 0,1.9, 1,1.35, 2,1.05, 3,0.82, 0.62],
       // P3: Rang = tier + ele. Labels tier-gestaffelt bis z11; das riesige tier-4-Band
       // (2000er) ab z12 zusätzlich nach ele ausgedünnt (>=2600), ab z13 vollständig.
+      // B20: Stufenwerte kommen aus PEAK_NAME_GATE — dasselbe Objekt steuert das
+      // Klick-/Hover-Gate (_peakClickable): Interaktion exakt ab Label-Sichtbarkeit.
       'text-field':['step',['zoom'],
         ['case',['==',['get','tier'],0],['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],''],
         8, ['case',['<=',['get','tier'],1],['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],''],
-        10,['case',['<=',['get','tier'],2],['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],''],
-        11,['case',['<=',['get','tier'],3],['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],''],
-        12,['case',['<=',['get','tier'],3],['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],
-           ['case',['>=',['get','ele'],2600],['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],'']],
-        13,['concat',['get','name'],'\n',['to-string',['get','ele']],' m']],
+        PEAK_NAME_GATE.t2,['case',['<=',['get','tier'],2],['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],''],
+        PEAK_NAME_GATE.t3,['case',['<=',['get','tier'],3],['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],''],
+        PEAK_NAME_GATE.t4ele,['case',['<=',['get','tier'],3],['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],
+           ['case',['>=',['get','ele'],PEAK_NAME_GATE.t4min],['concat',['get','name'],'\n',['to-string',['get','ele']],' m'],'']],
+        PEAK_NAME_GATE.t4all,['concat',['get','name'],'\n',['to-string',['get','ele']],' m']],
       'text-font':['Noto Sans Bold'],'text-size':['match',['get','tier'], 0,12+LB, 1,11+LB, 9.5+LB],
       'symbol-sort-key':['get','tier'],   // wichtige Gipfel zuerst platziert; < Pässe (80/90) -> Gipfel gewinnen
       // Punkt 2a: Gipfel-Label weicht per variable-anchor aus (oben/unten/seitlich) statt den
@@ -2518,8 +2520,25 @@ map.on('load',()=>{
   // die Zeile öffnet die Gebirgsgruppe. Beide Builds (Gipfel = neutrale Geodaten). ─
   const PEAK_LAYERS = ['osm-peaks','osm-peaks-gold','osm-landmarks','osm-landhigh','peaks-in-group','peaks-highest'];
   const peakPopup = new maplibregl.Popup({closeButton:true, closeOnClick:false, offset:12});
+  // B20: Gipfel-Interaktion erst ab Label-Sichtbarkeit (Gates aus PEAK_NAME_GATE,
+  // gleiche Werte wie der text-field-Step von osm-peaks). Landmark-Tier + Gold
+  // (Namen ab Übersicht) immer; Gruppen-Gipfel-Layer (peaks-in-group/-highest)
+  // sind bewusst ausgenommen (nur bei gewählter Gruppe sichtbar, beschriftet).
+  function _peakClickable(f){
+    const p=f.properties||{}, lid=f.layer&&f.layer.id;
+    if(lid==='peaks-in-group'||lid==='peaks-highest') return true;
+    if(p.landmark===1||p.land_high===1) return true;
+    const t=(p.tier==null||p.tier==='')?9:+p.tier;
+    if(t<=1) return true;                               // Gold-Layer: Namen ab Übersicht
+    const z=map.getZoom();
+    if(t===2) return z>=PEAK_NAME_GATE.t2;
+    if(t===3) return z>=PEAK_NAME_GATE.t3;
+    return z>=PEAK_NAME_GATE.t4all || (z>=PEAK_NAME_GATE.t4ele && (+p.ele||0)>=PEAK_NAME_GATE.t4min);
+  }
   map.on('click', PEAK_LAYERS, e=>{
-    const f=e.features[0], p=f.properties||{};
+    const _fc=(e.features||[]).find(_peakClickable);
+    if(!_fc) return;                                    // B20: unter dem Gate -> Klick gehört der Fläche
+    const f=_fc, p=f.properties||{};
     const name=p.name||'Gipfel';
     const ele=(p.ele!=null && p.ele!=='')?(Math.round(+p.ele)+' m'):'';
     let sts='', gname='';
@@ -2537,14 +2556,16 @@ map.on('load',()=>{
     "<text x='21' y='10.4' font-size='9' font-family='Arial,sans-serif' font-weight='bold' fill='#1a2530' text-anchor='middle'>?</text></svg>";
   const PEAK_CURSOR='url("data:image/svg+xml,'+encodeURIComponent(_peakCurSvg)+'") 5 24, pointer';
   PEAK_LAYERS.forEach(l=>{
-    map.on('mouseenter',l,()=>{ map.getCanvas().style.cursor=PEAK_CURSOR; });
+    // B20: Berg-Cursor nur, wenn der Gipfel auch klickbar ist (Label-Gate);
+    // darunter bleibt der Flächen-Cursor der Gruppe.
+    map.on('mouseenter',l,e=>{ if((e.features||[]).some(_peakClickable)) map.getCanvas().style.cursor=PEAK_CURSOR; });
     map.on('mouseleave',l,()=>{ map.getCanvas().style.cursor=''; });
   });
 
   map.on('click','sts-hit',e=>{
     if(TOUR_LAYERS.length && map.queryRenderedFeatures(e.point,{layers:TOUR_LAYERS}).length) return;
     if(map.queryRenderedFeatures(e.point,{layers:HUT_LAYERS}).length) return;  // Hütte hat Vorrang
-    if(map.queryRenderedFeatures(e.point,{layers:PEAK_LAYERS}).length) return;  // Befund 3: Gipfel-Popup hat Vorrang
+    if(map.queryRenderedFeatures(e.point,{layers:PEAK_LAYERS}).some(_peakClickable)) return;  // Befund 3/B20: nur KLICKBARER Gipfel hat Vorrang
     if(map.queryRenderedFeatures(e.point,{layers:['places-sq','places-dot','places-label','places-village','places-village-label','cable-icon']}).length) return;  // Ort/Seilbahn hat Vorrang
     if(map.getLayer('t-cluster-halo') && map.queryRenderedFeatures(e.point,{layers:['t-cluster-halo']}).length) return;  // P2.7: Cluster hat Vorrang
     clearTimeout(_hoverTimer); hoverPop.remove(); stsPopup.remove(); hutPopup.remove();  // B: keine klebende Box
