@@ -386,7 +386,7 @@ if not PUBLIC:
     def _name_variants(_nm):
         # Doppel-/Kompositnamen zerlegen: "A / B" (OSM+touren.json) und "A - B"
         # (OSM, z. B. "Kesselkogel - Catinaccio d'Antermoia"). NUR " - " mit
-        # Leerzeichen — Bindestrich-Namen (Alois-Günther-Haus-Muster) bleiben ganz.
+        # Leerzeichen — Namen mit Bindestrich ohne Leerzeichen bleiben ganz.
         _parts = {str(_nm)} | {p for p in re.split(r"\s+/\s+|\s+-\s+", str(_nm)) if p.strip()}
         return {_hutnorm(p) for p in _parts if _hutnorm(p)}
 
